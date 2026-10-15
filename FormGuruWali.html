@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bimbingan Guru Wali - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-chat-heart-fill text-danger me-2"></i>Formulir Bimbingan Guru Wali</h4>
+        <p class="text-muted small mb-0">Catat layanan pendampingan, konseling, dan pembinaan karakter bagi siswa asuh.</p>
+      </div>
+      <div class="d-flex gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-primary rounded-pill btn-sm" onclick="navigateTo('laporan-guruwali')">
+          <i class="bi bi-heart-pulse me-1"></i> Lihat Laporan Bimbingan
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card p-4 shadow-sm mb-4">
+      <form id="formGuruWali" onsubmit="saveBimbingan(event)">
+        <!-- Row 1: Tanggal & Nama Guru Wali -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Tanggal Pelaksanaan <span class="text-danger">*</span></label>
+            <input type="date" id="gwTanggal" class="form-control" required>
+          </div>
+          <div class="col-md-5 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Nama Guru Wali Penanggung Jawab <span class="text-danger">*</span></label>
+            <div id="divGuruWaliContainer">
+              <!-- Dropdown for Super Admin or Readonly Input for Teacher -->
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-12">
+            <label class="form-label fw-semibold small text-secondary">Kategori Bimbingan <span class="text-danger">*</span></label>
+            <select id="gwKategori" class="form-select">
+              <option value="Individu">Bimbingan Individu (Perorangan)</option>
+              <option value="Kelompok">Bimbingan Kelompok</option>
+              <option value="Klasikal">Bimbingan Klasikal / Kelas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2: Pilih Siswa Asuh -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
+            <span>Siswa Asuh yang Dibimbing <span class="text-danger">*</span> <small class="text-muted fw-normal">(Pilih satu atau beberapa)</small></span>
+            <div class="d-flex gap-2">
+              <small class="text-success cursor-pointer fw-semibold" onclick="selectAllStudentSelection()"><i class="bi bi-check-all me-1"></i>Pilih Semua</small>
+              <small class="text-primary cursor-pointer" onclick="clearStudentSelection()"><i class="bi bi-x-circle me-1"></i>Reset Pilihan</small>
+            </div>
+          </label>
+          <div id="containerSiswaAsuh" class="p-3 border rounded bg-light d-flex flex-wrap gap-2" style="max-height: 180px; overflow-y: auto;">
+            <small class="text-muted">Memuat daftar siswa asuh...</small>
+          </div>
+          <small class="text-muted d-block mt-1">Daftar siswa asuh diambil dari Master Data Bimbingan Guru Wali.</small>
+        </div>
+
+        <!-- Row 3: Topik Permasalahan & Pembahasan -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Topik Bahasan / Masalah yang Dikonsultasikan <span class="text-danger">*</span></label>
+          <textarea id="gwTopik" class="form-control" rows="3" required placeholder="Jelaskan pokok bahasan bimbingan, permasalahan akademik, motivasi belajar, pergaulan, kedisiplinan, dll..."></textarea>
+        </div>
+
+        <!-- Row 4: Tindak Lanjut -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Tindak Lanjut & Rekomendasi Solusi <span class="text-danger">*</span></label>
+          <textarea id="gwTindakLanjut" class="form-control" rows="3" required placeholder="Langkah konkrit penyelesaian masalah, kesepakatan bersama siswa, rencana monitoring, atau koordinasi dengan orang tua..."></textarea>
+        </div>
+
+        <!-- Row 5: Keterangan / Evaluasi -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Keterangan Tambahan / Hasil Evaluasi</label>
+          <input type="text" id="gwKeterangan" class="form-control" placeholder="Contoh: Siswa kooperatif dan berkomitmen meningkatkan kedisiplinan kehadiran">
+        </div>
+
+        <!-- Row 6: Bukti Dokumentasi / Foto Konseling -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold small text-secondary d-block">Dokumentasi / Foto Pendukung Kegiatan</label>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-8">
+              <input type="text" id="gwLinkBukti" class="form-control" placeholder="Tautan Google Drive atau klik tombol unggah di samping...">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+              <label class="btn btn-outline-primary w-100 mb-0" for="fileBuktiGW">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Unggah ke Drive
+              </label>
+              <input type="file" id="fileBuktiGW" class="d-none" accept="image/*,.pdf,.doc,.docx" onchange="handleBuktiUpload(this)">
+            </div>
+          </div>
+          <small class="text-muted d-block mt-1">Berkas disimpan ke folder Google Drive Guru Wali.</small>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <button type="reset" class="btn btn-light rounded-pill px-4">Reset</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSubmitGW">
+            <i class="bi bi-save2-fill me-1"></i> Simpan Catatan Bimbingan
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Bimbingan Guru Wali';
+
+    let allBimbinganData = [];
+    let driveFolderGW = '';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('gwTanggal').value = new Date().toISOString().slice(0,10);
+      setupGuruWaliField();
+      loadInitialData();
+    });
+
+    function setupGuruWaliField() {
+      const container = document.getElementById('divGuruWaliContainer');
+      if (isSuperAdmin()) {
+        container.innerHTML = '<select id="gwGuru" class="form-select" onchange="filterStudentsByGuru()"></select>';
+        google.script.run.withSuccessHandler(function(guruList) {
+          const sel = document.getElementById('gwGuru');
+          sel.innerHTML = '';
+          guruList.forEach(function(g) {
+            sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
+          });
+          if (user && user.nama) sel.value = user.nama;
+          filterStudentsByGuru();
+        }).getDaftarGuruNama();
+      } else {
+        container.innerHTML = '<input type="text" id="gwGuru" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci sesuai akun login Anda">';
+      }
+    }
+
+    function loadInitialData() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load Settings
+      google.script.run.withSuccessHandler(function(st) {
+        if (st && st.folder_guru_wali) driveFolderGW = st.folder_guru_wali;
+      }).getSettings();
+
+      // Load Bimbingan Students
+      google.script.run.withSuccessHandler(function(data) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        allBimbinganData = data || [];
+        filterStudentsByGuru();
+      }).getDataMuridGuruWali();
+    }
+
+    function filterStudentsByGuru() {
+      const guruEl = document.getElementById('gwGuru');
+      const guru = String(guruEl ? guruEl.value : (user.nama || '')).trim();
+      const container = document.getElementById('containerSiswaAsuh');
+
+      if (!guru) {
+        container.innerHTML = '<div class="text-muted small py-2"><i class="bi bi-info-circle me-1"></i>Silakan pilih Guru Wali Penanggung Jawab terlebih dahulu.</div>';
+        return;
+      }
+
+      const students = allBimbinganData.filter(function(b) {
+        return String(b.guru_wali || '').trim().toLowerCase() === guru.toLowerCase();
+      });
+
+      if (students.length === 0) {
+        container.innerHTML = '<div class="alert alert-warning py-3 px-3 mb-0 small d-flex align-items-center gap-3 w-100">' +
+          '<i class="bi bi-exclamation-triangle-fill text-warning fs-4 flex-shrink-0"></i>' +
+          '<div>' +
+            '<div class="fw-bold text-dark">Guru ' + escapeHtml(guru) + ' tidak memiliki siswa asuh.</div>' +
+            '<div class="text-muted mt-1">Siswa asuh belum terdaftar untuk guru ini di database. Anda dapat memetakan siswa asuh melalui menu <a href="javascript:void(0)" onclick="navigateTo(\'master-bimbingan\')" class="alert-link fw-semibold">Data Siswa Bimbingan (Guru Wali)</a>.</div>' +
+          '</div>' +
+        '</div>';
+        return;
+      }
+
+      let html = '';
+      students.forEach(function(s) {
+        html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white shadow-xs">' +
+          '<input class="form-check-input siswa-gw-chk" type="checkbox" id="sgw_' + s.id + '" value="' + escapeHtml(s.nama_murid) + '">' +
+          '<label class="form-check-label small cursor-pointer" for="sgw_' + s.id + '">' +
+            '<span class="fw-semibold text-dark">' + escapeHtml(s.nama_murid) + '</span> ' +
+            '<span class="badge bg-secondary-subtle text-secondary ms-1">' + escapeHtml(s.kelas || '-') + '</span>' +
+          '</label>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function selectAllStudentSelection() {
+      document.querySelectorAll('.siswa-gw-chk').forEach(function(c){ c.checked = true; });
+    }
+
+    function clearStudentSelection() {
+      document.querySelectorAll('.siswa-gw-chk').forEach(function(c){ c.checked = false; });
+    }
+
+    function handleBuktiUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      showLoading('Mengunggah bukti ke Google Drive...');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        const folderId = extractDriveFolderId(driveFolderGW);
+
+        if (!folderId) {
+          Swal.close();
+          showToast('warning', 'Folder Guru Wali Drive belum dikonfigurasi di Pengaturan');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById('gwLinkBukti').value = res.url;
+              showToast('success', 'Bukti bimbingan berhasil diunggah!');
+            } else {
+              showToast('error', res.message || 'Gagal unggah');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error unggah: ' + err.message);
+          })
+          .uploadFileToDrive(base64Data, file.name, folderId);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function extractDriveFolderId(url) {
+      if (!url) return null;
+      const m = String(url).match(/folders\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    function saveBimbingan(e) {
+      e.preventDefault();
+      const guruEl = document.getElementById('gwGuru');
+      const guru = guruEl ? guruEl.value : (user.nama || '');
+
+      const checkedStudents = [];
+      document.querySelectorAll('.siswa-gw-chk:checked').forEach(function(c){ checkedStudents.push(c.value); });
+
+      if (checkedStudents.length === 0) {
+        showToast('warning', 'Pilih minimal satu siswa asuh');
+        return;
+      }
+
+      const payload = {
+        tanggal: document.getElementById('gwTanggal').value,
+        nama_guru_wali: guru,
+        nama_murid: checkedStudents.join(', '),
+        kategori: document.getElementById('gwKategori').value,
+        topik_masalah: document.getElementById('gwTopik').value.trim(),
+        tindak_lanjut: document.getElementById('gwTindakLanjut').value.trim(),
+        keterangan: document.getElementById('gwKeterangan').value.trim(),
+        file_bukti: document.getElementById('gwLinkBukti').value.trim()
+      };
+
+      showLoading('Menyimpan catatan bimbingan...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Catatan Bimbingan Berhasil Disimpan!',
+              text: 'Layanan bimbingan untuk ' + payload.nama_murid + ' berhasil dicatat.',
+              showCancelButton: true,
+              confirmButtonText: 'Lihat Laporan Bimbingan',
+              cancelButtonText: 'Input Bimbingan Lain'
+            }).then(function(result) {
+              if (result.isConfirmed) {
+                navigateTo('laporan-guruwali');
+              } else {
+                document.getElementById('gwTopik').value = '';
+                document.getElementById('gwTindakLanjut').value = '';
+                document.getElementById('gwKeterangan').value = '';
+                document.getElementById('gwLinkBukti').value = '';
+                clearStudentSelection();
+              }
+            });
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan bimbingan');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .saveBimbinganGuruWali(payload);
+    }
+  </script>
+</body>
+</html>

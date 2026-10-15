@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Bimbingan Guru Wali - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-heart-pulse-fill text-danger me-2"></i>Laporan Bimbingan Guru
+          Wali</h4>
+        <p class="text-muted small mb-0">Rekapitulasi riwayat konseling, topik permasalahan, dan tindak lanjut siswa
+          binaan.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataGuruWali()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-primary rounded-pill px-3 btn-sm shadow-sm" onclick="openPrintLaporan()">
+          <i class="bi bi-printer me-1"></i> Cetak PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Multi-Kriteria -->
+    <div class="card p-3 mb-4 shadow-xs">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Tahun Ajaran</label>
+          <select id="filterTA" class="form-select form-select-sm" onchange="loadLaporan()"></select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Semester</label>
+          <select id="filterSemester" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="Ganjil">Ganjil</option>
+            <option value="Genap">Genap</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Guru Wali Penanggung Jawab</label>
+          <div id="divGuruFilter"></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Cari Siswa / Topik</label>
+          <input type="text" id="filterKeyword" class="form-control form-control-sm" placeholder="Ketik kata kunci..."
+            oninput="renderTable()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableGuruWali">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;">No</th>
+              <th>Tanggal</th>
+              <th>Guru Wali</th>
+              <th>Siswa Asuh</th>
+              <th>Kategori</th>
+              <th>Topik / Permasalahan</th>
+              <th>Tindak Lanjut & Rekomendasi</th>
+              <th>Keterangan</th>
+              <th>Bukti</th>
+              <th class="text-center" style="width: 80px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyGuruWali">
+            <tr>
+              <td colspan="10" class="text-center text-muted py-4">Memuat data bimbingan...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Edit Bimbingan -->
+  <div class="modal fade" id="modalEditGW" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Edit Catatan Bimbingan Guru Wali</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formEditGW" onsubmit="saveEditGW(event)">
+          <div class="modal-body">
+            <input type="hidden" id="editGWId">
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Tanggal <span class="text-danger">*</span></label>
+                <input type="date" id="editGWTanggal" class="form-control" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Kategori <span class="text-danger">*</span></label>
+                <select id="editGWKategori" class="form-select" required>
+                  <option value="Individu">Bimbingan Individu (Perorangan)</option>
+                  <option value="Kelompok">Bimbingan Kelompok</option>
+                  <option value="Klasikal">Bimbingan Klasikal / Kelas</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Guru Wali Penanggung Jawab</label>
+                <input type="text" id="editGWNamaGuru" class="form-control bg-light fw-semibold text-dark" readonly>
+              </div>
+            </div>
+
+            <!-- Checkbox Siswa Asuh Berdasarkan Guru Wali -->
+            <div class="mb-3">
+              <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+                <span>Siswa Asuh yang Dibimbing <span class="text-danger">*</span> <small
+                    class="text-muted fw-normal">(Pilih satu atau beberapa)</small></span>
+                <div class="d-flex gap-2">
+                  <small class="text-success cursor-pointer fw-semibold" onclick="selectAllEditGWStudents()"><i
+                      class="bi bi-check-all me-1"></i>Pilih Semua</small>
+                  <small class="text-primary cursor-pointer" onclick="clearEditGWStudentSelection()"><i
+                      class="bi bi-x-circle me-1"></i>Reset</small>
+                </div>
+              </label>
+              <div id="containerEditGWSiswa" class="p-3 border rounded bg-light d-flex flex-wrap gap-2"
+                style="max-height: 180px; overflow-y: auto;">
+                <small class="text-muted">Memuat daftar siswa asuh...</small>
+              </div>
+              <small class="text-muted d-block mt-1">Daftar siswa asuh diambil sesuai guru wali penanggung
+                jawab.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Topik Permasalahan</label>
+              <textarea id="editGWTopik" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Tindak Lanjut</label>
+              <textarea id="editGWTindakLanjut" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Keterangan Tambahan</label>
+              <input type="text" id="editGWKeterangan" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
+              <div class="input-group">
+                <input type="text" id="editGWBukti" class="form-control" placeholder="https://drive.google.com/...">
+                <label class="btn btn-outline-secondary" for="fileEditGW" title="Unggah Berkas Pengganti ke Drive"><i
+                    class="bi bi-upload"></i></label>
+                <input type="file" id="fileEditGW" class="d-none"
+                  onchange="uploadReplacementFile(this, 'editGWBukti', 'folder_bimbingan')">
+              </div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
+                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Laporan Guru Wali';
+
+    let allLaporanGW = [];
+    let allBimbinganMurid = [];
+
+    function getModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return { show: function () { }, hide: function () { } };
+      let inst = bootstrap.Modal.getInstance(el);
+      if (!inst) inst = new bootstrap.Modal(el);
+      return inst;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Hidrasi instan dari AppBundle (0 detik)
+      hydrateFromCache();
+
+      // 2. Tarik data laporan dan sinkronisasi filter sekaligus dalam 1 panggilan cepat
+      loadLaporan();
+
+      // 3. Preload data siswa bimbingan jika diperlukan
+      if (allBimbinganMurid.length === 0) {
+        google.script.run.withSuccessHandler(function (data) {
+          if (data && Array.isArray(data)) allBimbinganMurid = data;
+        }).getDataMuridGuruWali();
+      }
+    });
+
+    function hydrateFromCache() {
+      const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+      if (!bundle) return;
+      applyBundleOptions(bundle);
+    }
+
+    function applyBundleOptions(b) {
+      if (!b) return;
+
+      // Dropdown TA
+      const taList = b.tahunAjaran || [];
+      if (taList.length > 0) {
+        const selTA = document.getElementById('filterTA');
+        const curTA = selTA.value;
+        selTA.innerHTML = '<option value="">Semua TA</option>';
+        taList.forEach(function (t) {
+          selTA.innerHTML += '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+        });
+        if (curTA) selTA.value = curTA;
+        else if (b.settings && b.settings.tahun_ajaran) selTA.value = b.settings.tahun_ajaran;
+        else selTA.value = taList[0];
+      }
+
+      // Semester
+      if (b.settings && b.settings.semester) {
+        const selSem = document.getElementById('filterSemester');
+        if (!selSem.value) selSem.value = b.settings.semester;
+      }
+
+      // Guru Wali Filter
+      setupGuruFilter(b.guruList || b.guruNama || b.guru);
+    }
+
+    function setupGuruFilter(guruList) {
+      const container = document.getElementById('divGuruFilter');
+      if (!container) return;
+      if (isSuperAdmin()) {
+        const sel = document.getElementById('filterGuru');
+        const cur = sel ? sel.value : '';
+        let html = '<select id="filterGuru" class="form-select form-select-sm" onchange="loadLaporan()"><option value="">Semua Guru Wali</option>';
+        if (guruList && Array.isArray(guruList)) {
+          guruList.forEach(function (g) {
+            const nama = g.nama || g.nama_guru || g;
+            html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+          });
+        }
+        html += '</select>';
+        container.innerHTML = html;
+        const newSel = document.getElementById('filterGuru');
+        if (newSel && cur) newSel.value = cur;
+      } else {
+        container.innerHTML = '<input type="text" id="filterGuru" class="form-control form-control-sm bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci: Hanya melihat rekaman Anda">';
+      }
+    }
+
+    function loadLaporan() {
+      const tbody = document.getElementById('tbodyGuruWali');
+      if (allLaporanGW.length === 0 && tbody) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2 text-primary"></span>Memuat catatan bimbingan...</td></tr>';
+      }
+
+      const guruEl = document.getElementById('filterGuru');
+      const filters = {
+        tahun_ajaran: document.getElementById('filterTA') ? document.getElementById('filterTA').value : '',
+        semester: document.getElementById('filterSemester') ? document.getElementById('filterSemester').value : '',
+        nama_guru_wali: guruEl ? guruEl.value : ''
+      };
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            applyBundleOptions(res);
+            if (typeof updateAppBundle === 'function') {
+              updateAppBundle({
+                settings: res.settings,
+                tahunAjaran: res.tahunAjaran,
+                kelas: res.kelas,
+                mapel: res.mapel,
+                guruNama: res.guruList
+              });
+            }
+            if (res.bimbinganMurid && Array.isArray(res.bimbinganMurid)) {
+              allBimbinganMurid = res.bimbinganMurid;
+            }
+            allLaporanGW = res.data || [];
+          } else {
+            allLaporanGW = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+          }
+          renderTable();
+        })
+        .withFailureHandler(function (err) {
+          showToast('error', 'Gagal memuat laporan: ' + err.message);
+          renderTable();
+        })
+        .getLaporanFullBundle('guruwali', filters);
+    }
+
+    function renderTable() {
+      const q = document.getElementById('filterKeyword').value.trim().toLowerCase();
+      const filtered = allLaporanGW.filter(function (r) {
+        return !q || String(r.nama_murid || '').toLowerCase().includes(q) || String(r.topik_masalah || '').toLowerCase().includes(q) || String(r.tindak_lanjut || '').toLowerCase().includes(q);
+      });
+
+      const tbody = document.getElementById('tbodyGuruWali');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Tidak ada catatan bimbingan yang sesuai filter.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(function (r, idx) {
+        const canManage = canManageReport('guruwali', r);
+
+        let buktiHtml = '-';
+        if (r.file_bukti) {
+          buktiHtml = '<a href="' + escapeHtml(r.file_bukti) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
+            '<i class="bi bi-link-45deg"></i> Bukti' +
+            '</a>';
+        }
+
+        let aksiHtml = '';
+        if (canManage) {
+          aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="openEditModalByIndex(' + idx + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteRecord(' + r.id + ')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+            '</div>';
+        } else {
+          aksiHtml = '<span class="badge bg-light text-muted border">🔒 Terkunci</span>';
+        }
+
+        html += '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + formatDateIndo(r.tanggal) + '</td>' +
+          '<td><span class="badge bg-light text-dark border"><i class="bi bi-person-badge text-primary me-1"></i>' + escapeHtml(r.nama_guru_wali) + '</span></td>' +
+          '<td class="fw-bold text-dark">' + escapeHtml(r.nama_murid || '-') + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary">' + escapeHtml(r.kategori || 'Individu') + '</span></td>' +
+          '<td><div class="text-break" style="max-width: 220px;">' + escapeHtml(r.topik_masalah || '-') + '</div></td>' +
+          '<td><div class="text-break text-muted small" style="max-width: 220px;">' + escapeHtml(r.tindak_lanjut || '-') + '</div></td>' +
+          '<td><small class="text-muted">' + escapeHtml(r.keterangan || '-') + '</small></td>' +
+          '<td>' + buktiHtml + '</td>' +
+          '<td class="text-center">' + aksiHtml + '</td>' +
+          '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function openEditModalByIndex(idx) {
+      const record = allLaporanGW[idx];
+      if (!record) return;
+      openEditModal(record);
+    }
+
+    function openEditModal(record) {
+      if (!record) return;
+      document.getElementById('editGWId').value = record.id;
+      document.getElementById('editGWTanggal').value = record.tanggal || '';
+      document.getElementById('editGWKategori').value = record.kategori || 'Individu';
+      document.getElementById('editGWNamaGuru').value = record.nama_guru_wali || '';
+      document.getElementById('editGWTopik').value = record.topik_masalah || '';
+      document.getElementById('editGWTindakLanjut').value = record.tindak_lanjut || '';
+      document.getElementById('editGWKeterangan').value = record.keterangan || '';
+      document.getElementById('editGWBukti').value = record.file_bukti || '';
+
+      renderEditGWStudentCheckboxes(record);
+
+      getModal('modalEditGW').show();
+    }
+
+    function renderEditGWStudentCheckboxes(record) {
+      const container = document.getElementById('containerEditGWSiswa');
+      if (!container) return;
+      const guru = String(record.nama_guru_wali || '').trim();
+      const currentSelectedNames = (record.nama_murid || '')
+        .split(',')
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean);
+
+      function doRender(muridList) {
+        const students = muridList.filter(function (b) {
+          return String(b.guru_wali || '').trim().toLowerCase() === guru.toLowerCase();
+        });
+
+        if (students.length === 0) {
+          container.innerHTML = '<div class="alert alert-warning py-2 px-3 mb-0 small d-flex align-items-center gap-2 w-100">' +
+            '<i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0"></i>' +
+            '<div>' +
+            '<span class="fw-semibold text-dark">Guru <u>' + escapeHtml(guru || 'ini') + '</u> tidak memiliki siswa asuh terdaftar.</span>' +
+            '<span class="text-muted d-block small">Data siswa asuh dapat diatur melalui menu <strong>Data Siswa Bimbingan (Guru Wali)</strong>.</span>' +
+            '</div>' +
+            '</div>';
+          return;
+        }
+
+        let html = '';
+        const renderedNames = [];
+        students.forEach(function (s) {
+          const isChecked = currentSelectedNames.some(function (n) {
+            return n.toLowerCase() === String(s.nama_murid).trim().toLowerCase();
+          });
+          renderedNames.push(String(s.nama_murid).trim().toLowerCase());
+
+          html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white shadow-xs">' +
+            '<input class="form-check-input edit-gw-chk" type="checkbox" id="egw_' + s.id + '" value="' + escapeHtml(s.nama_murid) + '"' + (isChecked ? ' checked' : '') + '>' +
+            '<label class="form-check-label small cursor-pointer" for="egw_' + s.id + '">' +
+            '<span class="fw-semibold text-dark">' + escapeHtml(s.nama_murid) + '</span>' +
+            '<span class="badge bg-secondary-subtle text-secondary ms-1">' + escapeHtml(s.kelas || '-') + '</span>' +
+            '</label>' +
+            '</div>';
+        });
+
+        // Pertahankan siswa tersimpan sebelumnya jika tidak ada di master saat ini
+        currentSelectedNames.forEach(function (oldName, idx) {
+          if (!renderedNames.includes(oldName.toLowerCase())) {
+            html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-warning-subtle shadow-xs">' +
+              '<input class="form-check-input edit-gw-chk" type="checkbox" id="egw_custom_' + idx + '" value="' + escapeHtml(oldName) + '" checked>' +
+              '<label class="form-check-label small cursor-pointer" for="egw_custom_' + idx + '">' +
+              '<span class="fw-semibold text-dark">' + escapeHtml(oldName) + '</span>' +
+              '<span class="badge bg-warning text-dark ms-1">Tersimpan</span>' +
+              '</label>' +
+              '</div>';
+          }
+        });
+
+        container.innerHTML = html;
+      }
+
+      if (allBimbinganMurid && allBimbinganMurid.length > 0) {
+        doRender(allBimbinganMurid);
+      } else {
+        container.innerHTML = '<div class="text-center py-2 text-muted small"><span class="spinner-border spinner-border-sm me-1 text-primary"></span>Memuat daftar siswa asuh...</div>';
+        google.script.run.withSuccessHandler(function (data) {
+          allBimbinganMurid = data || [];
+          doRender(allBimbinganMurid);
+        }).getDataMuridGuruWali();
+      }
+    }
+
+    function selectAllEditGWStudents() {
+      document.querySelectorAll('.edit-gw-chk').forEach(function (c) { c.checked = true; });
+    }
+
+    function clearEditGWStudentSelection() {
+      document.querySelectorAll('.edit-gw-chk').forEach(function (c) { c.checked = false; });
+    }
+
+    function saveEditGW(e) {
+      e.preventDefault();
+      const id = document.getElementById('editGWId').value;
+      const checked = [];
+      document.querySelectorAll('.edit-gw-chk:checked').forEach(function (c) {
+        if (c.value) checked.push(c.value.trim());
+      });
+
+      if (checked.length === 0) {
+        showToast('warning', 'Pilih minimal satu siswa asuh yang dibimbing');
+        return;
+      }
+
+      const payload = {
+        id: id,
+        tanggal: document.getElementById('editGWTanggal').value,
+        kategori: document.getElementById('editGWKategori').value,
+        nama_murid: checked.join(', '),
+        topik_masalah: document.getElementById('editGWTopik').value.trim(),
+        tindak_lanjut: document.getElementById('editGWTindakLanjut').value.trim(),
+        keterangan: document.getElementById('editGWKeterangan').value.trim(),
+        file_bukti: document.getElementById('editGWBukti').value.trim()
+      };
+
+      showLoading('Menyimpan perubahan...');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          Swal.close();
+          if (res && res.success) {
+            getModal('modalEditGW').hide();
+            showToast('success', 'Catatan bimbingan berhasil diperbarui');
+            loadLaporan();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan');
+          }
+        })
+        .withFailureHandler(function (err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .updateLaporan('Hasil Guru Wali', payload);
+    }
+
+    function deleteRecord(id) {
+      Swal.fire({
+        title: 'Hapus Catatan Bimbingan?',
+        text: 'Data yang dihapus tidak dapat dipulihkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data...');
+          google.script.run
+            .withSuccessHandler(function (res) {
+              Swal.close();
+              if (res && res.success) {
+                showToast('success', 'Catatan bimbingan berhasil dihapus');
+                loadLaporan();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function (err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteLaporan('Hasil Guru Wali', id);
+        }
+      });
+    }
+
+    // Export Excel
+    function exportDataGuruWali() {
+      if (allLaporanGW.length === 0) {
+        showToast('info', 'Tidak ada data untuk diekspor');
+        return;
+      }
+      const rows = allLaporanGW.map(function (r, idx) {
+        return {
+          'No': idx + 1,
+          'Tanggal': r.tanggal || '',
+          'Tahun Ajaran': r.tahun_ajaran || '',
+          'Semester': r.semester || '',
+          'Nama Guru Wali': r.nama_guru_wali || '',
+          'Nama Murid': r.nama_murid || '',
+          'Kategori': r.kategori || '',
+          'Topik Masalah': r.topik_masalah || '',
+          'Tindak Lanjut': r.tindak_lanjut || '',
+          'Keterangan': r.keterangan || '',
+          'File Bukti': r.file_bukti || ''
+        };
+      });
+      exportArrayToExcel(rows, 'Laporan_Bimbingan_Guru_Wali_' + new Date().toISOString().slice(0, 10), 'Bimbingan Guru Wali');
+    }
+
+    // Open Print PDF in New Tab
+    function openPrintLaporan() {
+      const ta = document.getElementById('filterTA').value;
+      const sem = document.getElementById('filterSemester').value;
+      const grEl = document.getElementById('filterGuru');
+      const gr = grEl ? grEl.value : '';
+
+      const printUrl = getBaseUrl() + '?page=print-laporan&type=guruwali&ta=' + encodeURIComponent(ta) + '&semester=' + encodeURIComponent(sem) + '&guru=' + encodeURIComponent(gr);
+      window.open(printUrl, '_blank');
+    }
+  </script>
+</body>
+
+</html>

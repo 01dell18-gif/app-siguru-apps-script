@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Siswa - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+  <style>
+    .segmented-btn-group .btn-check:checked + .btn-outline-success {
+      background-color: #198754; color: #fff;
+    }
+    .segmented-btn-group .btn-check:checked + .btn-outline-warning {
+      background-color: #ffc107; color: #000;
+    }
+    .segmented-btn-group .btn-check:checked + .btn-outline-info {
+      background-color: #0dcaf0; color: #000;
+    }
+    .segmented-btn-group .btn-check:checked + .btn-outline-danger {
+      background-color: #dc3545; color: #fff;
+    }
+    .segmented-btn-group .btn-check:checked + .btn-outline-purple {
+      background-color: #6f42c1; color: #fff;
+    }
+    .btn-outline-purple {
+      color: #6f42c1; border-color: #6f42c1;
+    }
+    .btn-outline-purple:hover {
+      background-color: #6f42c1; color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-check2-circle text-primary me-2"></i>Presensi / Absensi Siswa</h4>
+        <p class="text-muted small mb-0">Catat kehadiran peserta didik per mata pelajaran & kelas dengan segmented status (H, I, S, A, D).</p>
+      </div>
+      <div class="d-flex gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-primary rounded-pill btn-sm" onclick="navigateTo('laporan-absen')">
+          <i class="bi bi-file-earmark-check me-1"></i> Lihat Rekap Presensi
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Header Presensi Sesuai PRD -->
+    <div class="card p-3 mb-4 shadow-xs">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Tanggal</label>
+          <input type="date" id="absenTanggal" class="form-control form-control-sm" onchange="loadStudents()">
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Nama Guru</label>
+          <div id="divGuruContainer">
+            <!-- Dropdown for Super Admin or Readonly Input for Teacher -->
+          </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+          <label class="form-label fw-semibold small text-secondary">Tahun Ajaran</label>
+          <select id="absenTA" class="form-select form-select-sm" onchange="loadStudents()"></select>
+        </div>
+        <div class="col-md-1 col-sm-4">
+          <label class="form-label fw-semibold small text-secondary">Semester</label>
+          <select id="absenSemester" class="form-select form-select-sm" onchange="loadStudents()">
+            <option value="Ganjil">Ganjil</option>
+            <option value="Genap">Genap</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-4">
+          <label class="form-label fw-semibold small text-secondary">Mata Pelajaran</label>
+          <select id="absenMapel" class="form-select form-select-sm" onchange="loadStudents()"></select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Kelas / Rombel</label>
+          <select id="absenKelas" class="form-select form-select-sm" onchange="loadStudents()"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Form Card -->
+    <div class="card overflow-hidden">
+      <div class="d-flex flex-wrap justify-content-between align-items-center p-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="fw-bold text-dark">Daftar Kehadiran:</span>
+          <span class="badge bg-primary px-3 py-1" id="badgeKelas">-</span>
+          <span class="badge bg-secondary px-3 py-1" id="badgeMapel">-</span>
+          <span class="badge bg-light text-dark border px-3 py-1" id="badgeGuru">-</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+          <button type="button" class="btn btn-outline-success btn-sm rounded-pill fw-semibold" onclick="markAllAttendance('H')">
+            <i class="bi bi-check-all me-1"></i> Tandai Semua Hadir
+          </button>
+          <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="savePresensi()">
+            <i class="bi bi-save2-fill me-1"></i> Simpan Presensi
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 50px;">No</th>
+              <th>NISN</th>
+              <th>Nama Siswa</th>
+              <th>L/P</th>
+              <th class="text-center" style="min-width: 330px;">Keterangan Kehadiran (H / I / S / A / D)</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAbsen">
+            <tr><td colspan="5" class="text-center text-muted py-4">Pilih kelas untuk memuat daftar siswa.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Presensi Siswa';
+
+    let currentStudents = [];
+    let allMuridData = [];
+    let existingAttendance = {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set default date to today
+      document.getElementById('absenTanggal').value = new Date().toISOString().slice(0,10);
+      setupGuruField();
+      loadFilterOptions();
+    });
+
+    function setupGuruField() {
+      const container = document.getElementById('divGuruContainer');
+      if (isSuperAdmin()) {
+        container.innerHTML = '<select id="absenGuru" class="form-select form-select-sm" onchange="updateBadges(); loadStudents();"></select>';
+        google.script.run.withSuccessHandler(function(guruList) {
+          const sel = document.getElementById('absenGuru');
+          sel.innerHTML = '';
+          guruList.forEach(function(g) {
+            sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
+          });
+          if (user && user.nama) sel.value = user.nama;
+          updateBadges();
+        }).getDaftarGuruNama();
+      } else {
+        container.innerHTML = '<input type="text" id="absenGuru" class="form-control form-control-sm bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci sesuai akun login Anda">';
+        updateBadges();
+      }
+    }
+
+    function loadFilterOptions() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load Settings for TA & Semester
+      google.script.run.withSuccessHandler(function(st) {
+        if (st) {
+          if (st.semester) document.getElementById('absenSemester').value = st.semester;
+        }
+      }).getSettings();
+
+      // Load Tahun Ajaran
+      google.script.run.withSuccessHandler(function(taList) {
+        const selTA = document.getElementById('absenTA');
+        selTA.innerHTML = '';
+        taList.forEach(function(t) {
+          selTA.innerHTML += '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+        });
+      }).getDaftarTahunAjaran();
+
+      // Load Mapel
+      google.script.run.withSuccessHandler(function(mapelList) {
+        const selMapel = document.getElementById('absenMapel');
+        selMapel.innerHTML = '';
+        mapelList.forEach(function(m) {
+          selMapel.innerHTML += '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
+        });
+        updateBadges();
+      }).getDaftarMapel();
+
+      // Load Kelas & Students
+      google.script.run.withSuccessHandler(function(kelasList) {
+        const selKelas = document.getElementById('absenKelas');
+        selKelas.innerHTML = '';
+        kelasList.forEach(function(k) {
+          selKelas.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+
+        // Load all murid
+        google.script.run.withSuccessHandler(function(dataMurid) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          allMuridData = dataMurid || [];
+          loadStudents();
+        }).getDataMurid();
+      }).getDaftarKelas();
+    }
+
+    function updateBadges() {
+      const k = document.getElementById('absenKelas').value || '-';
+      const m = document.getElementById('absenMapel').value || '-';
+      const g = document.getElementById('absenGuru') ? document.getElementById('absenGuru').value : (user.nama || '-');
+
+      document.getElementById('badgeKelas').textContent = k;
+      document.getElementById('badgeMapel').textContent = m;
+      document.getElementById('badgeGuru').innerHTML = '<i class="bi bi-person-badge text-primary me-1"></i>' + escapeHtml(g);
+    }
+
+    function loadStudents() {
+      updateBadges();
+      const kelas = document.getElementById('absenKelas').value;
+      const tanggal = document.getElementById('absenTanggal').value;
+      const mapel = document.getElementById('absenMapel').value;
+      const ta = document.getElementById('absenTA').value;
+      const semester = document.getElementById('absenSemester').value;
+
+      if (!kelas) {
+        document.getElementById('tbodyAbsen').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Pilih kelas terlebih dahulu.</td></tr>';
+        return;
+      }
+
+      currentStudents = allMuridData.filter(function(m) { return m.kelas === kelas; });
+      if (currentStudents.length === 0) {
+        document.getElementById('tbodyAbsen').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data siswa di kelas ' + escapeHtml(kelas) + '.</td></tr>';
+        return;
+      }
+
+      // Check if existing records in spreadsheet
+      google.script.run.withSuccessHandler(function(laporanRows) {
+        existingAttendance = {};
+        if (laporanRows && laporanRows.length > 0) {
+          laporanRows.forEach(function(r) {
+            existingAttendance[formatNISN(r.nisn)] = r.keterangan;
+            existingAttendance[r.nama_murid] = r.keterangan;
+          });
+        }
+        renderStudentTable();
+      }).getLaporanAbsen({
+        tahun_ajaran: ta,
+        semester: semester,
+        kelas: kelas,
+        mata_pelajaran: mapel
+      });
+    }
+
+    function renderStudentTable() {
+      const tbody = document.getElementById('tbodyAbsen');
+      let html = '';
+
+      currentStudents.forEach(function(s, idx) {
+        const nisnPad = formatNISN(s.nisn);
+        const savedKet = existingAttendance[nisnPad] || existingAttendance[s.nama_murid] || 'H';
+        const jkBadge = s.jenis_kelamin === 'P' ? '<span class="badge bg-danger-subtle text-danger">P</span>' : '<span class="badge bg-primary-subtle text-primary">L</span>';
+
+        html += '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(nisnPad) + '</span></td>' +
+          '<td><span class="fw-bold text-dark">' + escapeHtml(s.nama_murid) + '</span></td>' +
+          '<td>' + jkBadge + '</td>' +
+          '<td class="text-center">' +
+            '<div class="btn-group btn-group-sm segmented-btn-group" role="group" id="group_' + s.id + '">' +
+              '<input type="radio" class="btn-check" name="absen_' + s.id + '" id="h_' + s.id + '" value="H" ' + (savedKet === 'H' ? 'checked' : '') + ' data-nisn="' + escapeHtml(nisnPad) + '" data-nama="' + escapeHtml(s.nama_murid) + '" data-jk="' + escapeHtml(s.jenis_kelamin || 'L') + '">' +
+              '<label class="btn btn-outline-success px-3" for="h_' + s.id + '" title="Hadir">🟢 H</label>' +
+
+              '<input type="radio" class="btn-check" name="absen_' + s.id + '" id="i_' + s.id + '" value="I" ' + (savedKet === 'I' ? 'checked' : '') + ' data-nisn="' + escapeHtml(nisnPad) + '" data-nama="' + escapeHtml(s.nama_murid) + '" data-jk="' + escapeHtml(s.jenis_kelamin || 'L') + '">' +
+              '<label class="btn btn-outline-warning px-3" for="i_' + s.id + '" title="Izin">🟡 I</label>' +
+
+              '<input type="radio" class="btn-check" name="absen_' + s.id + '" id="s_' + s.id + '" value="S" ' + (savedKet === 'S' ? 'checked' : '') + ' data-nisn="' + escapeHtml(nisnPad) + '" data-nama="' + escapeHtml(s.nama_murid) + '" data-jk="' + escapeHtml(s.jenis_kelamin || 'L') + '">' +
+              '<label class="btn btn-outline-info px-3" for="s_' + s.id + '" title="Sakit">🔵 S</label>' +
+
+              '<input type="radio" class="btn-check" name="absen_' + s.id + '" id="a_' + s.id + '" value="A" ' + (savedKet === 'A' ? 'checked' : '') + ' data-nisn="' + escapeHtml(nisnPad) + '" data-nama="' + escapeHtml(s.nama_murid) + '" data-jk="' + escapeHtml(s.jenis_kelamin || 'L') + '">' +
+              '<label class="btn btn-outline-danger px-3" for="a_' + s.id + '" title="Alpha">🔴 A</label>' +
+
+              '<input type="radio" class="btn-check" name="absen_' + s.id + '" id="d_' + s.id + '" value="D" ' + (savedKet === 'D' ? 'checked' : '') + ' data-nisn="' + escapeHtml(nisnPad) + '" data-nama="' + escapeHtml(s.nama_murid) + '" data-jk="' + escapeHtml(s.jenis_kelamin || 'L') + '">' +
+              '<label class="btn btn-outline-purple px-3" for="d_' + s.id + '" title="Dispensasi">🟣 D</label>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function savePresensi() {
+      const tanggal = document.getElementById('absenTanggal').value;
+      const kelas = document.getElementById('absenKelas').value;
+      const mapel = document.getElementById('absenMapel').value;
+      const guru = document.getElementById('absenGuru').value;
+
+      if (!tanggal || !kelas || !mapel) {
+        showToast('warning', 'Lengkapi tanggal, kelas, dan mata pelajaran');
+        return;
+      }
+
+      const studentsData = [];
+      currentStudents.forEach(function(s) {
+        const checked = document.querySelector('input[name="absen_' + s.id + '"]:checked');
+        const ket = checked ? checked.value : 'H';
+        studentsData.push({
+          nisn: formatNISN(s.nisn),
+          nama_murid: s.nama_murid,
+          jenis_kelamin: s.jenis_kelamin || 'L',
+          keterangan: ket
+        });
+      });
+
+      if (studentsData.length === 0) {
+        showToast('warning', 'Tidak ada data siswa untuk disimpan');
+        return;
+      }
+
+      const payload = {
+        tanggal: tanggal,
+        kelas: kelas,
+        mata_pelajaran: mapel,
+        nama_guru: guru,
+        students: JSON.stringify(studentsData)
+      };
+
+      showLoading('Menyimpan presensi ' + studentsData.length + ' siswa...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Presensi Berhasil Disimpan!',
+              text: res.message || 'Data kehadiran berhasil dicatat ke spreadsheet.',
+              showCancelButton: true,
+              confirmButtonText: 'Lihat Rekap Presensi',
+              cancelButtonText: 'Tetap di Sini'
+            }).then(function(result) {
+              if (result.isConfirmed) {
+                navigateTo('laporan-absen');
+              }
+            });
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan presensi');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .saveAbsensi(payload);
+    }
+  </script>
+</body>
+</html>

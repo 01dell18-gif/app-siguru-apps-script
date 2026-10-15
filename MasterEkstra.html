@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siswa Ekstrakurikuler - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-trophy-fill text-warning me-2"></i>Data Siswa Ekstrakurikuler</h4>
+        <p class="text-muted small mb-0">Kelola keanggotaan dan cabang ekstrakurikuler yang diikuti peserta didik.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm" onclick="showAddModal()">
+          <i class="bi bi-person-plus-fill me-1"></i> Tambah Anggota
+        </button>
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataEkstra()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="downloadTemplateEkstra()">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Unduh Template
+        </button>
+        <button class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportEkstra">
+          <i class="bi bi-upload me-1"></i> Import Siswa
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control" placeholder="Cari nama, NISN..." oninput="handleFilterChange()">
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <select id="filterEkstra" class="form-select form-select-sm" onchange="handleFilterChange()">
+            <option value="">Semua Cabang Ekstra</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select id="filterKelas" class="form-select form-select-sm" onchange="handleFilterChange()">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select id="limitPerPage" class="form-select form-select-sm" onchange="handleFilterChange()">
+            <option value="10">10 data / hal</option>
+            <option value="20">20 data / hal</option>
+            <option value="50" selected>50 data / hal</option>
+            <option value="100">100 data / hal</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+          <button class="btn btn-primary btn-sm rounded-pill px-3 w-100" onclick="handleFilterChange()">Filter</button>
+          <button class="btn btn-outline-secondary btn-sm rounded-pill px-2" onclick="resetFilter()" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableEkstra">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 50px;">No</th>
+              <th>NISN</th>
+              <th>Nama Siswa</th>
+              <th>L/P</th>
+              <th>Kelas</th>
+              <th>Cabang Ekstrakurikuler</th>
+              <th class="text-center" style="width: 110px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyEkstra">
+            <tr><td colspan="7" class="text-center text-muted py-4">Memuat data siswa ekstra...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light" id="paginationWrapper" style="display:none !important;">
+        <small class="text-muted" id="paginationInfo">Menampilkan 0 data</small>
+        <ul class="pagination pagination-sm mb-0" id="paginationNav"></ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Tambah / Edit Siswa Ekstra -->
+  <div class="modal fade" id="modalEkstra" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalEkstraTitle">Tambah Anggota Ekstrakurikuler</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formEkstra" onsubmit="saveEkstra(event)">
+          <div class="modal-body">
+            <input type="hidden" id="ekstraId">
+            
+            <!-- Pilih Siswa Terdaftar (Autofill) -->
+            <div class="mb-3" id="divSelectMurid">
+              <label class="form-label fw-semibold small text-primary"><i class="bi bi-magic me-1"></i>Pilih Siswa dari Data Induk</label>
+              <select class="form-select" id="selectMuridAutofill" onchange="handleSelectMuridAutofill(this)">
+                <option value="">-- Pilih Siswa Berstatus Ekstra atau Ketik Manual --</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">NISN</label>
+              <input type="text" class="form-control" id="ekstraNisn" placeholder="0081234567" maxlength="10">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Nama Lengkap Murid <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="ekstraNama" required placeholder="Nama lengkap siswa">
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Jenis Kelamin</label>
+                <select class="form-select" id="ekstraJk">
+                  <option value="L">Laki-laki (L)</option>
+                  <option value="P">Perempuan (P)</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Kelas / Rombel</label>
+                <select class="form-select" id="ekstraKelas">
+                  <option value="">-- Pilih Kelas --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold small d-block mb-1">Cabang Ekstrakurikuler <span class="text-danger">*</span></label>
+              <div id="containerEkstraCheckboxes" class="p-3 border rounded bg-light d-flex flex-wrap gap-3">
+                <!-- Checkboxes populated dynamically -->
+              </div>
+              <small class="text-muted d-block mt-1">Dapat memilih lebih dari satu cabang kegiatan ekstrakurikuler.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4" id="btnSaveEkstra">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Import Siswa Ekstra -->
+  <div class="modal fade" id="modalImportEkstra" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Import Data Siswa Ekstra</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> Format Excel (.xlsx) atau CSV (.csv) urutan kolom:<br>
+            <strong>No, NISN, Nama Murid, Jenis Kelamin (L/P), Kelas, Nama Ekstrakurikuler</strong>.
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pilih Berkas Excel / CSV</label>
+            <input type="file" id="fileImportCsvEkstra" class="form-control" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Mode Import</label>
+            <select id="importModeEkstra" class="form-select">
+              <option value="merge">Tambahkan ke Data yang Ada (Merge)</option>
+              <option value="replace">Gantikan Seluruh Data Lama (Replace)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="processImportCsvEkstra()">Proses Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Siswa Ekstrakurikuler';
+
+    let rawEkstra = [];
+    let filteredEkstra = [];
+    let allMuridInduk = [];
+    let listEkstraGlobal = [];
+    let currentPage = 1;
+    let modalEkstraInstance = null;
+    let modalImportInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      modalEkstraInstance = new bootstrap.Modal(document.getElementById('modalEkstra'));
+      modalImportInstance = new bootstrap.Modal(document.getElementById('modalImportEkstra'));
+      loadInitialData();
+    });
+
+    function loadInitialData() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load Ekstra list
+      google.script.run.withSuccessHandler(function(ekstraList) {
+        listEkstraGlobal = ekstraList || [];
+        const selFilter = document.getElementById('filterEkstra');
+        selFilter.innerHTML = '<option value="">Semua Cabang Ekstra</option>';
+        const chkBoxDiv = document.getElementById('containerEkstraCheckboxes');
+        chkBoxDiv.innerHTML = '';
+
+        listEkstraGlobal.forEach(function(e, i) {
+          selFilter.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
+          chkBoxDiv.innerHTML += '<div class="form-check">' +
+            '<input class="form-check-input ekstra-chk" type="checkbox" id="chkEkstra_' + i + '" value="' + escapeHtml(e) + '">' +
+            '<label class="form-check-label small" for="chkEkstra_' + i + '">' + escapeHtml(e) + '</label>' +
+          '</div>';
+        });
+      }).getDaftarEkstra();
+
+      // Load Kelas
+      google.script.run.withSuccessHandler(function(kelasList) {
+        const selFilter = document.getElementById('filterKelas');
+        const selModal = document.getElementById('ekstraKelas');
+        selFilter.innerHTML = '<option value="">Semua Kelas</option>';
+        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        kelasList.forEach(function(k) {
+          selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+      }).getDaftarKelas();
+
+      // Load Murid Induk for Autofill
+      google.script.run.withSuccessHandler(function(muridList) {
+        allMuridInduk = muridList || [];
+        const sel = document.getElementById('selectMuridAutofill');
+        sel.innerHTML = '<option value="">-- Pilih Siswa Berstatus Ekstra atau Ketik Manual --</option>';
+        const eligible = allMuridInduk.filter(function(m){ return String(m.status || '').includes('Ekstra'); });
+        eligible.forEach(function(m) {
+          sel.innerHTML += '<option value="' + m.id + '">' + escapeHtml(m.nama_murid) + ' (' + escapeHtml(m.kelas || '-') + ')</option>';
+        });
+      }).getDataMurid();
+
+      loadEkstraData();
+    }
+
+    function loadEkstraData() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          rawEkstra = data || [];
+          handleFilterChange();
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast('error', 'Gagal memuat data ekstra: ' + err.message);
+        })
+        .getDataMuridEkstra();
+    }
+
+    function handleFilterChange() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const eks = document.getElementById('filterEkstra').value;
+      const kls = document.getElementById('filterKelas').value;
+
+      filteredEkstra = rawEkstra.filter(function(e) {
+        const matchQ = !q || String(e.nama_murid || '').toLowerCase().includes(q) || String(e.nisn || '').includes(q);
+        const matchEks = !eks || String(e.nama_ekstra || '').includes(eks);
+        const matchKls = !kls || e.kelas === kls;
+        return matchQ && matchEks && matchKls;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    function resetFilter() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterEkstra').value = '';
+      document.getElementById('filterKelas').value = '';
+      handleFilterChange();
+    }
+
+    function renderTable() {
+      const limit = parseInt(document.getElementById('limitPerPage').value) || 50;
+      const total = filteredEkstra.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const start = (currentPage - 1) * limit;
+      const end = Math.min(start + limit, total);
+      const pageData = filteredEkstra.slice(start, end);
+
+      const tbody = document.getElementById('tbodyEkstra');
+      if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Data siswa ekstra tidak ditemukan.</td></tr>';
+        document.getElementById('paginationWrapper').style.setProperty('display', 'none', 'important');
+        return;
+      }
+
+      let html = '';
+      pageData.forEach(function(e, idx) {
+        const no = start + idx + 1;
+        const nisnPad = formatNISN(e.nisn);
+        const jkBadge = e.jenis_kelamin === 'P' ? '<span class="badge bg-danger-subtle text-danger">P</span>' : '<span class="badge bg-primary-subtle text-primary">L</span>';
+        
+        // Ekstra badges
+        const ekstraArr = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        let badgesHtml = '';
+        ekstraArr.forEach(function(ek){
+          badgesHtml += '<span class="badge bg-warning-subtle text-dark border me-1 mb-1"><i class="bi bi-star-fill text-warning me-1"></i>' + escapeHtml(ek) + '</span>';
+        });
+        if (!badgesHtml) badgesHtml = '<span class="text-muted">-</span>';
+
+        html += '<tr>' +
+          '<td>' + no + '</td>' +
+          '<td><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(nisnPad) + '</span></td>' +
+          '<td><span class="fw-bold text-dark">' + escapeHtml(e.nama_murid) + '</span></td>' +
+          '<td>' + jkBadge + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary fw-semibold">' + escapeHtml(e.kelas || '-') + '</span></td>' +
+          '<td>' + badgesHtml + '</td>' +
+          '<td class="text-center">' +
+            '<div class="d-flex justify-content-center gap-1">' +
+              '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editEkstra(' + e.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+              '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteEkstra(' + e.id + ', \'' + escapeHtml(e.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      });
+      tbody.innerHTML = html;
+
+      // Render Pagination
+      const wrapper = document.getElementById('paginationWrapper');
+      wrapper.style.setProperty('display', 'flex', 'important');
+      document.getElementById('paginationInfo').textContent = 'Menampilkan ' + (start + 1) + ' - ' + end + ' dari total ' + total + ' data';
+
+      const nav = document.getElementById('paginationNav');
+      let navHtml = '';
+      navHtml += '<li class="page-item ' + (currentPage <= 1 ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="goToPage(' + (currentPage - 1) + ')">Sebelumnya</a></li>';
+      for (let p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) {
+        navHtml += '<li class="page-item ' + (p === currentPage ? 'active' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="goToPage(' + p + ')">' + p + '</a></li>';
+      }
+      navHtml += '<li class="page-item ' + (currentPage >= totalPages ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="goToPage(' + (currentPage + 1) + ')">Selanjutnya</a></li>';
+      nav.innerHTML = navHtml;
+    }
+
+    function goToPage(p) {
+      currentPage = p;
+      renderTable();
+    }
+
+    function handleSelectMuridAutofill(sel) {
+      const id = sel.value;
+      if (!id) return;
+      const m = allMuridInduk.find(function(x){ return x.id == id; });
+      if (m) {
+        document.getElementById('ekstraNisn').value = formatNISN(m.nisn);
+        document.getElementById('ekstraNama').value = m.nama_murid || '';
+        document.getElementById('ekstraJk').value = m.jenis_kelamin || 'L';
+        document.getElementById('ekstraKelas').value = m.kelas || '';
+      }
+    }
+
+    function showAddModal() {
+      document.getElementById('modalEkstraTitle').textContent = 'Tambah Anggota Ekstrakurikuler';
+      document.getElementById('divSelectMurid').style.display = 'block';
+      document.getElementById('selectMuridAutofill').value = '';
+      document.getElementById('ekstraId').value = '';
+      document.getElementById('ekstraNisn').value = '';
+      document.getElementById('ekstraNama').value = '';
+      document.getElementById('ekstraJk').value = 'L';
+      document.getElementById('ekstraKelas').value = '';
+
+      document.querySelectorAll('.ekstra-chk').forEach(function(c){ c.checked = false; });
+      modalEkstraInstance.show();
+    }
+
+    function editEkstra(id) {
+      const e = rawEkstra.find(function(x){ return x.id == id; });
+      if (!e) return;
+
+      document.getElementById('modalEkstraTitle').textContent = 'Edit Anggota Ekstrakurikuler';
+      document.getElementById('divSelectMurid').style.display = 'none';
+      document.getElementById('ekstraId').value = e.id;
+      document.getElementById('ekstraNisn').value = formatNISN(e.nisn);
+      document.getElementById('ekstraNama').value = e.nama_murid || '';
+      document.getElementById('ekstraJk').value = e.jenis_kelamin || 'L';
+      document.getElementById('ekstraKelas').value = e.kelas || '';
+
+      const ekstraArr = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim(); });
+      document.querySelectorAll('.ekstra-chk').forEach(function(c){
+        c.checked = ekstraArr.includes(c.value);
+      });
+
+      modalEkstraInstance.show();
+    }
+
+    function saveEkstra(evt) {
+      evt.preventDefault();
+      const id = document.getElementById('ekstraId').value;
+      const checkedEkstra = [];
+      document.querySelectorAll('.ekstra-chk:checked').forEach(function(c){ checkedEkstra.push(c.value); });
+
+      if (checkedEkstra.length === 0) {
+        showToast('warning', 'Pilih minimal satu cabang ekstrakurikuler');
+        return;
+      }
+
+      const formData = {
+        id: id,
+        nisn: document.getElementById('ekstraNisn').value.trim(),
+        nama_murid: document.getElementById('ekstraNama').value.trim(),
+        jenis_kelamin: document.getElementById('ekstraJk').value,
+        kelas: document.getElementById('ekstraKelas').value,
+        nama_ekstra: checkedEkstra.join(', ')
+      };
+
+      showLoading(id ? 'Menyimpan perubahan...' : 'Menambahkan data ekstra...');
+
+      const handler = google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            modalEkstraInstance.hide();
+            showToast('success', res.message || 'Data berhasil disimpan!');
+            loadEkstraData();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan data');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        });
+
+      if (id) {
+        handler.updateDataMuridEkstra(formData);
+      } else {
+        handler.addDataMuridEkstra(formData);
+      }
+    }
+
+    function deleteEkstra(id, nama) {
+      Swal.fire({
+        title: 'Hapus Anggota Ekstra?',
+        text: 'Apakah Anda yakin ingin menghapus data "' + nama + '"?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data...');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              Swal.close();
+              if (res && res.success) {
+                showToast('success', 'Data ekstra berhasil dihapus');
+                loadEkstraData();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function(err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteDataMuridEkstra(id);
+        }
+      });
+    }
+
+    // Export Excel
+    function exportDataEkstra() {
+      if (rawEkstra.length === 0) {
+        showToast('info', 'Tidak ada data ekstra untuk diekspor');
+        return;
+      }
+      const rows = rawEkstra.map(function(e, idx) {
+        return {
+          'No': idx + 1,
+          'NISN': formatNISN(e.nisn),
+          'Nama Murid': e.nama_murid || '',
+          'Jenis Kelamin': e.jenis_kelamin || 'L',
+          'Kelas': e.kelas || '',
+          'Nama Ekstrakurikuler': e.nama_ekstra || ''
+        };
+      });
+      exportArrayToExcel(rows, 'Data_Murid_Ekstra_' + new Date().toISOString().slice(0,10), 'Siswa Ekstra');
+    }
+
+    // Download Template Excel
+    function downloadTemplateEkstra() {
+      const headers = ['No', 'NISN', 'Nama Murid', 'Jenis Kelamin', 'Kelas', 'Nama Ekstrakurikuler'];
+      const sampleRows = [
+        ['1', '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Pramuka, Futsal'],
+        ['2', '0087654321', 'Annisa Nurul Hidayah', 'P', 'X RPL 1', 'PMR'],
+        ['3', '0091122334', 'Bagas Dimas Saputra', 'L', 'XI RPL 1', 'Basket']
+      ];
+      downloadExcelTemplate(headers, sampleRows, 'Template_Import_Data_Ekstra', 'Template Ekstra');
+    }
+
+    // Process Import Excel / CSV
+    function processImportCsvEkstra() {
+      const fileInput = document.getElementById('fileImportCsvEkstra');
+      const mode = document.getElementById('importModeEkstra').value;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('warning', 'Pilih file Excel / CSV terlebih dahulu');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      readExcelOrCsvFile(file, function(lines) {
+        if (!lines || lines.length <= 1) {
+          showToast('error', 'File kosong atau tidak memiliki data.');
+          return;
+        }
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const parts = lines[i] || [];
+          if (parts.length >= 2) {
+            rows.push({
+              nisn: formatNISN(parts[1] !== undefined && parts[1] !== '' ? parts[1] : (parts[0] || '')),
+              nama_murid: String(parts[2] !== undefined && parts[2] !== '' ? parts[2] : (parts[1] || '')).trim(),
+              jenis_kelamin: String(parts[3] || 'L').toUpperCase().startsWith('P') ? 'P' : 'L',
+              kelas: String(parts[4] || '').trim(),
+              nama_ekstra: String(parts[5] || 'Pramuka').trim()
+            });
+          }
+        }
+
+        if (rows.length === 0) {
+          showToast('error', 'Format data tidak sesuai.');
+          return;
+        }
+
+        showLoading('Mengimpor ' + rows.length + ' data siswa ekstra...');
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              modalImportInstance.hide();
+              fileInput.value = '';
+              if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+              showToast('success', res.message || 'Import data ekstra berhasil!');
+              loadEkstraData();
+            } else {
+              showToast('error', res.message || 'Gagal import data');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error import: ' + err.message);
+          })
+          .importData('Data Murid Ekstra', rows, mode);
+      }, function(err) {
+        showToast('error', 'Gagal membaca berkas: ' + err.message);
+      });
+    }
+
+    function parseCsvLine(text) {
+      const re_value = /(?!\s*$)\s*(?:"([^"]*(?:""[^"]*)*)"|([^,\"]*))\s*(?:,|$)/g;
+      const a = [];
+      text.replace(re_value, function(m0, m1, m2) {
+        if (m1 !== undefined) a.push(m1.replace(/""/g, '"'));
+        else if (m2 !== undefined) a.push(m2);
+        return '';
+      });
+      return a;
+    }
+  </script>
+</body>
+</html>

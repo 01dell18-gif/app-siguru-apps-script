@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <!-- Loading -->
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Welcome -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-2 border-bottom">
+      <div>
+        <h3 class="fw-bold text-dark mb-1" id="welcomeTitle">Selamat Datang! 👋</h3>
+        <p class="text-muted mb-0 small" id="welcomeSubtitle"></p>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-md-0" id="quickActions"></div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4" id="statCards"></div>
+
+    <!-- Charts & Activity -->
+    <div class="row g-3">
+      <!-- Presensi Chart -->
+      <div class="col-lg-6">
+        <div class="card p-3">
+          <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Statistik Presensi Siswa</h6>
+          <canvas id="chartPresensi" height="220"></canvas>
+        </div>
+      </div>
+      
+      <!-- Recent Activity -->
+      <div class="col-lg-6">
+        <div class="card p-3">
+          <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-warning"></i>Aktivitas Terbaru</h6>
+          <div id="recentActivity" style="max-height: 300px; overflow-y: auto;">
+            <p class="text-muted small">Memuat...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    if (user) {
+      document.getElementById('headerPageTitle').textContent = 'Dashboard';
+      document.getElementById('welcomeTitle').textContent = 'Selamat Datang, ' + user.nama + '! 👋';
+      
+      // Quick actions
+      let actions = '';
+      if (hasAccess('form_absen')) {
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-absen\')" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-check2-circle me-1"></i>Input Presensi</a>';
+      }
+      if (hasAccess('form_jurnal')) {
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-jurnal\')" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-journal-plus me-1"></i>Input Jurnal</a>';
+      }
+      document.getElementById('quickActions').innerHTML = actions;
+
+      // Load dashboard data
+      google.script.run.withSuccessHandler(function(data) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        
+        if (data.error) {
+          showToast('error', 'Error', data.error);
+          return;
+        }
+        
+        // Welcome subtitle
+        document.getElementById('welcomeSubtitle').innerHTML = 
+          'Masuk sebagai: <span class="badge bg-primary-subtle text-primary fw-bold px-2 py-1">' + escapeHtml(user.hak_akses) + '</span>' +
+          ' &bull; Tahun Ajaran: <strong>' + escapeHtml(data.settings.tahun_ajaran || '-') + '</strong> (' + escapeHtml(data.settings.semester || '-') + ')';
+
+        // Stat cards
+        const stats = [
+          { label: 'Data Guru', value: data.countGuru, icon: 'bi-people-fill', color: 'primary', sub: 'Tenaga Pendidik', subIcon: 'bi-person-badge' },
+          { label: 'Data Siswa', value: data.countMurid, icon: 'bi-person-lines-fill', color: 'info', sub: 'Siswa Terdaftar', subIcon: 'bi-mortarboard' },
+          { label: 'Jurnal Mengajar', value: data.countJurnal, icon: 'bi-journal-bookmark-fill', color: 'warning', sub: 'Total Entri KBM', subIcon: 'bi-journal-text' },
+          { label: 'Presensi', value: data.countAbsen, icon: 'bi-clipboard-check-fill', color: 'success', sub: 'Data Kehadiran', subIcon: 'bi-check2-circle' },
+          { label: 'Bimbingan', value: data.countGuruWali, icon: 'bi-chat-heart-fill', color: 'purple', sub: 'Sesi Konseling', subIcon: 'bi-heart-pulse' },
+          { label: 'Wali Kelas', value: data.countWali, icon: 'bi-clipboard-data-fill', color: 'danger', sub: 'Kegiatan', subIcon: 'bi-calendar2-week' },
+          { label: 'Ekstrakurikuler', value: data.countEkstra, icon: 'bi-trophy-fill', color: 'dark', sub: 'Kegiatan Ekstra', subIcon: 'bi-activity' }
+        ];
+        
+        let statsHtml = '';
+        stats.forEach(function(s) {
+          const colorMap = {
+            primary: '#eff6ff', info: '#f0f9ff', warning: '#fffbeb', success: '#f0fdf4',
+            purple: '#f5f3ff', danger: '#fef2f2', dark: '#f8fafc'
+          };
+          const textMap = {
+            primary: '#2563eb', info: '#0284c7', warning: '#d97706', success: '#16a34a',
+            purple: '#7c3aed', danger: '#dc2626', dark: '#334155'
+          };
+          statsHtml += '<div class="col-6 col-lg-3"><div class="stat-card p-3 h-100"><div class="d-flex align-items-center justify-content-between"><div>' +
+            '<span class="text-muted small fw-semibold d-block mb-1">' + s.label + '</span>' +
+            '<h3 class="fw-bold mb-1 text-dark">' + s.value + '</h3>' +
+            '<small style="color: ' + textMap[s.color] + ';" class="fw-medium"><i class="bi ' + s.subIcon + ' me-1"></i>' + s.sub + '</small>' +
+            '</div><div class="stat-icon" style="background: ' + colorMap[s.color] + '; color: ' + textMap[s.color] + ';"><i class="bi ' + s.icon + '"></i></div></div></div></div>';
+        });
+        document.getElementById('statCards').innerHTML = statsHtml;
+
+        // Chart
+        const ctx = document.getElementById('chartPresensi').getContext('2d');
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Hadir (H)', 'Izin (I)', 'Sakit (S)', 'Alpha (A)', 'Dispen (D)'],
+            datasets: [{
+              data: [data.statH, data.statI, data.statS, data.statA, data.statD],
+              backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { size: 11, family: 'Plus Jakarta Sans' }, padding: 12 } }
+            }
+          }
+        });
+
+        // Recent activity
+        let actHtml = '';
+        if (data.recentJurnal.length > 0) {
+          data.recentJurnal.forEach(function(j) {
+            actHtml += '<div class="d-flex align-items-start gap-2 py-2 border-bottom">' +
+              '<div class="stat-icon bg-warning-subtle text-warning" style="width:28px;height:28px;font-size:0.8rem;flex-shrink:0;"><i class="bi bi-journal-text"></i></div>' +
+              '<div><div class="fw-semibold small">' + escapeHtml(j.nama_guru) + '</div>' +
+              '<div class="text-muted" style="font-size:0.75rem;">' + escapeHtml(j.mata_pelajaran) + ' — ' + escapeHtml(j.kelas) + ' | ' + formatDateIndo(j.tanggal) + '</div></div></div>';
+          });
+        }
+        if (data.recentBimbingan.length > 0) {
+          data.recentBimbingan.forEach(function(b) {
+            actHtml += '<div class="d-flex align-items-start gap-2 py-2 border-bottom">' +
+              '<div class="stat-icon bg-info-subtle text-info" style="width:28px;height:28px;font-size:0.8rem;flex-shrink:0;"><i class="bi bi-chat-heart"></i></div>' +
+              '<div><div class="fw-semibold small">' + escapeHtml(b.nama_guru_wali) + '</div>' +
+              '<div class="text-muted" style="font-size:0.75rem;">' + escapeHtml(b.nama_murid) + ' | ' + formatDateIndo(b.tanggal) + '</div></div></div>';
+          });
+        }
+        if (!actHtml) actHtml = '<p class="text-muted small text-center">Belum ada aktivitas terbaru.</p>';
+        document.getElementById('recentActivity').innerHTML = actHtml;
+      }).getDashboardData();
+    }
+  </script>
+</body>
+</html>

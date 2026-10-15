@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Siswa - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Master Data Siswa</h4>
+        <p class="text-muted small mb-0">Daftar induk siswa dengan fitur quick-edit status terhubung (Murid, Guru Wali, Wali Kelas, Ekstra).</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm" onclick="showAddModal()">
+          <i class="bi bi-person-plus-fill me-1"></i> Tambah Siswa
+        </button>
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataMurid()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="downloadTemplateMurid()">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Unduh Template
+        </button>
+        <button class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportMurid">
+          <i class="bi bi-upload me-1"></i> Import Siswa
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control" placeholder="Cari NISN atau nama siswa..." oninput="handleFilterChange()">
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <select id="filterKelas" class="form-select form-select-sm" onchange="handleFilterChange()">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select id="limitPerPage" class="form-select form-select-sm" onchange="handleFilterChange()">
+            <option value="10">10 data / hal</option>
+            <option value="20">20 data / hal</option>
+            <option value="50" selected>50 data / hal</option>
+            <option value="100">100 data / hal</option>
+            <option value="250">250 data / hal</option>
+            <option value="500">500 data / hal</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+          <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="handleFilterChange()">Filter</button>
+          <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="resetFilter()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableMurid">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 50px;">No</th>
+              <th>NISN</th>
+              <th>Nama Siswa</th>
+              <th>L/P</th>
+              <th>Kelas</th>
+              <th style="min-width: 310px;">Status Terhubung <small class="text-muted fw-normal">(Edit Cepat)</small></th>
+              <th class="text-center" style="width: 110px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMurid">
+            <tr><td colspan="7" class="text-center text-muted py-4">Memuat data siswa...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light" id="paginationWrapper" style="display:none !important;">
+        <small class="text-muted" id="paginationInfo">Menampilkan 0 data</small>
+        <ul class="pagination pagination-sm mb-0" id="paginationNav"></ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Tambah / Edit Siswa -->
+  <div class="modal fade" id="modalMurid" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalMuridTitle">Tambah Data Siswa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formMurid" onsubmit="saveMurid(event)">
+          <div class="modal-body">
+            <input type="hidden" id="muridId">
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">NISN <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="muridNisn" required placeholder="Contoh: 0081234567" maxlength="10">
+              <small class="text-muted">Format 10 digit angka</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Nama Lengkap Siswa <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="muridNama" required placeholder="Nama lengkap siswa">
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Jenis Kelamin</label>
+                <select class="form-select" id="muridJk">
+                  <option value="L">Laki-laki (L)</option>
+                  <option value="P">Perempuan (P)</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Kelas / Rombel <span class="text-danger">*</span></label>
+                <select class="form-select" id="muridKelas" required>
+                  <option value="">-- Pilih Kelas --</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small d-block mb-2">Status Keterlibatan</label>
+              <div class="d-flex flex-wrap gap-3 p-2 border rounded bg-light">
+                <div class="form-check">
+                  <input class="form-check-input status-chk" type="checkbox" id="chkStatusMurid" value="Murid" checked>
+                  <label class="form-check-label small" for="chkStatusMurid">Murid</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input status-chk" type="checkbox" id="chkStatusGW" value="Guru Wali">
+                  <label class="form-check-label small text-info fw-semibold" for="chkStatusGW">Guru Wali</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input status-chk" type="checkbox" id="chkStatusWK" value="Wali Kelas">
+                  <label class="form-check-label small text-primary fw-semibold" for="chkStatusWK">Wali Kelas</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input status-chk" type="checkbox" id="chkStatusEkstra" value="Ekstra">
+                  <label class="form-check-label small text-success fw-semibold" for="chkStatusEkstra">Ekstra</label>
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1">Centang peran yang terhubung untuk otomatis sinkronisasi ke modul bimbingan & ekstra.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4" id="btnSaveMurid">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Import Siswa -->
+  <div class="modal fade" id="modalImportMurid" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Import Data Siswa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> Unggah berkas Excel (.xlsx) atau CSV (.csv) sesuai urutan kolom: 
+            <strong>No, NISN, Nama Murid, Jenis Kelamin (L/P), Kelas, Status Terhubung</strong>.
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pilih File Excel / CSV</label>
+            <input type="file" id="fileImportCsv" class="form-control" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Mode Import</label>
+            <select id="importMode" class="form-select">
+              <option value="merge">Tambahkan ke Data yang Ada (Merge)</option>
+              <option value="replace">Gantikan Seluruh Data Lama (Replace)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="processImportCsv()">Proses Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Lightbox Foto Siswa -->
+  <div class="modal fade" id="lightboxModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-transparent border-0 shadow-none">
+        <div class="modal-body text-center p-0 position-relative">
+          <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal"></button>
+          <img id="lightboxImg" src="" alt="Foto Siswa" class="img-fluid rounded-4 shadow-lg border border-3 border-white" style="max-height: 80vh; object-fit: contain;">
+          <h5 id="lightboxCaption" class="text-white mt-3 fw-bold text-shadow"></h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Data Siswa';
+
+    let rawMurid = [];
+    let filteredMurid = [];
+    let currentPage = 1;
+
+    function getModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return { show: function(){}, hide: function(){} };
+      let inst = bootstrap.Modal.getInstance(el);
+      if (!inst) inst = new bootstrap.Modal(el);
+      return inst;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadInitialData();
+      setTimeout(function() {
+        const ov = document.getElementById('loadingOverlay');
+        if (ov) ov.style.display = 'none';
+      }, 5000);
+    });
+
+    function loadInitialData() {
+      // 1. Instant hydration from AppBundle cache (0-second load)
+      if (typeof getAppBundle === 'function') {
+        const bundle = getAppBundle();
+        if (bundle) {
+          applyMuridBundle(bundle);
+        }
+      }
+
+      // If no bundle yet, show subtle overlay
+      if (rawMurid.length === 0) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+      }
+
+      // 2. Fetch fresh bundle in background
+      google.script.run
+        .withSuccessHandler(function(bundle) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (bundle) {
+            if (typeof updateAppBundle === 'function') updateAppBundle(bundle);
+            applyMuridBundle(bundle);
+          }
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast('error', 'Gagal memuat data siswa: ' + err.message);
+        })
+        .getAppBundle();
+    }
+
+    function applyMuridBundle(bundle) {
+      if (bundle.kelas && Array.isArray(bundle.kelas)) {
+        const selFilter = document.getElementById('filterKelas');
+        const selModal = document.getElementById('muridKelas');
+        const currentFilter = selFilter.value;
+        const currentModal = selModal.value;
+        
+        selFilter.innerHTML = '<option value="">Semua Kelas</option>';
+        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        
+        bundle.kelas.forEach(function(k) {
+          selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+        if (currentFilter) selFilter.value = currentFilter;
+        if (currentModal) selModal.value = currentModal;
+      }
+      if (bundle.murid && Array.isArray(bundle.murid)) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        rawMurid = bundle.murid;
+        handleFilterChange();
+      }
+    }
+
+    function loadMuridData() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          rawMurid = data || [];
+          if (typeof updateAppBundle === 'function') {
+            updateAppBundle({ murid: rawMurid });
+          }
+          handleFilterChange();
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast('error', 'Gagal memuat data siswa: ' + err.message);
+        })
+        .getDataMurid();
+    }
+
+    function handleFilterChange() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const k = document.getElementById('filterKelas').value;
+
+      filteredMurid = rawMurid.filter(function(m) {
+        const matchQ = !q || String(m.nama_murid || '').toLowerCase().includes(q) || String(m.nisn || '').includes(q);
+        const matchK = !k || m.kelas === k;
+        return matchQ && matchK;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    function resetFilter() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterKelas').value = '';
+      handleFilterChange();
+    }
+
+    function renderTable() {
+      const limit = parseInt(document.getElementById('limitPerPage').value) || 50;
+      const total = filteredMurid.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const start = (currentPage - 1) * limit;
+      const end = Math.min(start + limit, total);
+      const pageData = filteredMurid.slice(start, end);
+
+      const tbody = document.getElementById('tbodyMurid');
+      if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data siswa yang cocok.</td></tr>';
+        document.getElementById('paginationWrapper').style.setProperty('display', 'none', 'important');
+        return;
+      }
+
+      let html = '';
+      pageData.forEach(function(m, idx) {
+        const no = start + idx + 1;
+        const nisnPad = formatNISN(m.nisn);
+        const stArr = String(m.status || 'Murid').split(',').map(function(s){ return s.trim(); });
+        const jkBadge = m.jenis_kelamin === 'P' ? '<span class="badge bg-danger-subtle text-danger">P</span>' : '<span class="badge bg-primary-subtle text-primary">L</span>';
+        
+        let photoHtml = '';
+        if (m.foto_murid) {
+          photoHtml = '<img src="' + escapeHtml(m.foto_murid) + '" alt="' + escapeHtml(m.nama_murid) + '" class="rounded-circle border shadow-xs" style="width: 32px; height: 32px; object-fit: cover; cursor: pointer;" title="Klik untuk lihat foto" onclick="openLightbox(\'' + escapeHtml(m.foto_murid) + '\', \'' + escapeHtml(m.nama_murid) + '\')">';
+        } else {
+          const init = (m.nama_murid || 'S').charAt(0).toUpperCase();
+          photoHtml = '<span class="avatar-initials bg-secondary-subtle text-secondary rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.75rem;">' + init + '</span>';
+        }
+
+        html += '<tr>' +
+          '<td>' + no + '</td>' +
+          '<td><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(nisnPad) + '</span></td>' +
+          '<td><div class="d-flex align-items-center gap-2">' + photoHtml + '<span class="fw-bold text-dark">' + escapeHtml(m.nama_murid) + '</span></div></td>' +
+          '<td>' + jkBadge + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary fw-semibold">' + escapeHtml(m.kelas || '-') + '</span></td>' +
+          '<td>' +
+            '<div class="d-flex flex-wrap gap-2">' +
+              '<div class="form-check form-check-inline m-0">' +
+                '<input class="form-check-input" type="checkbox" id="st_m_' + m.id + '" ' + (stArr.includes('Murid') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Murid\', this)">' +
+                '<label class="form-check-label small" for="st_m_' + m.id + '">Murid</label>' +
+              '</div>' +
+              '<div class="form-check form-check-inline m-0">' +
+                '<input class="form-check-input" type="checkbox" id="st_gw_' + m.id + '" ' + (stArr.includes('Guru Wali') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Guru Wali\', this)">' +
+                '<label class="form-check-label small text-info fw-semibold" for="st_gw_' + m.id + '">Guru Wali</label>' +
+              '</div>' +
+              '<div class="form-check form-check-inline m-0">' +
+                '<input class="form-check-input" type="checkbox" id="st_wk_' + m.id + '" ' + (stArr.includes('Wali Kelas') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Wali Kelas\', this)">' +
+                '<label class="form-check-label small text-primary fw-semibold" for="st_wk_' + m.id + '">Wali Kelas</label>' +
+              '</div>' +
+              '<div class="form-check form-check-inline m-0">' +
+                '<input class="form-check-input" type="checkbox" id="st_ek_' + m.id + '" ' + (stArr.includes('Ekstra') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Ekstra\', this)">' +
+                '<label class="form-check-label small text-success fw-semibold" for="st_ek_' + m.id + '">Ekstra</label>' +
+              '</div>' +
+            '</div>' +
+          '</td>' +
+          '<td class="text-center">' +
+            '<div class="d-flex justify-content-center gap-1">' +
+              '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editMurid(' + m.id + ')" title="Edit Siswa"><i class="bi bi-pencil"></i></button>' +
+              '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteMurid(' + m.id + ', \'' + escapeHtml(m.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      });
+      tbody.innerHTML = html;
+
+      // Render Pagination
+      const wrapper = document.getElementById('paginationWrapper');
+      wrapper.style.setProperty('display', 'flex', 'important');
+      document.getElementById('paginationInfo').textContent = 'Menampilkan ' + (start + 1) + ' - ' + end + ' dari total ' + total + ' data';
+
+      const nav = document.getElementById('paginationNav');
+      let navHtml = '';
+      navHtml += '<li class="page-item ' + (currentPage <= 1 ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="goToPage(' + (currentPage - 1) + ')">Sebelumnya</a></li>';
+      for (let p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) {
+        navHtml += '<li class="page-item ' + (p === currentPage ? 'active' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="goToPage(' + p + ')">' + p + '</a></li>';
+      }
+      navHtml += '<li class="page-item ' + (currentPage >= totalPages ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="goToPage(' + (currentPage + 1) + ')">Selanjutnya</a></li>';
+      nav.innerHTML = navHtml;
+    }
+
+    function goToPage(p) {
+      currentPage = p;
+      renderTable();
+    }
+
+    function openLightbox(url, name) {
+      document.getElementById('lightboxImg').src = url;
+      document.getElementById('lightboxCaption').textContent = name;
+      getModal('lightboxModal').show();
+    }
+
+    // Toggle Checkbox Status Terhubung (Quick Edit)
+    function toggleStudentStatus(id, roleName, chk) {
+      const murid = rawMurid.find(function(m){ return m.id == id; });
+      if (!murid) return;
+
+      let stList = String(murid.status || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      if (chk.checked) {
+        if (!stList.includes(roleName)) stList.push(roleName);
+      } else {
+        stList = stList.filter(function(s){ return s !== roleName; });
+        if (stList.length === 0) stList = ['Murid'];
+      }
+
+      const newStatus = stList.join(', ');
+      murid.status = newStatus;
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            showToast('success', 'Status Diperbarui', murid.nama_murid + ': ' + newStatus);
+          } else {
+            showToast('error', 'Gagal memperbarui status');
+            chk.checked = !chk.checked;
+          }
+        })
+        .withFailureHandler(function(err) {
+          showToast('error', 'Error: ' + err.message);
+          chk.checked = !chk.checked;
+        })
+        .updateStatusMurid(id, newStatus);
+    }
+
+    function showAddModal() {
+      document.getElementById('modalMuridTitle').textContent = 'Tambah Data Siswa';
+      document.getElementById('muridId').value = '';
+      document.getElementById('muridNisn').value = '';
+      document.getElementById('muridNama').value = '';
+      document.getElementById('muridJk').value = 'L';
+      document.getElementById('muridKelas').value = '';
+      
+      document.getElementById('chkStatusMurid').checked = true;
+      document.getElementById('chkStatusGW').checked = false;
+      document.getElementById('chkStatusWK').checked = false;
+      document.getElementById('chkStatusEkstra').checked = false;
+
+      getModal('modalMurid').show();
+    }
+
+    function editMurid(id) {
+      const m = rawMurid.find(function(x){ return x.id == id; });
+      if (!m) return;
+
+      document.getElementById('modalMuridTitle').textContent = 'Edit Data Siswa';
+      document.getElementById('muridId').value = m.id;
+      document.getElementById('muridNisn').value = formatNISN(m.nisn);
+      document.getElementById('muridNama').value = m.nama_murid || '';
+      document.getElementById('muridJk').value = m.jenis_kelamin || 'L';
+      document.getElementById('muridKelas').value = m.kelas || '';
+
+      const stList = String(m.status || '').split(',').map(function(s){ return s.trim(); });
+      document.getElementById('chkStatusMurid').checked = stList.includes('Murid');
+      document.getElementById('chkStatusGW').checked = stList.includes('Guru Wali');
+      document.getElementById('chkStatusWK').checked = stList.includes('Wali Kelas');
+      document.getElementById('chkStatusEkstra').checked = stList.includes('Ekstra');
+
+      getModal('modalMurid').show();
+    }
+
+    function saveMurid(e) {
+      e.preventDefault();
+      const id = document.getElementById('muridId').value;
+      const nisn = document.getElementById('muridNisn').value.trim();
+      const nama = document.getElementById('muridNama').value.trim();
+      const jk = document.getElementById('muridJk').value;
+      const kelas = document.getElementById('muridKelas').value;
+
+      const checkedStatuses = [];
+      document.querySelectorAll('.status-chk:checked').forEach(function(c){ checkedStatuses.push(c.value); });
+      const statusStr = checkedStatuses.length > 0 ? checkedStatuses.join(', ') : 'Murid';
+
+      const formData = {
+        id: id,
+        nisn: nisn,
+        nama_murid: nama,
+        jenis_kelamin: jk,
+        kelas: kelas,
+        status: statusStr
+      };
+
+      showLoading(id ? 'Menyimpan perubahan siswa...' : 'Menambahkan siswa baru...');
+
+      const handler = google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            getModal('modalMurid').hide();
+            if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+            showToast('success', res.message || 'Data siswa berhasil disimpan!');
+            loadMuridData();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan data');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        });
+
+      if (id) {
+        handler.updateDataMurid(formData);
+      } else {
+        handler.addDataMurid(formData);
+      }
+    }
+
+    function deleteMurid(id, nama) {
+      Swal.fire({
+        title: 'Hapus Siswa?',
+        text: 'Apakah Anda yakin ingin menghapus data "' + nama + '"?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data siswa...');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              Swal.close();
+              if (res && res.success) {
+                if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+                showToast('success', 'Data siswa berhasil dihapus');
+                loadMuridData();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function(err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteDataMurid(id);
+        }
+      });
+    }
+
+    // Export Data Murid to Excel
+    function exportDataMurid() {
+      if (rawMurid.length === 0) {
+        showToast('info', 'Tidak ada data siswa untuk diekspor');
+        return;
+      }
+      const rows = rawMurid.map(function(m, idx) {
+        return {
+          'No': idx + 1,
+          'NISN': formatNISN(m.nisn),
+          'Nama Murid': m.nama_murid || '',
+          'Jenis Kelamin': m.jenis_kelamin || 'L',
+          'Kelas': m.kelas || '',
+          'Status Terhubung': m.status || ''
+        };
+      });
+      exportArrayToExcel(rows, 'Data_Murid_' + new Date().toISOString().slice(0,10), 'Data Siswa');
+    }
+
+    // Download Template Murid Excel
+    function downloadTemplateMurid() {
+      const headers = ['No', 'NISN', 'Nama Murid', 'Jenis Kelamin', 'Kelas', 'Status Terhubung'];
+      const sampleRows = [
+        ['1', '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Murid, Guru Wali'],
+        ['2', '0087654321', 'Annisa Nurul Hidayah', 'P', 'X RPL 1', 'Murid, Ekstra'],
+        ['3', '0091122334', 'Bagas Dimas Saputra', 'L', 'XI RPL 1', 'Murid, Wali Kelas, Ekstra']
+      ];
+      downloadExcelTemplate(headers, sampleRows, 'Template_Import_Data_Murid', 'Template Siswa');
+    }
+
+    // Process Import Excel / CSV
+    function processImportCsv() {
+      const fileInput = document.getElementById('fileImportCsv');
+      const mode = document.getElementById('importMode').value;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('warning', 'Pilih file Excel / CSV terlebih dahulu');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      readExcelOrCsvFile(file, function(lines) {
+        if (!lines || lines.length <= 1) {
+          showToast('error', 'File kosong atau tidak memiliki data.');
+          return;
+        }
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const parts = lines[i] || [];
+          if (parts.length >= 2) {
+            rows.push({
+              nisn: formatNISN(parts[1] !== undefined && parts[1] !== '' ? parts[1] : (parts[0] || '')),
+              nama_murid: String(parts[2] !== undefined && parts[2] !== '' ? parts[2] : (parts[1] || '')).trim(),
+              jenis_kelamin: String(parts[3] || 'L').toUpperCase().startsWith('P') ? 'P' : 'L',
+              kelas: String(parts[4] || '').trim(),
+              status: String(parts[5] || 'Murid').trim()
+            });
+          }
+        }
+
+        if (rows.length === 0) {
+          showToast('error', 'Format data dalam file tidak sesuai.');
+          return;
+        }
+
+        showLoading('Mengimpor ' + rows.length + ' data siswa...');
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              getModal('modalImportMurid').hide();
+              fileInput.value = '';
+              if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+              showToast('success', res.message || 'Import data berhasil!');
+              loadMuridData();
+            } else {
+              showToast('error', res.message || 'Gagal import data');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error import: ' + err.message);
+          })
+          .importData('Data Murid', rows, mode);
+      }, function(err) {
+        showToast('error', 'Gagal membaca berkas: ' + err.message);
+      });
+    }
+
+    function parseCsvLine(text) {
+      const re_value = /(?!\s*$)\s*(?:"([^"]*(?:""[^"]*)*)"|([^,\"]*))\s*(?:,|$)/g;
+      const a = [];
+      text.replace(re_value, function(m0, m1, m2) {
+        if (m1 !== undefined) a.push(m1.replace(/""/g, '"'));
+        else if (m2 !== undefined) a.push(m2);
+        return '';
+      });
+      return a;
+    }
+  </script>
+</body>
+</html>

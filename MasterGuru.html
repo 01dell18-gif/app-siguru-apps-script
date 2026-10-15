@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Guru - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-person-badge-fill text-primary me-2"></i>Master Data Guru</h4>
+        <p class="text-muted small mb-0">Kelola data tenaga pendidik, penugasan guru wali, wali kelas, dan pembina ekstra.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm" onclick="showAddModal()">
+          <i class="bi bi-person-plus-fill me-1"></i> Tambah Guru
+        </button>
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataGuru()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="downloadTemplateGuru()">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Unduh Template
+        </button>
+        <button class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportGuru">
+          <i class="bi bi-upload me-1"></i> Import Guru
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchGuru" class="form-control" placeholder="Cari nama guru atau NIP..." oninput="handleSearch()">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select id="filterTugas" class="form-select form-select-sm" onchange="handleSearch()">
+            <option value="">Semua Penugasan</option>
+            <option value="guru_wali">Sebagai Guru Wali</option>
+            <option value="wali_kelas">Sebagai Wali Kelas</option>
+            <option value="pembina_ekstra">Sebagai Pembina Ekstra</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 w-100" onclick="resetFilter()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableGuru">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 50px;">No</th>
+              <th>Nama Lengkap Guru</th>
+              <th>NIP</th>
+              <th>Guru Wali</th>
+              <th>Wali Kelas</th>
+              <th>Pembina Ekstra</th>
+              <th class="text-center" style="width: 100px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyGuru">
+            <tr><td colspan="7" class="text-center text-muted py-4">Memuat data guru...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Tambah / Edit Guru -->
+  <div class="modal fade" id="modalGuru" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalGuruTitle">Tambah Data Guru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formGuru">
+          <div class="modal-body">
+            <input type="hidden" id="guruId">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Nama Lengkap Guru <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="namaGuru" required placeholder="Contoh: Drs. Budi Santoso, M.Pd.">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">NIP</label>
+              <input type="text" class="form-control" id="nipGuru" placeholder="Contoh: 19750815 199903 1 002">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Sebagai Guru Wali</label>
+              <select class="form-select" id="sebagaiGuruWali">
+                <option value="Tidak">Tidak</option>
+                <option value="Ya">Ya (Membimbing Siswa Asuh)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Sebagai Wali Kelas</label>
+              <select class="form-select" id="sebagaiWaliKelas">
+                <option value="-">- Tidak Ada -</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Pembina Ekstrakurikuler</label>
+              <select class="form-select" id="pembinaEkstra">
+                <option value="-">- Tidak Ada -</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4" id="btnSaveGuru">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Import Guru -->
+  <div class="modal fade" id="modalImportGuru" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Import Data Guru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            Format: <strong>No, Nama Guru, NIP, Sebagai Guru Wali (Ya/Tidak), Sebagai Wali Kelas, Pembina Ekstra</strong>.
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pilih File Excel / CSV</label>
+            <input type="file" id="fileImportCsvGuru" class="form-control" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Mode Import</label>
+            <select id="importModeGuru" class="form-select">
+              <option value="merge">Tambahkan ke Data yang Ada (Merge)</option>
+              <option value="replace">Gantikan Seluruh Data Lama (Replace)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="processImportCsvGuru()">Proses Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Data Guru';
+    
+    let allGuru = [];
+
+    function getModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return { show: function(){}, hide: function(){} };
+      let inst = bootstrap.Modal.getInstance(el);
+      if (!inst) inst = new bootstrap.Modal(el);
+      return inst;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      loadData();
+      setTimeout(function() {
+        const ov = document.getElementById('loadingOverlay');
+        if (ov) ov.style.display = 'none';
+      }, 5000);
+    });
+
+    function loadData() {
+      // 1. Instant hydration from AppBundle (0-second load)
+      if (typeof getAppBundle === 'function') {
+        const bundle = getAppBundle();
+        if (bundle) {
+          applyGuruBundle(bundle);
+        }
+      }
+
+      if (allGuru.length === 0) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+      }
+
+      // 2. Fetch fresh bundle in background
+      google.script.run
+        .withSuccessHandler(function(bundle) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (bundle) {
+            if (typeof updateAppBundle === 'function') updateAppBundle(bundle);
+            applyGuruBundle(bundle);
+          }
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast('error', 'Error: ' + err.message);
+        })
+        .getAppBundle();
+    }
+
+    function applyGuruBundle(bundle) {
+      if (bundle.guru && Array.isArray(bundle.guru)) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        allGuru = bundle.guru;
+        renderTable(allGuru);
+      }
+      if (bundle.kelas && Array.isArray(bundle.kelas)) {
+        const sel = document.getElementById('sebagaiWaliKelas');
+        const curr = sel.value;
+        sel.innerHTML = '<option value="-">- Tidak Ada -</option>';
+        bundle.kelas.forEach(function(k) { sel.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; });
+        if (curr) sel.value = curr;
+      }
+      if (bundle.ekstra && Array.isArray(bundle.ekstra)) {
+        const sel = document.getElementById('pembinaEkstra');
+        const curr = sel.value;
+        sel.innerHTML = '<option value="-">- Tidak Ada -</option>';
+        bundle.ekstra.forEach(function(e) { sel.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>'; });
+        if (curr) sel.value = curr;
+      }
+    }
+    
+    function renderTable(data) {
+      const tbody = document.getElementById('tbodyGuru');
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Belum ada data guru yang sesuai.</td></tr>';
+        return;
+      }
+      let html = '';
+      data.forEach(function(g, i) {
+        const gwBadge = g.sebagai_guru_wali === 'Ya' 
+          ? '<span class="badge bg-success-subtle text-success">Ya</span>' 
+          : '<span class="badge bg-secondary-subtle text-secondary">Tidak</span>';
+        
+        html += '<tr>' +
+          '<td>' + (i+1) + '</td>' +
+          '<td class="fw-bold text-dark">' + escapeHtml(g.nama_guru) + '</td>' +
+          '<td><small class="text-muted">' + escapeHtml(g.nip || '-') + '</small></td>' +
+          '<td>' + gwBadge + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary">' + escapeHtml(g.sebagai_wali_kelas || '-') + '</span></td>' +
+          '<td><span class="badge bg-warning-subtle text-dark border">' + escapeHtml(g.pembina_ekstra || '-') + '</span></td>' +
+          '<td class="text-center"><div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editGuru(' + g.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteGuru(' + g.id + ', \'' + escapeHtml(g.nama_guru) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+          '</div></td></tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    function handleSearch() {
+      const q = document.getElementById('searchGuru').value.trim().toLowerCase();
+      const t = document.getElementById('filterTugas').value;
+
+      const filtered = allGuru.filter(function(g) {
+        const matchQ = !q || String(g.nama_guru || '').toLowerCase().includes(q) || String(g.nip || '').includes(q);
+        let matchT = true;
+        if (t === 'guru_wali') matchT = (g.sebagai_guru_wali === 'Ya');
+        else if (t === 'wali_kelas') matchT = (g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-');
+        else if (t === 'pembina_ekstra') matchT = (g.pembina_ekstra && g.pembina_ekstra !== '-');
+        return matchQ && matchT;
+      });
+
+      renderTable(filtered);
+    }
+
+    function resetFilter() {
+      document.getElementById('searchGuru').value = '';
+      document.getElementById('filterTugas').value = '';
+      renderTable(allGuru);
+    }
+    
+    function showAddModal() {
+      document.getElementById('modalGuruTitle').textContent = 'Tambah Data Guru';
+      document.getElementById('guruId').value = '';
+      document.getElementById('namaGuru').value = '';
+      document.getElementById('nipGuru').value = '';
+      document.getElementById('sebagaiGuruWali').value = 'Tidak';
+      document.getElementById('sebagaiWaliKelas').value = '-';
+      document.getElementById('pembinaEkstra').value = '-';
+      getModal('modalGuru').show();
+    }
+    
+    function editGuru(id) {
+      const g = allGuru.find(function(x) { return x.id == id; });
+      if (!g) return;
+      document.getElementById('modalGuruTitle').textContent = 'Edit Data Guru';
+      document.getElementById('guruId').value = g.id;
+      document.getElementById('namaGuru').value = g.nama_guru || '';
+      document.getElementById('nipGuru').value = g.nip || '';
+      document.getElementById('sebagaiGuruWali').value = g.sebagai_guru_wali || 'Tidak';
+      document.getElementById('sebagaiWaliKelas').value = g.sebagai_wali_kelas || '-';
+      document.getElementById('pembinaEkstra').value = g.pembina_ekstra || '-';
+      getModal('modalGuru').show();
+    }
+    
+    function deleteGuru(id, nama) {
+      Swal.fire({
+        title: 'Hapus Data Guru?',
+        text: 'Apakah Anda yakin ingin menghapus data "' + nama + '"?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data...');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              Swal.close();
+              if (res.success) {
+                if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+                showToast('success', res.message);
+                loadData();
+              } else {
+                showToast('error', res.message);
+              }
+            })
+            .withFailureHandler(function(err) {
+              Swal.close();
+              showToast('error', err.message);
+            })
+            .deleteDataGuru(id);
+        }
+      });
+    }
+    
+    document.getElementById('formGuru').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = {
+        id: document.getElementById('guruId').value,
+        nama_guru: document.getElementById('namaGuru').value.trim(),
+        nip: document.getElementById('nipGuru').value.trim(),
+        sebagai_guru_wali: document.getElementById('sebagaiGuruWali').value,
+        sebagai_wali_kelas: document.getElementById('sebagaiWaliKelas').value,
+        pembina_ekstra: document.getElementById('pembinaEkstra').value
+      };
+      
+      showLoading('Menyimpan data...');
+      getModal('modalGuru').hide();
+      
+      const handler = google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res.success) {
+            if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+            showToast('success', res.message);
+            loadData();
+          } else {
+            showToast('error', res.message);
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', err.message);
+        });
+
+      if (formData.id) {
+        handler.updateDataGuru(formData);
+      } else {
+        handler.addDataGuru(formData);
+      }
+    });
+
+    // Export Excel
+    function exportDataGuru() {
+      if (allGuru.length === 0) {
+        showToast('info', 'Tidak ada data guru untuk diekspor');
+        return;
+      }
+      const rows = allGuru.map(function(g, idx) {
+        return {
+          'No': idx + 1,
+          'Nama Guru': g.nama_guru || '',
+          'NIP': g.nip || '-',
+          'Sebagai Guru Wali': g.sebagai_guru_wali || 'Tidak',
+          'Sebagai Wali Kelas': g.sebagai_wali_kelas || '-',
+          'Pembina Ekstra': g.pembina_ekstra || '-'
+        };
+      });
+      exportArrayToExcel(rows, 'Data_Guru_' + new Date().toISOString().slice(0,10), 'Data Guru');
+    }
+
+    // Download Template Excel
+    function downloadTemplateGuru() {
+      const headers = ['No', 'Nama Guru', 'NIP', 'Sebagai Guru Wali', 'Sebagai Wali Kelas', 'Pembina Ekstra'];
+      const sampleRows = [
+        ['1', 'Drs. Budi Santoso, M.Pd.', '197503122000031002', 'Ya', 'X RPL 1', 'Pramuka'],
+        ['2', 'Siti Nurhaliza, S.Pd.', '198506242008012005', 'Ya', '-', 'PMR'],
+        ['3', 'Ahmad Fauzi, S.Kom.', '199201152019031004', 'Tidak', 'XI RPL 1', '-']
+      ];
+      downloadExcelTemplate(headers, sampleRows, 'Template_Import_Data_Guru', 'Template Guru');
+    }
+
+    // Process Import (Excel / CSV)
+    function processImportCsvGuru() {
+      const fileInput = document.getElementById('fileImportCsvGuru');
+      const mode = document.getElementById('importModeGuru').value;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('warning', 'Pilih file Excel / CSV terlebih dahulu');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      readExcelOrCsvFile(file, function(lines) {
+        if (!lines || lines.length <= 1) {
+          showToast('error', 'File kosong atau tidak memiliki data.');
+          return;
+        }
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const parts = lines[i] || [];
+          if (parts.length >= 2) {
+            rows.push({
+              nama_guru: String(parts[1] !== undefined && parts[1] !== '' ? parts[1] : (parts[0] || '')).trim(),
+              nip: String(parts[2] !== undefined ? parts[2] : '-').trim() || '-',
+              sebagai_guru_wali: String(parts[3] !== undefined ? parts[3] : 'Tidak').trim() || 'Tidak',
+              sebagai_wali_kelas: String(parts[4] !== undefined ? parts[4] : '-').trim() || '-',
+              pembina_ekstra: String(parts[5] !== undefined ? parts[5] : '-').trim() || '-'
+            });
+          }
+        }
+
+        if (rows.length === 0) {
+          showToast('error', 'Format data tidak sesuai');
+          return;
+        }
+
+        showLoading('Mengimpor ' + rows.length + ' data guru...');
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              getModal('modalImportGuru').hide();
+              fileInput.value = '';
+              if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+              showToast('success', res.message || 'Import data guru berhasil!');
+              loadData();
+            } else {
+              showToast('error', res.message || 'Gagal import');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error import: ' + err.message);
+          })
+          .importData('Data Guru', rows, mode);
+      }, function(err) {
+        showToast('error', 'Gagal membaca berkas: ' + err.message);
+      });
+    }
+
+    function parseCsvLine(text) {
+      const re_value = /(?!\s*$)\s*(?:"([^"]*(?:""[^"]*)*)"|([^,\"]*))\s*(?:,|$)/g;
+      const a = [];
+      text.replace(re_value, function(m0, m1, m2) {
+        if (m1 !== undefined) a.push(m1.replace(/""/g, '"'));
+        else if (m2 !== undefined) a.push(m2);
+        return '';
+      });
+      return a;
+    }
+  </script>
+</body>
+</html>

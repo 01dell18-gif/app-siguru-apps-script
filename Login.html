@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SIGURU</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .login-container {
+      display: flex;
+      width: 100%;
+      max-width: 1080px;
+      min-height: 600px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+      margin: 20px;
+    }
+    /* Left Showcase */
+    .showcase-panel {
+      flex: 1;
+      background: linear-gradient(160deg, #1e3a5f 0%, #0f172a 60%, #1a1a2e 100%);
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .showcase-panel::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(67,97,238,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .showcase-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .showcase-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #4361ee, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 20px rgba(67,97,238,0.3);
+    }
+    .showcase-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 0.5rem;
+    }
+    .showcase-subtitle {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .showcase-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(67,97,238,0.15);
+      border: 1px solid rgba(67,97,238,0.3);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      color: #93c5fd;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    .module-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+    .module-card:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-2px);
+    }
+    .module-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .module-card span {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+    /* Right Login Form */
+    .login-panel {
+      width: 420px;
+      min-width: 380px;
+      background: #ffffff;
+      padding: 3rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .login-header { margin-bottom: 2rem; }
+    .login-header h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+    .login-header p {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    .form-label-login {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+    .input-login {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+    .input-login:focus {
+      border-color: #4361ee;
+      box-shadow: 0 0 0 4px rgba(67,97,238,0.1);
+      background: #ffffff;
+    }
+    .btn-login {
+      background: linear-gradient(135deg, #4361ee 0%, #3b82f6 100%);
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.02em;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(67,97,238,0.3);
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(67,97,238,0.4);
+      background: linear-gradient(135deg, #3651d4 0%, #2563eb 100%);
+      color: white;
+    }
+    .btn-login:active { transform: translateY(0); }
+    .toggle-pass {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+    }
+    .toggle-pass:hover { color: #4361ee; }
+    .fyj-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 9999px;
+      padding: 5px 14px;
+      color: #dc2626;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      margin-top: 0.75rem;
+    }
+    .fyj-badge:hover {
+      background: #dc2626;
+      color: white;
+      border-color: #dc2626;
+    }
+    @media (max-width: 768px) {
+      .showcase-panel { display: none; }
+      .login-panel { width: 100%; min-width: auto; }
+      .login-container { border-radius: 16px; }
+    }
+    /* Spinner */
+    .spinner-login {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top: 2.5px solid white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <!-- Left: Showcase Panel -->
+    <div class="showcase-panel d-none d-md-flex">
+      <div class="showcase-logo">
+        <i class="bi bi-mortarboard-fill"></i>
+      </div>
+      <h1 class="showcase-title">SIGURU</h1>
+      <p class="showcase-subtitle">
+        Sistem Informasi Guru — Platform Administrasi Pendidik & Tenaga Kependidikan Terintegrasi. Berbasis Google Apps Script & Spreadsheet Database.
+      </p>
+      <div class="showcase-badge">
+        <i class="bi bi-shield-check"></i>
+        <span>Multi-Role Access Control (RBAC)</span>
+      </div>
+      <div class="module-grid">
+        <div class="module-card">
+          <div class="module-icon" style="background: rgba(16,185,129,0.15); color: #10b981;">
+            <i class="bi bi-check2-circle"></i>
+          </div>
+          <span>Presensi Siswa</span>
+        </div>
+        <div class="module-card">
+          <div class="module-icon" style="background: rgba(245,158,11,0.15); color: #f59e0b;">
+            <i class="bi bi-journal-bookmark"></i>
+          </div>
+          <span>Jurnal KBM</span>
+        </div>
+        <div class="module-card">
+          <div class="module-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;">
+            <i class="bi bi-chat-heart"></i>
+          </div>
+          <span>Bimbingan Guru Wali</span>
+        </div>
+        <div class="module-card">
+          <div class="module-icon" style="background: rgba(59,130,246,0.15); color: #3b82f6;">
+            <i class="bi bi-calendar2-week"></i>
+          </div>
+          <span>Kegiatan Wali Kelas</span>
+        </div>
+        <div class="module-card">
+          <div class="module-icon" style="background: rgba(236,72,153,0.15); color: #ec4899;">
+            <i class="bi bi-activity"></i>
+          </div>
+          <span>Ekstrakurikuler</span>
+        </div>
+        <div class="module-card">
+          <div class="module-icon" style="background: rgba(14,165,233,0.15); color: #0ea5e9;">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+          </div>
+          <span>Cetak PDF Resmi</span>
+        </div>
+      </div>
+      <a href="https://www.youtube.com/@fyjchannel" target="_blank" class="fyj-badge mt-4" style="width: fit-content;">
+        <i class="bi bi-youtube"></i> Subscribe FYJ Channel
+      </a>
+    </div>
+
+    <!-- Right: Login Form -->
+    <div class="login-panel">
+      <div class="login-header">
+        <div class="d-flex align-items-center gap-2 mb-3 d-md-none">
+          <div class="showcase-logo" style="width:40px; height:40px; font-size:1.1rem; margin-bottom:0;">
+            <i class="bi bi-mortarboard-fill"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-dark" style="font-size:1.1rem;">SIGURU</div>
+            <div class="text-muted" style="font-size:0.7rem;">Sistem Informasi Guru</div>
+          </div>
+        </div>
+        <h2>Masuk ke Akun Anda</h2>
+        <p>Silakan masukkan kredensial untuk mengakses portal administrasi.</p>
+      </div>
+
+      <form id="formLogin" autocomplete="off">
+        <div class="mb-3">
+          <label class="form-label-login">Username</label>
+          <div class="position-relative">
+            <input type="text" id="inputUsername" class="form-control input-login" placeholder="Masukkan username" required>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label-login">Password</label>
+          <div class="position-relative">
+            <input type="password" id="inputPassword" class="form-control input-login pe-5" placeholder="Masukkan password" required>
+            <button type="button" class="toggle-pass" onclick="togglePassword()">
+              <i class="bi bi-eye" id="iconTogglePass"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-login w-100 d-flex align-items-center justify-content-center gap-2" id="btnLogin">
+          <span>Masuk</span>
+          <div class="spinner-login" id="spinnerLogin"></div>
+        </button>
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="javascript:void(0)" onclick="navigateToTop(getBaseUrl() + (getBaseUrl().includes('?') ? '&' : '?') + 'page=landing')" class="text-decoration-none small text-muted">
+          <i class="bi bi-arrow-left me-1"></i> Kembali ke Beranda Publik
+        </a>
+      </div>
+
+      <div class="text-center mt-4">
+        <small class="text-muted" style="font-size: 0.72rem;">
+          © 2026 SIGURU — Sistem Informasi Guru<br>
+          Powered by Google Apps Script & Spreadsheet
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const inp = document.getElementById('inputPassword');
+      const icon = document.getElementById('iconTogglePass');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        inp.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    }
+
+    document.getElementById('formLogin').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const username = document.getElementById('inputUsername').value.trim();
+      const password = document.getElementById('inputPassword').value.trim();
+      
+      if (!username || !password) {
+        Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Username dan password wajib diisi!', timer: 2500 });
+        return;
+      }
+
+      const btn = document.getElementById('btnLogin');
+      const spinner = document.getElementById('spinnerLogin');
+      btn.disabled = true;
+      spinner.style.display = 'block';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          if (result.success) {
+            // Simpan session user di localStorage
+            localStorage.setItem('siguru_user', JSON.stringify(result.user));
+            Swal.fire({
+              icon: 'success',
+              title: 'Selamat Datang!',
+              text: 'Halo, ' + result.user.nama + '! Mengalihkan ke dashboard...',
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 1500,
+              timerProgressBar: true
+            });
+            setTimeout(function() {
+              // Navigate to intended page or dashboard
+              const redirectTarget = sessionStorage.getItem('siguru_redirect_target');
+              sessionStorage.removeItem('siguru_redirect_target');
+              const isViewer = (result.user && (result.user.hak_akses === 'Pelihat' || result.user.hak_akses === 'pengawas'));
+              let targetPage = (redirectTarget && redirectTarget !== 'login' && redirectTarget !== 'landing') ? redirectTarget : (isViewer ? 'laporan-absen' : 'dashboard');
+              if (isViewer && targetPage === 'dashboard') targetPage = 'laporan-absen';
+
+              const baseUrl = getBaseUrl();
+              navigateToTop(baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'page=' + encodeURIComponent(targetPage));
+            }, 1200);
+          } else {
+            Swal.fire({ icon: 'error', title: 'Login Gagal', text: result.message, timer: 3000 });
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          Swal.fire({ icon: 'error', title: 'Kesalahan Server', text: err.message });
+        })
+        .loginUser(username, password);
+    });
+
+    const SERVER_URL = "<?= (typeof scriptUrl !== 'undefined') ? scriptUrl : '' ?>";
+    if (SERVER_URL) {
+      localStorage.setItem('siguru_script_url', SERVER_URL);
+    }
+
+    const AUTH_PARAM = "<?= (typeof params !== 'undefined' && params && params.auth) ? params.auth : '' ?>";
+    document.addEventListener('DOMContentLoaded', function() {
+      if (AUTH_PARAM === 'required') {
+        setTimeout(function() {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Sesi Belum Aktif',
+            text: 'Silakan login terlebih dahulu untuk mengakses menu dan fitur SIGURU.',
+            confirmButtonText: 'Siap, Mengerti',
+            confirmButtonColor: '#4361ee'
+          });
+        }, 200);
+      }
+    });
+
+    function getBaseUrl() {
+      const cached = localStorage.getItem('siguru_script_url');
+      if (cached && cached.indexOf('script.google.com') !== -1) return cached;
+      try {
+        if (window.top && window.top.location && window.top.location.href && window.top.location.href.indexOf('script.google.com') !== -1) {
+          const topUrl = window.top.location.href.split('?')[0];
+          localStorage.setItem('siguru_script_url', topUrl);
+          return topUrl;
+        }
+      } catch(e) {}
+      return window.location.href.split('?')[0];
+    }
+
+    function navigateToTop(url) {
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_top';
+        (document.body || document.documentElement).appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 100);
+      } catch(e) {
+        try {
+          window.top.location.href = url;
+        } catch(e2) {
+          window.location.href = url;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

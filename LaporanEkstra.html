@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Kegiatan Ekstrakurikuler - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-award-fill text-warning me-2"></i>Laporan Kegiatan
+          Ekstrakurikuler</h4>
+        <p class="text-muted small mb-0">Rekapitulasi keterlaksanaan latihan, presensi anggota, materi kepelatihan, dan
+          dokumentasi ekstra.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataEkstra()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-primary rounded-pill px-3 btn-sm shadow-sm" onclick="openPrintLaporan()">
+          <i class="bi bi-printer me-1"></i> Cetak PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Multi-Kriteria -->
+    <div class="card p-3 mb-4 shadow-xs">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Tahun Ajaran</label>
+          <select id="filterTA" class="form-select form-select-sm" onchange="loadLaporan()"></select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Semester</label>
+          <select id="filterSemester" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="Ganjil">Ganjil</option>
+            <option value="Genap">Genap</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Cabang Ekstrakurikuler</label>
+          <select id="filterEkstra" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="">Semua Cabang Ekstra</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Nama Pembina Ekstra</label>
+          <div id="divGuruFilter"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableEkstra">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;">No</th>
+              <th>Tanggal</th>
+              <th>Pembina Ekstra</th>
+              <th>Cabang Ekstra</th>
+              <th>Peserta yang Hadir</th>
+              <th>Materi / Catatan Latihan</th>
+              <th>Bukti</th>
+              <th class="text-center" style="width: 80px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyEkstra">
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">Memuat data kegiatan ekstra...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Edit Ekstra -->
+  <div class="modal fade" id="modalEditEkstra" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Edit Catatan Kegiatan Ekstrakurikuler</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formEditEkstra" onsubmit="saveEditEkstra(event)">
+          <div class="modal-body">
+            <input type="hidden" id="editEkstraId">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Tanggal</label>
+                <input type="date" id="editEkstraTanggal" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Cabang Ekstra <span class="text-danger">*</span></label>
+                <select id="editEkstraNama" class="form-select" required>
+                  <option value="">-- Pilih Cabang Ekstra --</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Peserta yang Hadir</label>
+              <textarea id="editEkstraPeserta" class="form-control" rows="2"
+                placeholder="Nama siswa dipisahkan koma..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Materi / Catatan Latihan</label>
+              <textarea id="editEkstraKeterangan" class="form-control" rows="3" required
+                placeholder="Rincian materi kepelatihan, agenda latihan, atau catatan khusus..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
+              <div class="input-group">
+                <input type="text" id="editEkstraBukti" class="form-control" placeholder="https://drive.google.com/...">
+                <label class="btn btn-outline-secondary" for="fileEditEkstra"
+                  title="Unggah Berkas Pengganti ke Drive"><i class="bi bi-upload"></i></label>
+                <input type="file" id="fileEditEkstra" class="d-none"
+                  onchange="uploadReplacementFile(this, 'editEkstraBukti', 'folder_ekstra')">
+              </div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
+                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Laporan Ekstra';
+
+    let allLaporanEkstra = [];
+    let masterEkstraList = [];
+
+    function getModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return { show: function () { }, hide: function () { } };
+      let inst = bootstrap.Modal.getInstance(el);
+      if (!inst) inst = new bootstrap.Modal(el);
+      return inst;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Hidrasi filter dari cache lokal langsung (0.00s)
+      hydrateFromCache();
+
+      // 2. Tarik data laporan dan sinkronisasi filter sekaligus dalam 1 panggilan cepat
+      loadLaporan();
+    });
+
+    function hydrateFromCache() {
+      const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+      if (!bundle) return;
+      if (bundle.ekstra && Array.isArray(bundle.ekstra)) {
+        masterEkstraList = bundle.ekstra;
+      }
+      applyBundleOptions(bundle);
+    }
+
+    function applyBundleOptions(b) {
+      if (!b) return;
+
+      // Dropdown TA
+      const taList = b.tahunAjaran || [];
+      if (taList.length > 0) {
+        const selTA = document.getElementById('filterTA');
+        const curTA = selTA.value;
+        selTA.innerHTML = '<option value="">Semua TA</option>';
+        taList.forEach(function (t) {
+          selTA.innerHTML += '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+        });
+        if (curTA) selTA.value = curTA;
+        else if (b.settings && b.settings.tahun_ajaran) selTA.value = b.settings.tahun_ajaran;
+        else selTA.value = taList[0];
+      }
+
+      // Semester
+      if (b.settings && b.settings.semester) {
+        const selSem = document.getElementById('filterSemester');
+        if (!selSem.value) selSem.value = b.settings.semester;
+      }
+
+      // Ekstra List
+      const eList = b.ekstra || [];
+      if (eList.length > 0) {
+        masterEkstraList = eList;
+        const selEkstra = document.getElementById('filterEkstra');
+        const curEks = selEkstra.value;
+        selEkstra.innerHTML = '<option value="">Semua Cabang Ekstra</option>';
+        eList.forEach(function (e) {
+          selEkstra.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
+        });
+        if (curEks) selEkstra.value = curEks;
+      }
+
+      // Guru Filter
+      setupGuruFilter(b.guruList || b.guruNama || b.guru);
+    }
+
+    function setupGuruFilter(guruList) {
+      const container = document.getElementById('divGuruFilter');
+      if (!container) return;
+      if (isSuperAdmin()) {
+        const sel = document.getElementById('filterGuru');
+        const cur = sel ? sel.value : '';
+        let html = '<select id="filterGuru" class="form-select form-select-sm" onchange="loadLaporan()"><option value="">Semua Pembina Ekstra</option>';
+        if (guruList && Array.isArray(guruList)) {
+          guruList.forEach(function (g) {
+            const nama = g.nama || g.nama_guru || g;
+            html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+          });
+        }
+        html += '</select>';
+        container.innerHTML = html;
+        const newSel = document.getElementById('filterGuru');
+        if (newSel && cur) newSel.value = cur;
+      } else {
+        container.innerHTML = '<input type="text" id="filterGuru" class="form-control form-control-sm bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci: Hanya melihat rekaman Anda">';
+      }
+    }
+
+    function loadLaporan() {
+      const tbody = document.getElementById('tbodyEkstra');
+      if (allLaporanEkstra.length === 0 && tbody) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2 text-primary"></span>Memuat data kegiatan ekstra...</td></tr>';
+      }
+
+      const guruEl = document.getElementById('filterGuru');
+      const filters = {
+        tahun_ajaran: document.getElementById('filterTA') ? document.getElementById('filterTA').value : '',
+        semester: document.getElementById('filterSemester') ? document.getElementById('filterSemester').value : '',
+        kegiatan_ekstra: document.getElementById('filterEkstra') ? document.getElementById('filterEkstra').value : '',
+        pembina_ekstra: guruEl ? guruEl.value : ''
+      };
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            applyBundleOptions(res);
+            if (typeof updateAppBundle === 'function') {
+              updateAppBundle({
+                settings: res.settings,
+                tahunAjaran: res.tahunAjaran,
+                kelas: res.kelas,
+                mapel: res.mapel,
+                ekstra: res.ekstra,
+                guruNama: res.guruList
+              });
+            }
+            allLaporanEkstra = res.data || [];
+          } else {
+            allLaporanEkstra = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+          }
+          renderTable();
+        })
+        .withFailureHandler(function (err) {
+          showToast('error', 'Gagal memuat laporan: ' + err.message);
+          renderTable();
+        })
+        .getLaporanFullBundle('ekstra', filters);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tbodyEkstra');
+      if (allLaporanEkstra.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Tidak ada catatan kegiatan ekstra yang sesuai filter.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      allLaporanEkstra.forEach(function (r, idx) {
+        const canManage = canManageReport('ekstra', r);
+
+        let buktiHtml = '-';
+        if (r.link_bukti_ekstra) {
+          buktiHtml = '<a href="' + escapeHtml(r.link_bukti_ekstra) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
+            '<i class="bi bi-link-45deg"></i> Bukti' +
+            '</a>';
+        }
+
+        let aksiHtml = '';
+        if (canManage) {
+          aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="openEditModalByIndex(' + idx + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteRecord(' + r.id + ')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+            '</div>';
+        } else {
+          aksiHtml = '<span class="badge bg-light text-muted border">🔒 Terkunci</span>';
+        }
+
+        html += '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + formatDateIndo(r.tanggal) + '</td>' +
+          '<td><span class="badge bg-light text-dark border"><i class="bi bi-person-badge text-primary me-1"></i>' + escapeHtml(r.pembina_ekstra) + '</span></td>' +
+          '<td><span class="badge bg-warning-subtle text-dark border"><i class="bi bi-star-fill text-warning me-1"></i>' + escapeHtml(r.kegiatan_ekstra || '-') + '</span></td>' +
+          '<td><small class="text-dark fw-semibold text-break" style="max-width: 200px; display: inline-block;">' + escapeHtml(r.nama_murid || '-') + '</small></td>' +
+          '<td><div class="text-break" style="max-width: 280px;">' + escapeHtml(r.keterangan || '-') + '</div></td>' +
+          '<td>' + buktiHtml + '</td>' +
+          '<td class="text-center">' + aksiHtml + '</td>' +
+          '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function openEditModalByIndex(idx) {
+      const record = allLaporanEkstra[idx];
+      if (!record) return;
+      openEditModal(record);
+    }
+
+    function openEditModal(record) {
+      if (!record) return;
+      document.getElementById('editEkstraId').value = record.id;
+      document.getElementById('editEkstraTanggal').value = record.tanggal || '';
+
+      // Populate dropdown Cabang Ekstra dari master list
+      const selEkstra = document.getElementById('editEkstraNama');
+      selEkstra.innerHTML = '<option value="">-- Pilih Cabang Ekstra --</option>';
+      const currentVal = (record.kegiatan_ekstra || '').trim();
+      let matched = false;
+
+      let list = masterEkstraList;
+      if (!list || list.length === 0) {
+        const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+        if (bundle && bundle.ekstra) list = bundle.ekstra;
+      }
+
+      if (list && Array.isArray(list)) {
+        list.forEach(function (e) {
+          const val = String(e).trim();
+          if (!val) return;
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val;
+          if (val.toLowerCase() === currentVal.toLowerCase()) {
+            opt.selected = true;
+            matched = true;
+          }
+          selEkstra.appendChild(opt);
+        });
+      }
+
+      // Jika data tersimpan memiliki cabang ekstra yang belum ada di master, tetap tambahkan sebagai opsi terpilih
+      if (currentVal && !matched) {
+        const opt = document.createElement('option');
+        opt.value = currentVal;
+        opt.textContent = currentVal + ' (Tersimpan)';
+        opt.selected = true;
+        selEkstra.appendChild(opt);
+      }
+
+      document.getElementById('editEkstraPeserta').value = record.nama_murid || '';
+      document.getElementById('editEkstraKeterangan').value = record.keterangan || '';
+      document.getElementById('editEkstraBukti').value = record.link_bukti_ekstra || '';
+      getModal('modalEditEkstra').show();
+    }
+
+    function saveEditEkstra(e) {
+      e.preventDefault();
+      const id = document.getElementById('editEkstraId').value;
+      const payload = {
+        id: id,
+        tanggal: document.getElementById('editEkstraTanggal').value,
+        kegiatan_ekstra: document.getElementById('editEkstraNama').value.trim(),
+        nama_murid: document.getElementById('editEkstraPeserta').value.trim(),
+        keterangan: document.getElementById('editEkstraKeterangan').value.trim(),
+        link_bukti_ekstra: document.getElementById('editEkstraBukti').value.trim()
+      };
+
+      showLoading('Menyimpan perubahan...');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          Swal.close();
+          if (res && res.success) {
+            getModal('modalEditEkstra').hide();
+            showToast('success', 'Catatan kegiatan ekstra berhasil diperbarui');
+            loadLaporan();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan');
+          }
+        })
+        .withFailureHandler(function (err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .updateLaporan('Hasil Ekstra', payload);
+    }
+
+    function deleteRecord(id) {
+      Swal.fire({
+        title: 'Hapus Kegiatan Ekstra?',
+        text: 'Data yang dihapus tidak dapat dipulihkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data...');
+          google.script.run
+            .withSuccessHandler(function (res) {
+              Swal.close();
+              if (res && res.success) {
+                showToast('success', 'Catatan kegiatan berhasil dihapus');
+                loadLaporan();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function (err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteLaporan('Hasil Ekstra', id);
+        }
+      });
+    }
+
+    // Export Excel
+    function exportDataEkstra() {
+      if (allLaporanEkstra.length === 0) {
+        showToast('info', 'Tidak ada data untuk diekspor');
+        return;
+      }
+      const rows = allLaporanEkstra.map(function (r, idx) {
+        return {
+          'No': idx + 1,
+          'Tanggal': r.tanggal || '',
+          'Tahun Ajaran': r.tahun_ajaran || '',
+          'Semester': r.semester || '',
+          'Nama Murid': r.nama_murid || '',
+          'Kegiatan Ekstra': r.kegiatan_ekstra || '',
+          'Keterangan': r.keterangan || '',
+          'Link Bukti': r.link_bukti_ekstra || '',
+          'Pembina Ekstra': r.pembina_ekstra || ''
+        };
+      });
+      exportArrayToExcel(rows, 'Laporan_Kegiatan_Ekstra_' + new Date().toISOString().slice(0, 10), 'Kegiatan Ekstra');
+    }
+
+    // Open Print PDF in New Tab
+    function openPrintLaporan() {
+      const ta = document.getElementById('filterTA').value;
+      const sem = document.getElementById('filterSemester').value;
+      const eks = document.getElementById('filterEkstra').value;
+      const grEl = document.getElementById('filterGuru');
+      const gr = grEl ? grEl.value : '';
+
+      const printUrl = getBaseUrl() + '?page=print-laporan&type=ekstra&ta=' + encodeURIComponent(ta) + '&semester=' + encodeURIComponent(sem) + '&ekstra=' + encodeURIComponent(eks) + '&guru=' + encodeURIComponent(gr);
+      window.open(printUrl, '_blank');
+    }
+  </script>
+</body>
+
+</html>

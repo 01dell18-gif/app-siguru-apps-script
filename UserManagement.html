@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen User - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Manajemen User & Hak Akses (RBAC)</h4>
+        <p class="text-muted small mb-0">Kelola akun kredensial guru, staf, penugasan multi-peran, dan intip kata sandi.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm" onclick="showAddModal()">
+          <i class="bi bi-person-plus-fill me-1"></i> Tambah User
+        </button>
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataUser()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="downloadTemplateUser()">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Unduh Template
+        </button>
+        <button class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportUser">
+          <i class="bi bi-upload me-1"></i> Import User
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableUser">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 50px;">No</th>
+              <th>Username</th>
+              <th>Nama Lengkap</th>
+              <th>NIP</th>
+              <th>Hak Akses (Role)</th>
+              <th>Kata Sandi</th>
+              <th class="text-center" style="width: 100px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyUser">
+            <tr><td colspan="7" class="text-center text-muted py-4">Memuat data pengguna...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Tambah User -->
+  <div class="modal fade" id="modalAddUser" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Tambah Akun Pengguna</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formAddUser" onsubmit="saveAddUser(event)">
+          <div class="modal-body">
+            <!-- Tarik Otomatis dari Master Guru -->
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-primary"><i class="bi bi-magic me-1"></i>Tarik Data Otomatis dari Master Guru</label>
+              <select class="form-select" id="selectGuruAutofill" onchange="handleGuruAutofill(this)">
+                <option value="">-- Pilih Guru atau Ketik Manual di Bawah --</option>
+              </select>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" id="addNama" class="form-control" required placeholder="Nama lengkap staf/guru">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">NIP</label>
+                <input type="text" id="addNip" class="form-control" placeholder="19750815...">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
+                <input type="text" id="addUsername" class="form-control" required placeholder="username (tanpa spasi)">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Kata Sandi (Password) <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="password" id="addPassword" class="form-control" required placeholder="Minimal 6 karakter">
+                  <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('addPassword', this)"><i class="bi bi-eye"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Multi-Role Selection -->
+            <div class="mb-3">
+              <label class="form-label small fw-semibold d-block">Hak Akses Pengguna (Multi-Role)</label>
+              <div class="p-3 border rounded bg-light d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input add-role-chk" type="checkbox" id="addRoleSAdmin" value="Super Admin">
+                  <label class="form-check-label small fw-bold text-danger" for="addRoleSAdmin">Super Admin</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input add-role-chk" type="checkbox" id="addRoleGuru" value="Guru" checked>
+                  <label class="form-check-label small fw-semibold text-primary" for="addRoleGuru">Guru (Mapel)</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input add-role-chk" type="checkbox" id="addRoleWali" value="Wali Kelas">
+                  <label class="form-check-label small fw-semibold text-info" for="addRoleWali">Wali Kelas</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input add-role-chk" type="checkbox" id="addRoleGW" value="Guru Wali">
+                  <label class="form-check-label small fw-semibold text-danger" for="addRoleGW">Guru Wali</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input add-role-chk" type="checkbox" id="addRoleEkstra" value="Pembina Ekstra">
+                  <label class="form-check-label small fw-semibold text-warning" for="addRoleEkstra">Pembina Ekstra</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input add-role-chk" type="checkbox" id="addRolePelihat" value="Pelihat">
+                  <label class="form-check-label small fw-semibold text-secondary" for="addRolePelihat">Pelihat (Hanya Laporan)</label>
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1">Dapat memilih kombinasi peran (contoh: Guru, Wali Kelas, Pembina Ekstra).</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Simpan Akun</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit User -->
+  <div class="modal fade" id="modalEditUser" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Edit Akun Pengguna</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formEditUser" onsubmit="saveEditUser(event)">
+          <div class="modal-body">
+            <input type="hidden" id="editUserId">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" id="editNama" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">NIP</label>
+                <input type="text" id="editNip" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Username Login</label>
+                <input type="text" id="editUsername" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Kata Sandi</label>
+                <div class="input-group">
+                  <input type="password" id="editPassword" class="form-control" required>
+                  <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('editPassword', this)"><i class="bi bi-eye"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Multi-Role Selection Edit -->
+            <div class="mb-3" id="divEditRoleContainer">
+              <label class="form-label small fw-semibold d-block">Hak Akses Pengguna</label>
+              <div class="p-3 border rounded bg-light d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input edit-role-chk" type="checkbox" id="editRoleSAdmin" value="Super Admin">
+                  <label class="form-check-label small fw-bold text-danger" for="editRoleSAdmin">Super Admin</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input edit-role-chk" type="checkbox" id="editRoleGuru" value="Guru">
+                  <label class="form-check-label small fw-semibold text-primary" for="editRoleGuru">Guru</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input edit-role-chk" type="checkbox" id="editRoleWali" value="Wali Kelas">
+                  <label class="form-check-label small fw-semibold text-info" for="editRoleWali">Wali Kelas</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input edit-role-chk" type="checkbox" id="editRoleGW" value="Guru Wali">
+                  <label class="form-check-label small fw-semibold text-danger" for="editRoleGW">Guru Wali</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input edit-role-chk" type="checkbox" id="editRoleEkstra" value="Pembina Ekstra">
+                  <label class="form-check-label small fw-semibold text-warning" for="editRoleEkstra">Pembina Ekstra</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input edit-role-chk" type="checkbox" id="editRolePelihat" value="Pelihat">
+                  <label class="form-check-label small fw-semibold text-secondary" for="editRolePelihat">Pelihat</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Import User -->
+  <div class="modal fade" id="modalImportUser" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Import Data User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            Format: <strong>No, Username, Password, Hak Akses, Nama, NIP</strong>.
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pilih File Excel / CSV</label>
+            <input type="file" id="fileImportCsvUser" class="form-control" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Mode Import</label>
+            <select id="importModeUser" class="form-select">
+              <option value="merge">Tambahkan ke Data yang Ada (Merge)</option>
+              <option value="replace">Gantikan Seluruh Data Lama (Replace)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="processImportCsvUser()">Proses Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    if (!isSuperAdmin()) {
+      showToast('error', 'Akses ditolak: Hanya Super Admin');
+      setTimeout(function(){ navigateTo('dashboard'); }, 1200);
+    }
+    document.getElementById('headerPageTitle').textContent = 'Manajemen User';
+
+    let rawUsers = [];
+    let allGuruData = [];
+    let modalAddInstance = null;
+    let modalEditInstance = null;
+    let modalImportInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      modalAddInstance = new bootstrap.Modal(document.getElementById('modalAddUser'));
+      modalEditInstance = new bootstrap.Modal(document.getElementById('modalEditUser'));
+      modalImportInstance = new bootstrap.Modal(document.getElementById('modalImportUser'));
+      loadInitialData();
+    });
+
+    function loadInitialData() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load master guru for autofill
+      google.script.run.withSuccessHandler(function(guruList) {
+        allGuruData = guruList || [];
+        const sel = document.getElementById('selectGuruAutofill');
+        sel.innerHTML = '<option value="">-- Pilih Guru atau Ketik Manual di Bawah --</option>';
+        allGuruData.forEach(function(g) {
+          sel.innerHTML += '<option value="' + g.id + '">' + escapeHtml(g.nama_guru) + '</option>';
+        });
+      }).getDataGuru();
+
+      loadUserData();
+    }
+
+    function loadUserData() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          rawUsers = data || [];
+          renderTable();
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast('error', 'Gagal memuat pengguna: ' + err.message);
+        })
+        .getDataUser();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tbodyUser');
+      if (rawUsers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Belum ada akun pengguna.</td></tr>';
+        return;
+      }
+
+      const isCurrentSAdminUser = String(user.username).toLowerCase() === 'sadmin';
+
+      let html = '';
+      rawUsers.forEach(function(u, idx) {
+        const isSAdmin = String(u.username).toLowerCase() === 'sadmin';
+        
+        // Roles Badges
+        const roles = String(u.hak_akses || 'Guru').split(',').map(function(s){ return s.trim(); });
+        let roleHtml = '';
+        roles.forEach(function(r) {
+          let bClass = 'bg-primary-subtle text-primary';
+          if (r === 'Super Admin') bClass = 'bg-danger-subtle text-danger fw-bold';
+          else if (r === 'Wali Kelas') bClass = 'bg-info-subtle text-info';
+          else if (r === 'Guru Wali') bClass = 'bg-danger-subtle text-danger';
+          else if (r === 'Pembina Ekstra') bClass = 'bg-warning-subtle text-warning';
+          else if (r === 'Pelihat') bClass = 'bg-secondary-subtle text-secondary';
+          roleHtml += '<span class="badge ' + bClass + ' me-1 mb-1">' + escapeHtml(r) + '</span>';
+        });
+
+        // Password Peek Feature
+        let pwdHtml = '';
+        if (isSAdmin && !isCurrentSAdminUser) {
+          pwdHtml = '<span class="badge bg-light text-muted border" title="Hanya SAdmin yang dapat melihat sandi akun induk"><i class="bi bi-shield-lock me-1"></i>🔒 Terlindungi</span>';
+        } else {
+          pwdHtml = '<div class="input-group input-group-sm" style="max-width: 170px;">' +
+            '<input type="password" class="form-control form-control-sm border-end-0 bg-white" id="pwd_show_' + u.id + '" value="' + escapeHtml(u.password) + '" readonly>' +
+            '<button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility(\'pwd_show_' + u.id + '\', this)" title="Intip Password"><i class="bi bi-eye"></i></button>' +
+          '</div>';
+        }
+
+        // Action Buttons
+        let aksiHtml = '';
+        if (isSAdmin && !isCurrentSAdminUser) {
+          aksiHtml = '<span class="badge bg-light text-muted border">🔒 Terkunci</span>';
+        } else {
+          aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick=\'openEditModal(' + JSON.stringify(u) + ')\' title="Edit"><i class="bi bi-pencil"></i></button>';
+          if (!isSAdmin) {
+            aksiHtml += '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteUser(' + u.id + ', \'' + escapeHtml(u.username) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>';
+          }
+          aksiHtml += '</div>';
+        }
+
+        html += '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td><span class="fw-bold text-dark font-monospace">' + escapeHtml(u.username) + '</span>' + (isSAdmin ? ' <span class="badge bg-danger-subtle text-danger">Akun Induk</span>' : '') + '</td>' +
+          '<td><span class="fw-semibold text-dark">' + escapeHtml(u.nama) + '</span></td>' +
+          '<td><small class="text-muted">' + escapeHtml(u.nip || '-') + '</small></td>' +
+          '<td>' + roleHtml + '</td>' +
+          '<td>' + pwdHtml + '</td>' +
+          '<td class="text-center">' + aksiHtml + '</td>' +
+        '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      const icon = btn.querySelector('i');
+      if (el.type === 'password') {
+        el.type = 'text';
+        if (icon) { icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash'); }
+      } else {
+        el.type = 'password';
+        if (icon) { icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye'); }
+      }
+    }
+
+    function handleGuruAutofill(sel) {
+      const id = sel.value;
+      if (!id) return;
+      const g = allGuruData.find(function(x){ return x.id == id; });
+      if (g) {
+        document.getElementById('addNama').value = g.nama_guru || '';
+        document.getElementById('addNip').value = g.nip || '';
+        
+        // Buat username dari nama depan
+        const first = (g.nama_guru || '').toLowerCase().replace(/[^a-z]/g, '').slice(0, 8);
+        document.getElementById('addUsername').value = first || 'guru';
+        document.getElementById('addPassword').value = 'guru123';
+
+        // Set roles based on penugasan
+        document.getElementById('addRoleGuru').checked = true;
+        document.getElementById('addRoleGW').checked = (g.sebagai_guru_wali === 'Ya');
+        document.getElementById('addRoleWali').checked = (g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-');
+        document.getElementById('addRoleEkstra').checked = (g.pembina_ekstra && g.pembina_ekstra !== '-');
+      }
+    }
+
+    function showAddModal() {
+      document.getElementById('selectGuruAutofill').value = '';
+      document.getElementById('addNama').value = '';
+      document.getElementById('addNip').value = '';
+      document.getElementById('addUsername').value = '';
+      document.getElementById('addPassword').value = 'guru123';
+
+      document.getElementById('addRoleSAdmin').checked = false;
+      document.getElementById('addRoleGuru').checked = true;
+      document.getElementById('addRoleWali').checked = false;
+      document.getElementById('addRoleGW').checked = false;
+      document.getElementById('addRoleEkstra').checked = false;
+      document.getElementById('addRolePelihat').checked = false;
+
+      modalAddInstance.show();
+    }
+
+    function saveAddUser(e) {
+      e.preventDefault();
+      const roles = [];
+      document.querySelectorAll('.add-role-chk:checked').forEach(function(c){ roles.push(c.value); });
+      if (roles.length === 0) roles.push('Guru');
+
+      const payload = {
+        username: document.getElementById('addUsername').value.trim(),
+        password: document.getElementById('addPassword').value.trim(),
+        nama: document.getElementById('addNama').value.trim(),
+        nip: document.getElementById('addNip').value.trim(),
+        hak_akses: roles.join(', ')
+      };
+
+      showLoading('Menambahkan akun pengguna...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            modalAddInstance.hide();
+            showToast('success', res.message || 'User berhasil ditambahkan');
+            loadUserData();
+          } else {
+            showToast('error', res.message || 'Gagal menambahkan user');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .addDataUser(payload);
+    }
+
+    function openEditModal(record) {
+      document.getElementById('editUserId').value = record.id;
+      document.getElementById('editNama').value = record.nama || '';
+      document.getElementById('editNip').value = record.nip || '';
+      document.getElementById('editUsername').value = record.username || '';
+      document.getElementById('editPassword').value = record.password || '';
+
+      const isSAdmin = String(record.username).toLowerCase() === 'sadmin';
+      const unameEl = document.getElementById('editUsername');
+      unameEl.readOnly = isSAdmin;
+
+      const roles = String(record.hak_akses || '').split(',').map(function(s){ return s.trim(); });
+      document.getElementById('editRoleSAdmin').checked = roles.includes('Super Admin');
+      document.getElementById('editRoleGuru').checked = roles.includes('Guru');
+      document.getElementById('editRoleWali').checked = roles.includes('Wali Kelas');
+      document.getElementById('editRoleGW').checked = roles.includes('Guru Wali');
+      document.getElementById('editRoleEkstra').checked = roles.includes('Pembina Ekstra');
+      document.getElementById('editRolePelihat').checked = roles.includes('Pelihat');
+
+      if (isSAdmin) {
+        document.getElementById('editRoleSAdmin').checked = true;
+        document.getElementById('editRoleSAdmin').disabled = true;
+      } else {
+        document.getElementById('editRoleSAdmin').disabled = false;
+      }
+
+      modalEditInstance.show();
+    }
+
+    function saveEditUser(e) {
+      e.preventDefault();
+      const id = document.getElementById('editUserId').value;
+      const roles = [];
+      document.querySelectorAll('.edit-role-chk:checked').forEach(function(c){ roles.push(c.value); });
+      if (roles.length === 0) roles.push('Guru');
+
+      const payload = {
+        id: id,
+        username: document.getElementById('editUsername').value.trim(),
+        password: document.getElementById('editPassword').value.trim(),
+        nama: document.getElementById('editNama').value.trim(),
+        nip: document.getElementById('editNip').value.trim(),
+        hak_akses: roles.join(', ')
+      };
+
+      showLoading('Menyimpan perubahan user...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            modalEditInstance.hide();
+            showToast('success', res.message || 'Data pengguna berhasil diperbarui');
+            loadUserData();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .updateDataUser(payload);
+    }
+
+    function deleteUser(id, username) {
+      Swal.fire({
+        title: 'Hapus Pengguna?',
+        text: 'Apakah Anda yakin ingin menghapus akun "' + username + '"?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Hapus Akun',
+        cancelButtonText: 'Batal'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus user...');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              Swal.close();
+              if (res && res.success) {
+                showToast('success', 'User berhasil dihapus');
+                loadUserData();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function(err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteDataUser(id);
+        }
+      });
+    }
+
+    // Export Excel
+    function exportDataUser() {
+      if (rawUsers.length === 0) {
+        showToast('info', 'Tidak ada data user');
+        return;
+      }
+      const rows = [];
+      rawUsers.forEach(function(u, idx) {
+        if (String(u.username).toLowerCase() !== 'sadmin') {
+          rows.push({
+            'No': rows.length + 1,
+            'Username': u.username || '',
+            'Password': u.password || '',
+            'Hak Akses': u.hak_akses || '',
+            'Nama': u.nama || '',
+            'NIP': u.nip || '-'
+          });
+        }
+      });
+      exportArrayToExcel(rows, 'Data_User_' + new Date().toISOString().slice(0,10), 'Data User');
+    }
+
+    // Download Template Excel
+    function downloadTemplateUser() {
+      const headers = ['No', 'Username', 'Password', 'Hak Akses', 'Nama', 'NIP'];
+      const sampleRows = [
+        ['1', 'guru.budi', 'guru123', 'Guru, Wali Kelas', 'Drs. Budi Santoso, M.Pd.', '197503122000031002'],
+        ['2', 'guru.siti', 'guru123', 'Guru, Guru Wali', 'Siti Nurhaliza, S.Pd.', '198506242008012005'],
+        ['3', 'guru.ahmad', 'guru123', 'Guru, Pembina Ekstra', 'Ahmad Fauzi, S.Kom.', '199201152019031004'],
+        ['4', 'viewer.sekolah', 'viewer123', 'Pelihat', 'Staff Pengawas', '-']
+      ];
+      downloadExcelTemplate(headers, sampleRows, 'Template_Import_Data_User', 'Template User');
+    }
+
+    // Process Import Excel / CSV
+    function processImportCsvUser() {
+      const fileInput = document.getElementById('fileImportCsvUser');
+      const mode = document.getElementById('importModeUser').value;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('warning', 'Pilih file Excel / CSV terlebih dahulu');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      readExcelOrCsvFile(file, function(lines) {
+        if (!lines || lines.length <= 1) {
+          showToast('error', 'File kosong atau tidak memiliki data.');
+          return;
+        }
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const parts = lines[i] || [];
+          if (parts.length >= 2) {
+            const uname = String(parts[1] !== undefined && parts[1] !== '' ? parts[1] : (parts[0] || '')).trim();
+            if (uname && uname.toLowerCase() !== 'sadmin') {
+              rows.push({
+                username: uname,
+                password: String(parts[2] !== undefined ? parts[2] : 'guru123').trim() || 'guru123',
+                hak_akses: String(parts[3] !== undefined ? parts[3] : 'Guru').trim() || 'Guru',
+                nama: String(parts[4] !== undefined && parts[4] !== '' ? parts[4] : uname).trim(),
+                nip: String(parts[5] !== undefined ? parts[5] : '-').trim() || '-'
+              });
+            }
+          }
+        }
+
+        if (rows.length === 0) {
+          showToast('error', 'Format data tidak sesuai');
+          return;
+        }
+
+        showLoading('Mengimpor ' + rows.length + ' data user...');
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              modalImportInstance.hide();
+              fileInput.value = '';
+              showToast('success', res.message || 'Import user berhasil!');
+              loadUserData();
+            } else {
+              showToast('error', res.message || 'Gagal import');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error import: ' + err.message);
+          })
+          .importData('Data User', rows, mode);
+      }, function(err) {
+        showToast('error', 'Gagal membaca berkas: ' + err.message);
+      });
+    }
+
+    function parseCsvLine(text) {
+      const re_value = /(?!\s*$)\s*(?:"([^"]*(?:""[^"]*)*)"|([^,\"]*))\s*(?:,|$)/g;
+      const a = [];
+      text.replace(re_value, function(m0, m1, m2) {
+        if (m1 !== undefined) a.push(m1.replace(/""/g, '"'));
+        else if (m2 !== undefined) a.push(m2);
+        return '';
+      });
+      return a;
+    }
+  </script>
+</body>
+</html>

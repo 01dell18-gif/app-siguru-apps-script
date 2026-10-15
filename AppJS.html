@@ -1,0 +1,566 @@
+<!-- AppJS.html - Shared JavaScript for SIGURU Apps Script -->
+<script>
+// ============================================================
+// SIGURU Apps Script - Client-Side JavaScript
+// ============================================================
+
+// === SESSION MANAGEMENT ===
+function getCurrentUser() {
+  const userStr = localStorage.getItem('siguru_user');
+  if (!userStr) return null;
+  try { return JSON.parse(userStr); } catch(e) { return null; }
+}
+
+function requireLogin() {
+  const user = getCurrentUser();
+  if (!user || !user.username) {
+    try {
+      document.documentElement.style.display = 'none';
+    } catch(e) {}
+    navigateTo('login', { auth: 'required' });
+    return { id: 0, username: '', nama: '', hak_akses: '', nip: '' };
+  }
+  return user;
+}
+
+function getBaseUrl() {
+  if (window.SIGURU_SCRIPT_URL && window.SIGURU_SCRIPT_URL.indexOf('script.google.com') !== -1) {
+    return window.SIGURU_SCRIPT_URL;
+  }
+  const cachedUrl = localStorage.getItem('siguru_script_url');
+  if (cachedUrl && cachedUrl.indexOf('script.google.com') !== -1) {
+    return cachedUrl;
+  }
+  try {
+    if (window.top && window.top.location && window.top.location.href && window.top.location.href.indexOf('script.google.com') !== -1) {
+      const topUrl = window.top.location.href.split('?')[0];
+      localStorage.setItem('siguru_script_url', topUrl);
+      return topUrl;
+    }
+  } catch(e) {}
+  return window.location.href.split('?')[0];
+}
+
+function getCurrentPage() {
+  if (window.SIGURU_CURRENT_PAGE) return window.SIGURU_CURRENT_PAGE;
+  try {
+    const p = new URLSearchParams(window.location.search).get('page');
+    if (p) return p;
+  } catch(e) {}
+  try {
+    if (window.top && window.top.location) {
+      const pTop = new URLSearchParams(window.top.location.search).get('page');
+      if (pTop) return pTop;
+    }
+  } catch(e) {}
+
+  const stored = sessionStorage.getItem('siguru_current_page');
+  if (stored) return stored;
+
+  const titleEl = document.getElementById('headerPageTitle');
+  if (titleEl && titleEl.textContent) {
+    const t = titleEl.textContent.toLowerCase().trim();
+    if (t.includes('dashboard')) return 'dashboard';
+    if (t.includes('kehadiran') || t.includes('absen')) return 'laporan-absen';
+    if (t.includes('jurnal')) return 'laporan-jurnal';
+    if (t.includes('guru wali')) return 'laporan-guruwali';
+    if (t.includes('wali kelas')) return 'laporan-wali';
+    if (t.includes('ekstra')) return 'laporan-ekstra';
+    if (t.includes('bimbingan')) return 'master-bimbingan';
+    if (t.includes('siswa') || t.includes('murid')) return 'master-murid';
+    if (t.includes('guru')) return 'master-guru';
+    if (t.includes('pengaturan')) return 'pengaturan';
+    if (t.includes('user') || t.includes('pengguna')) return 'user-management';
+    if (t.includes('profil')) return 'profil';
+  }
+  return 'dashboard';
+}
+
+function reloadCurrentAppPage() {
+  const page = getCurrentPage();
+  sessionStorage.setItem('siguru_current_page', page);
+  navigateTo(page);
+}
+
+function navigateTo(page, params) {
+  try {
+    sessionStorage.setItem('siguru_current_page', page);
+  } catch(e) {}
+  let base = getBaseUrl();
+  let targetUrl = base + (base.includes('?') ? '&' : '?') + 'page=' + encodeURIComponent(page);
+  if (params && typeof params === 'object') {
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null) {
+        targetUrl += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+      }
+    }
+  }
+
+  // Anchor target _top adalah navigasi teraman dari dalam iframe Apps Script
+  try {
+    const a = document.createElement('a');
+    a.href = targetUrl;
+    a.target = '_top';
+    (document.body || document.documentElement).appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 100);
+  } catch(e) {
+    try {
+      window.top.location.href = targetUrl;
+    } catch(e2) {
+      window.location.href = targetUrl;
+    }
+  }
+}
+
+function logout() {
+  localStorage.removeItem('siguru_user');
+  sessionStorage.clear();
+  navigateTo('login');
+}
+
+// === FAST CACHE & CLIENT BUNDLE (Instan 0 Detik) ===
+window.SERVER_BUNDLE = window.SERVER_BUNDLE || null;
+
+function getAppBundle() {
+  if (window.SERVER_BUNDLE && typeof window.SERVER_BUNDLE === 'object') return window.SERVER_BUNDLE;
+  try {
+    const raw = sessionStorage.getItem('siguru_app_bundle');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function updateAppBundle(freshData) {
+  if (!freshData) return;
+  const current = getAppBundle() || {};
+  const updated = Object.assign({}, current, freshData);
+  window.SERVER_BUNDLE = updated;
+  try {
+    sessionStorage.setItem('siguru_app_bundle', JSON.stringify(updated));
+  } catch(e) {}
+}
+
+function invalidateAppBundle() {
+  window.SERVER_BUNDLE = null;
+  try {
+    sessionStorage.removeItem('siguru_app_bundle');
+  } catch(e) {}
+}
+
+// Prefetch and cache official Apps Script Web App URL & check forbidden state
+document.addEventListener('DOMContentLoaded', function() {
+  if (!localStorage.getItem('siguru_script_url') && typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run.withSuccessHandler(function(url) {
+      if (url) localStorage.setItem('siguru_script_url', url);
+    }).getScriptUrl();
+  }
+
+  try {
+    const params = window.SIGURU_PARAMS || {};
+    if (params.auth === 'forbidden') {
+      setTimeout(function() {
+        if (typeof showToast === 'function') {
+          showToast('error', 'Akses Ditolak: Anda tidak memiliki izin untuk membuka halaman tersebut.');
+        } else if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Akses Ditolak',
+            text: 'Anda tidak memiliki izin untuk membuka halaman tersebut.',
+            timer: 3500,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false
+          });
+        }
+      }, 300);
+    }
+  } catch(e) {}
+});
+
+// === RBAC ACCESS CHECK ===
+function isSuperAdmin() {
+  const user = getCurrentUser();
+  if (!user || !user.hak_akses) return false;
+  const role = String(user.hak_akses).toLowerCase().trim();
+  return role.includes('super admin') || role.includes('admin') || role.includes('pengelola') || role === 'sadmin';
+}
+
+function isViewer() {
+  const user = getCurrentUser();
+  if (!user || !user.hak_akses) return false;
+  const role = String(user.hak_akses).toLowerCase().trim();
+  return role.includes('pelihat') || role.includes('pengawas');
+}
+
+function hasAccess(module) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  const role = String(user.hak_akses || '').trim();
+  if (isSuperAdmin()) return true;
+  if (role.toLowerCase() === 'pelihat' || role.toLowerCase() === 'pengawas') return module.startsWith('laporan');
+  
+  const roleStr = role.toLowerCase();
+  switch(module) {
+    case 'master_guru': return isSuperAdmin();
+    case 'master_murid': return isSuperAdmin();
+    case 'master_bimbingan': return isSuperAdmin() || roleStr.includes('guru wali') || roleStr.includes('guru');
+    case 'master_ekstra': return isSuperAdmin() || roleStr.includes('pembina') || roleStr.includes('guru');
+    case 'form_absen': return roleStr.includes('guru') || roleStr.includes('wali');
+    case 'form_jurnal': return roleStr.includes('guru');
+    case 'form_guruwali': return roleStr.includes('guru wali') || roleStr.includes('guru');
+    case 'form_wali': return roleStr.includes('wali') || roleStr.includes('guru');
+    case 'form_ekstra': return roleStr.includes('pembina') || roleStr.includes('guru');
+    case 'laporan': return true;
+    case 'pengaturan': case 'user_management': return isSuperAdmin();
+    default: return false;
+  }
+}
+
+function canManageReport(type, record) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  if (isSuperAdmin()) return true;
+  
+  const role = String(user.hak_akses || '').toLowerCase().trim();
+  if (role.includes('pelihat') || role.includes('pengawas')) return false;
+
+  const nama = String(user.nama || '').trim().toLowerCase();
+  
+  switch(type) {
+    case 'jurnal': 
+      return !record || !record.nama_guru || String(record.nama_guru).trim().toLowerCase() === nama || role.includes('guru');
+    case 'absen': 
+      return !record || !record.nama_guru || String(record.nama_guru).trim().toLowerCase() === nama || role.includes('guru') || role.includes('wali');
+    case 'wali': 
+      return !record || !record.nama_wali_kelas || String(record.nama_wali_kelas).trim().toLowerCase() === nama || role.includes('wali') || role.includes('guru');
+    case 'guruwali': 
+      return !record || !record.nama_guru_wali || String(record.nama_guru_wali).trim().toLowerCase() === nama || role.includes('guru wali') || role.includes('guru');
+    case 'ekstra': 
+      return !record || !record.pembina_ekstra || String(record.pembina_ekstra).trim().toLowerCase() === nama || role.includes('pembina') || role.includes('guru');
+    default: 
+      return true;
+  }
+}
+
+// === AUTO-HIDING NAVBAR ===
+document.addEventListener('DOMContentLoaded', function() {
+  let lastScrollTop = 0;
+  const header = document.querySelector('.main-header');
+  
+  if (header) {
+    window.addEventListener('scroll', function() {
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+      if (currentScroll > 70) {
+        header.classList.add('scrolled');
+        if (currentScroll > lastScrollTop && currentScroll > 120) {
+          header.classList.add('navbar-hidden');
+        } else {
+          header.classList.remove('navbar-hidden');
+        }
+      } else {
+        header.classList.remove('scrolled');
+        header.classList.remove('navbar-hidden');
+      }
+      lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+    }, { passive: true });
+  }
+
+  // Sidebar Toggle
+  const btnToggle = document.getElementById('btnToggleSidebar');
+  const sidebar = document.querySelector('.main-sidebar');
+  const closeBtn = document.getElementById('sidebarCloseBtn');
+
+  if (window.innerWidth >= 992 && localStorage.getItem('siguru_sidebar_collapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+
+  if (btnToggle) {
+    btnToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (window.innerWidth < 992) {
+        if (sidebar) sidebar.classList.toggle('show');
+      } else {
+        const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('siguru_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+      }
+    });
+  }
+
+  if (closeBtn && sidebar) {
+    closeBtn.addEventListener('click', function() { sidebar.classList.remove('show'); });
+  }
+
+  // Refresh Button (Gunakan navigasi aman _top agar tidak blank putih)
+  const refreshBtn = document.getElementById('btnRefreshApp');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+      showToast('info', 'Memuat ulang data...');
+      setTimeout(function() {
+        reloadCurrentAppPage();
+      }, 350);
+    });
+  }
+
+  // Clear Cache Button (Gunakan reloadCurrentAppPage agar tidak blank putih)
+  const clearCacheBtn = document.getElementById('btnClearCache');
+  if (clearCacheBtn) {
+    clearCacheBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      try {
+        sessionStorage.clear();
+        localStorage.removeItem('siguru_cache');
+        localStorage.removeItem('siguru_app_bundle');
+        if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+      } catch(err) {}
+      Swal.fire({
+        icon: 'success', title: 'Cache Berhasil Dibersihkan!',
+        text: 'Memuat data segar...', toast: true, position: 'top-end',
+        showConfirmButton: false, timer: 1000, timerProgressBar: true
+      });
+      setTimeout(function() {
+        reloadCurrentAppPage();
+      }, 500);
+    });
+  }
+
+  // Real-Time Clock
+  function updateClock() {
+    const dateEl = document.getElementById('headerDeviceDate');
+    const timeEl = document.getElementById('headerDeviceTime');
+    if (!dateEl && !timeEl) return;
+    
+    const now = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    if (dateEl) {
+      dateEl.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+    }
+    if (timeEl) {
+      timeEl.textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+    }
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Trigger update sidebar & header saat AppJS selesai dimuat
+  if (typeof window.renderSidebarMenu === 'function') window.renderSidebarMenu();
+  if (typeof window.renderHeader === 'function') window.renderHeader();
+});
+
+// === TOAST NOTIFICATIONS ===
+function showToast(icon, title, text) {
+  Swal.fire({
+    icon: icon, title: title, text: text || '',
+    toast: true, position: 'top-end',
+    showConfirmButton: false, timer: 2500, timerProgressBar: true
+  });
+}
+
+function showLoading(text) {
+  Swal.fire({
+    title: text || 'Memproses...', allowOutsideClick: false,
+    showConfirmButton: false,
+    didOpen: function() { Swal.showLoading(); }
+  });
+}
+
+// === FORMAT HELPERS ===
+function formatDateIndo(dateStr) {
+  if (!dateStr) return '-';
+  const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function formatNISN(nisn) {
+  if (!nisn) return '';
+  const clean = String(nisn).replace(/\D/g, '');
+  return clean.padStart(10, '0');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// === UNIVERSAL EXCEL (.XLSX / .XLS) & CSV HELPERS ===
+
+// 1. Ekspor Array of Objects ke Excel (.xlsx)
+function exportArrayToExcel(dataArray, filename, sheetName) {
+  if (!dataArray || dataArray.length === 0) {
+    showToast('info', 'Tidak ada data untuk diekspor');
+    return;
+  }
+  const cleanName = filename.replace(/\.(xlsx|xls|csv)$/i, '');
+  if (typeof XLSX !== 'undefined') {
+    const ws = XLSX.utils.json_to_sheet(dataArray);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Data');
+    XLSX.writeFile(wb, cleanName + '.xlsx');
+    showToast('success', 'File Excel berhasil diunduh!');
+  } else {
+    exportArrayToCSV(dataArray, cleanName + '.csv');
+  }
+}
+
+// 2. Ekspor Tabel HTML ke Excel (.xlsx)
+function exportTableToExcel(tableId, filename, sheetName) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const cleanName = filename.replace(/\.(xlsx|xls|csv)$/i, '');
+  if (typeof XLSX !== 'undefined') {
+    const wb = XLSX.utils.table_to_book(table, { sheet: sheetName || 'Data' });
+    XLSX.writeFile(wb, cleanName + '.xlsx');
+    showToast('success', 'File Excel berhasil diunduh!');
+  } else {
+    exportTableToCSV(tableId, cleanName + '.csv');
+  }
+}
+
+// 3. Unduh Template Resmi dalam Format Excel (.xlsx)
+function downloadExcelTemplate(headers, sampleRows, filename, sheetName) {
+  const cleanName = filename.replace(/\.(xlsx|xls|csv)$/i, '');
+  if (typeof XLSX !== 'undefined') {
+    const wsData = [headers, ...sampleRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Template');
+    XLSX.writeFile(wb, cleanName + '.xlsx');
+  } else {
+    let csv = '\uFEFF' + headers.join(',') + '\n';
+    sampleRows.forEach(function(r) {
+      csv += r.map(function(v){ return '"' + String(v || '').replace(/"/g, '""') + '"'; }).join(',') + '\n';
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = cleanName + '.csv';
+    link.click();
+  }
+}
+
+// 4. Pembaca Berkas Excel (.xlsx, .xls) dan CSV Multifungsi
+function readExcelOrCsvFile(file, callback, errorCallback) {
+  if (!file) return;
+  if (typeof XLSX !== 'undefined') {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        callback(rows);
+      } catch(err) {
+        if (typeof errorCallback === 'function') errorCallback(err);
+        else showToast('error', 'Gagal membaca berkas Excel: ' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const lines = text.split(/\r\n|\n/).filter(function(l){ return l.trim().length > 0; });
+      const rows = lines.map(function(line){ return parseCsvLineFallback(line); });
+      callback(rows);
+    };
+    reader.readAsText(file);
+  }
+}
+
+function parseCsvLineFallback(text) {
+  const re_value = /(?!\s*$)\s*(?:"([^"]*(?:""[^"]*)*)"|([^,\"]*))\s*(?:,|$)/g;
+  const a = [];
+  text.replace(re_value, function(m0, m1, m2) {
+    if (m1 !== undefined) a.push(m1.replace(/""/g, '"'));
+    else if (m2 !== undefined) a.push(m2);
+    return '';
+  });
+  return a;
+}
+
+function exportArrayToCSV(dataArray, filename) {
+  if (!dataArray || dataArray.length === 0) return;
+  const headers = Object.keys(dataArray[0]);
+  let csv = '\uFEFF' + headers.join(',') + '\n';
+  dataArray.forEach(function(row) {
+    csv += headers.map(function(h){ return '"' + String(row[h] !== undefined ? row[h] : '').replace(/"/g, '""') + '"'; }).join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename || 'export.csv';
+  link.click();
+}
+
+function exportTableToCSV(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  let csv = [];
+  const rows = table.querySelectorAll('tr');
+  rows.forEach(function(row) {
+    const cols = row.querySelectorAll('td, th');
+    const rowData = [];
+    cols.forEach(function(col) {
+      let text = col.textContent.replace(/"/g, '""').trim();
+      rowData.push('"' + text + '"');
+    });
+    csv.push(rowData.join(','));
+  });
+  const blob = new Blob(['\uFEFF' + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename || 'export.csv';
+  link.click();
+}
+
+// === FILE UPLOAD & REPLACEMENT HELPER ===
+function extractDriveFolderId(url) {
+  if (!url) return null;
+  const m = String(url).match(/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function uploadReplacementFile(input, targetInputId, folderKey) {
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  showLoading('Mengunggah berkas baru ke Google Drive...');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Data = e.target.result.split(',')[1];
+    let folderUrl = '';
+    const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+    if (bundle && bundle.settings && bundle.settings[folderKey]) {
+      folderUrl = bundle.settings[folderKey];
+    }
+    const folderId = extractDriveFolderId(folderUrl);
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        Swal.close();
+        if (res && res.success) {
+          const el = document.getElementById(targetInputId);
+          if (el) el.value = res.url;
+          showToast('success', 'Berkas baru berhasil diunggah! Simpan perubahan untuk menerapkan pergantian file.');
+        } else {
+          showToast('error', res.message || 'Gagal mengunggah berkas');
+        }
+      })
+      .withFailureHandler(function(err) {
+        Swal.close();
+        showToast('error', 'Error upload: ' + err.message);
+      })
+      .uploadFileToDrive(base64Data, file.name, folderId || 'root');
+  };
+  reader.readAsDataURL(file);
+}
+</script>

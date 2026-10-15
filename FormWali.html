@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kegiatan Wali Kelas - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-calendar2-week-fill text-info me-2"></i>Formulir Kegiatan Wali Kelas</h4>
+        <p class="text-muted small mb-0">Catat agenda kepengurusan kelas binaan, koordinasi orang tua, home visit, dan administrasi kelas.</p>
+      </div>
+      <div class="d-flex gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-primary rounded-pill btn-sm" onclick="navigateTo('laporan-wali')">
+          <i class="bi bi-clipboard-data me-1"></i> Lihat Laporan Wali Kelas
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card p-4 shadow-sm mb-4">
+      <form id="formWali" onsubmit="saveKegiatan(event)">
+        <!-- Row 1: Tanggal, Nama Wali, Kelas -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Tanggal Kegiatan <span class="text-danger">*</span></label>
+            <input type="date" id="waliTanggal" class="form-control" required>
+          </div>
+          <div class="col-md-5 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Nama Wali Kelas <span class="text-danger">*</span></label>
+            <div id="divWaliContainer">
+              <!-- Dropdown for Super Admin or Readonly Input for Teacher -->
+            </div>
+          </div>
+          <div class="col-md-4 col-sm-12">
+            <label class="form-label fw-semibold small text-secondary">Kelas / Rombel Binaan <span class="text-danger">*</span></label>
+            <select id="waliKelas" class="form-select" required></select>
+          </div>
+        </div>
+
+        <!-- Row 2: Jenis / Kategori Agenda Cepat -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary d-block">Pilihan Cepat Agenda Kegiatan</label>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="appendAgenda('Home Visit (Kunjungan Rumah) peserta didik bermasalah/sakit')">🏡 Home Visit</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="appendAgenda('Rapat Koordinasi Paguyuban Orang Tua / Komite Kelas')">👥 Pertemuan Paguyuban</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="appendAgenda('Pembagian Rapor Semester dan Evaluasi Hasil Belajar')">📊 Pembagian Rapor</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="appendAgenda('Penyelesaian Masalah Kedisiplinan & Tata Tertib Siswa di Kelas')">⚖️ Penanganan Disiplin</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="appendAgenda('Kerja Bakti Kebersihan dan Penataan Lingkungan Kelas (7K)')">🧹 Kebersihan / 7K</button>
+          </div>
+        </div>
+
+        <!-- Row 3: Deskripsi Lengkap Kegiatan -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Rincian Deskripsi Kegiatan Wali Kelas <span class="text-danger">*</span></label>
+          <textarea id="waliDeskripsi" class="form-control" rows="4" required placeholder="Tuliskan rincian kegiatan wali kelas, pihak yang terlibat, hasil kesepakatan, atau catatan penting lainnya..."></textarea>
+        </div>
+
+        <!-- Row 4: Dokumentasi / Foto Bukti Kegiatan -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold small text-secondary d-block">Dokumentasi / Bukti Foto Kegiatan</label>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-8">
+              <input type="text" id="waliLinkBukti" class="form-control" placeholder="Tautan Google Drive atau klik tombol unggah di samping...">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+              <label class="btn btn-outline-primary w-100 mb-0" for="fileBuktiWali">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Unggah ke Drive
+              </label>
+              <input type="file" id="fileBuktiWali" class="d-none" accept="image/*,.pdf,.doc,.docx" onchange="handleBuktiUpload(this)">
+            </div>
+          </div>
+          <small class="text-muted d-block mt-1">Berkas disimpan ke folder Google Drive Wali Kelas.</small>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <button type="reset" class="btn btn-light rounded-pill px-4">Reset</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSubmitWali">
+            <i class="bi bi-save2-fill me-1"></i> Simpan Kegiatan Wali Kelas
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Kegiatan Wali Kelas';
+
+    let allGuruData = [];
+    let driveFolderWali = '';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('waliTanggal').value = new Date().toISOString().slice(0,10);
+      setupWaliField();
+      loadInitialData();
+    });
+
+    function setupWaliField() {
+      const container = document.getElementById('divWaliContainer');
+      if (isSuperAdmin()) {
+        container.innerHTML = '<select id="waliGuru" class="form-select" onchange="autoSelectKelasBinaan()"></select>';
+        google.script.run.withSuccessHandler(function(guruList) {
+          const sel = document.getElementById('waliGuru');
+          sel.innerHTML = '';
+          guruList.forEach(function(g) {
+            sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
+          });
+          if (user && user.nama) sel.value = user.nama;
+          autoSelectKelasBinaan();
+        }).getDaftarGuruNama();
+      } else {
+        container.innerHTML = '<input type="text" id="waliGuru" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci sesuai akun login Anda">';
+      }
+    }
+
+    function loadInitialData() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load Settings
+      google.script.run.withSuccessHandler(function(st) {
+        if (st && st.folder_wali) driveFolderWali = st.folder_wali;
+      }).getSettings();
+
+      // Load Kelas
+      google.script.run.withSuccessHandler(function(kelasList) {
+        const selKelas = document.getElementById('waliKelas');
+        selKelas.innerHTML = '';
+        kelasList.forEach(function(k) {
+          selKelas.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+
+        // Load guru for kelas binaan check
+        google.script.run.withSuccessHandler(function(dataGuru) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          allGuruData = dataGuru || [];
+          autoSelectKelasBinaan();
+        }).getDataGuru();
+      }).getDaftarKelas();
+    }
+
+    function autoSelectKelasBinaan() {
+      const guruEl = document.getElementById('waliGuru');
+      const guru = guruEl ? guruEl.value : (user.nama || '');
+      if (!guru || allGuruData.length === 0) return;
+
+      const g = allGuruData.find(function(x){ return x.nama_guru === guru; });
+      if (g && g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-') {
+        document.getElementById('waliKelas').value = g.sebagai_wali_kelas;
+      }
+    }
+
+    function appendAgenda(text) {
+      const el = document.getElementById('waliDeskripsi');
+      if (el.value.trim().length > 0) {
+        el.value += '\n' + text;
+      } else {
+        el.value = text;
+      }
+      el.focus();
+    }
+
+    function handleBuktiUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      showLoading('Mengunggah bukti ke Google Drive...');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        const folderId = extractDriveFolderId(driveFolderWali);
+
+        if (!folderId) {
+          Swal.close();
+          showToast('warning', 'Folder Wali Kelas Drive belum dikonfigurasi di Pengaturan');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById('waliLinkBukti').value = res.url;
+              showToast('success', 'Bukti berhasil diunggah!');
+            } else {
+              showToast('error', res.message || 'Gagal unggah bukti');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error unggah: ' + err.message);
+          })
+          .uploadFileToDrive(base64Data, file.name, folderId);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function extractDriveFolderId(url) {
+      if (!url) return null;
+      const m = String(url).match(/folders\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    function saveKegiatan(e) {
+      e.preventDefault();
+      const guruEl = document.getElementById('waliGuru');
+      const guru = guruEl ? guruEl.value : (user.nama || '');
+
+      const payload = {
+        tanggal: document.getElementById('waliTanggal').value,
+        nama_wali_kelas: guru,
+        kelas: document.getElementById('waliKelas').value,
+        deskripsi_kegiatan: document.getElementById('waliDeskripsi').value.trim(),
+        link_bukti_wali: document.getElementById('waliLinkBukti').value.trim()
+      };
+
+      showLoading('Menyimpan kegiatan wali kelas...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Kegiatan Berhasil Disimpan!',
+              text: 'Catatan wali kelas untuk kelas ' + payload.kelas + ' berhasil disimpan.',
+              showCancelButton: true,
+              confirmButtonText: 'Lihat Laporan Wali Kelas',
+              cancelButtonText: 'Input Kegiatan Lain'
+            }).then(function(result) {
+              if (result.isConfirmed) {
+                navigateTo('laporan-wali');
+              } else {
+                document.getElementById('waliDeskripsi').value = '';
+                document.getElementById('waliLinkBukti').value = '';
+              }
+            });
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan data');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .saveKegiatanWali(payload);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Pengguna - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-person-circle text-primary me-2"></i>Profil Pengguna</h4>
+        <p class="text-muted small mb-0">Kelola identitas akun login dan pembaruan kata sandi Anda.</p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Left Column: User Card -->
+      <div class="col-md-4">
+        <div class="card p-4 text-center shadow-sm">
+          <div class="mb-3 d-flex justify-content-center">
+            <div id="profilAvatar" class="avatar-initials bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow" style="width: 80px; height: 80px; font-size: 2rem;">
+              U
+            </div>
+          </div>
+          <h5 class="fw-bold text-dark mb-1" id="profilDisplayNama">Memuat...</h5>
+          <p class="text-muted small mb-2" id="profilDisplayNip">NIP. -</p>
+          <div id="profilDisplayRoles" class="d-flex flex-wrap justify-content-center gap-1 mb-3"></div>
+          
+          <div class="border-top pt-3 text-start small">
+            <div class="d-flex justify-content-between py-1">
+              <span class="text-muted">Username:</span>
+              <strong id="profilDisplayUsername" class="font-monospace">-</strong>
+            </div>
+            <div class="d-flex justify-content-between py-1">
+              <span class="text-muted">Status Akun:</span>
+              <span class="badge bg-success-subtle text-success">Aktif</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Edit Profile & Password Form -->
+      <div class="col-md-8">
+        <div class="card p-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pencil-square me-2 text-primary"></i>Perbarui Informasi Profil</h5>
+          <form id="formProfil" onsubmit="saveProfil(event)">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" id="profNama" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">NIP</label>
+                <input type="text" id="profNip" class="form-control" placeholder="19750815...">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Username Login</label>
+                <input type="text" id="profUsername" class="form-control bg-light" readonly>
+                <small class="text-muted" id="profUsernameHint">Username akun sistem tetap terkunci.</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Hak Akses (Role)</label>
+                <input type="text" id="profRoles" class="form-control bg-light" readonly>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-key-fill me-2 text-warning"></i>Ganti Kata Sandi (Opsional)</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Kata Sandi Baru</label>
+                <div class="input-group">
+                  <input type="password" id="profPasswordBaru" class="form-control" placeholder="Kosongkan jika tidak diganti">
+                  <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('profPasswordBaru', this)"><i class="bi bi-eye"></i></button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Konfirmasi Kata Sandi Baru</label>
+                <div class="input-group">
+                  <input type="password" id="profPasswordKonfirm" class="form-control" placeholder="Ulangi kata sandi baru">
+                  <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('profPasswordKonfirm', this)"><i class="bi bi-eye"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-check2-circle me-1"></i> Simpan Perubahan Profil
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Profil Saya';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      populateProfile();
+    });
+
+    function populateProfile() {
+      if (!user) return;
+      document.getElementById('loadingOverlay').style.display = 'none';
+
+      document.getElementById('profilDisplayNama').textContent = user.nama || user.username;
+      document.getElementById('profilDisplayNip').textContent = user.nip ? 'NIP. ' + user.nip : 'NIP. -';
+      document.getElementById('profilDisplayUsername').textContent = user.username;
+      document.getElementById('profilAvatar').textContent = (user.nama || user.username).charAt(0).toUpperCase();
+
+      // Roles Badges
+      const rolesContainer = document.getElementById('profilDisplayRoles');
+      rolesContainer.innerHTML = '';
+      const roles = String(user.hak_akses || 'Guru').split(',').map(function(s){ return s.trim(); });
+      roles.forEach(function(r) {
+        rolesContainer.innerHTML += '<span class="badge bg-primary-subtle text-primary">' + escapeHtml(r) + '</span>';
+      });
+
+      // Form inputs
+      document.getElementById('profNama').value = user.nama || '';
+      document.getElementById('profNip').value = user.nip || '';
+      document.getElementById('profUsername').value = user.username || '';
+      document.getElementById('profRoles').value = user.hak_akses || '';
+
+      const isSAdmin = String(user.username).toLowerCase() === 'sadmin';
+      if (!isSAdmin) {
+        document.getElementById('profUsernameHint').textContent = 'Hubungi Super Admin jika ingin mengubah username login.';
+      }
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      const icon = btn.querySelector('i');
+      if (el.type === 'password') {
+        el.type = 'text';
+        if (icon) { icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash'); }
+      } else {
+        el.type = 'password';
+        if (icon) { icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye'); }
+      }
+    }
+
+    function saveProfil(e) {
+      e.preventDefault();
+      const nama = document.getElementById('profNama').value.trim();
+      const nip = document.getElementById('profNip').value.trim();
+      const pBaru = document.getElementById('profPasswordBaru').value.trim();
+      const pKonfirm = document.getElementById('profPasswordKonfirm').value.trim();
+
+      if (pBaru) {
+        if (pBaru.length < 5) {
+          showToast('warning', 'Kata sandi baru minimal 5 karakter');
+          return;
+        }
+        if (pBaru !== pKonfirm) {
+          showToast('error', 'Konfirmasi kata sandi tidak cocok');
+          return;
+        }
+      }
+
+      const payload = {
+        id: user.id,
+        nama: nama,
+        nip: nip,
+        password_baru: pBaru
+      };
+
+      showLoading('Menyimpan perubahan profil...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            // Update session
+            user.nama = nama;
+            user.nip = nip;
+            localStorage.setItem('siguru_user', JSON.stringify(user));
+            
+            showToast('success', 'Profil Anda berhasil diperbarui');
+            setTimeout(function() {
+              window.location.reload();
+            }, 800);
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan perubahan');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .updateProfil(payload);
+    }
+  </script>
+</body>
+</html>

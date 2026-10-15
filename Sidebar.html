@@ -1,0 +1,321 @@
+<!-- Sidebar.html - Navigasi Sidebar SIGURU -->
+<aside class="main-sidebar d-flex flex-column" id="mainSidebar">
+  <!-- Brand Header -->
+  <div class="sidebar-brand d-flex justify-content-between align-items-center">
+    <a href="javascript:void(0)" onclick="navigateTo('dashboard')" class="text-white text-decoration-none d-flex align-items-center gap-2">
+      <div class="rounded-2 bg-primary d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; font-size: 1rem;">
+        <i class="bi bi-mortarboard-fill"></i>
+      </div>
+      <div>
+        <span class="fw-bold d-block text-white" style="font-size: 0.95rem; line-height: 1.15; letter-spacing: 0.5px;">SIGURU</span>
+        <span class="text-white-50" style="font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;">Admin Portal</span>
+      </div>
+    </a>
+    <button type="button" class="btn btn-sm btn-link text-white-50 d-lg-none p-0" id="sidebarCloseBtn" title="Tutup">
+      <i class="bi bi-x-lg fs-5"></i>
+    </button>
+  </div>
+
+  <!-- Menu List -->
+  <div class="sidebar-menu flex-grow-1" id="sidebarMenuList">
+    <!-- Dashboard -->
+    <a href="javascript:void(0)" onclick="navigateTo('dashboard')" class="nav-link-custom" data-page="dashboard">
+      <i class="bi bi-grid-1x2-fill"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <!-- Master Data Group -->
+    <div id="menuMasterGroup" style="display:none;">
+      <div class="menu-category">Data Master</div>
+      <div class="accordion sidebar-accordion" id="accordionMaster">
+        <div class="accordion-item bg-transparent border-0">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMaster">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-database-fill text-info"></i>
+              <span>Master Data</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+          </button>
+          <div id="collapseMaster" class="accordion-collapse collapse" data-bs-parent="#accordionMaster">
+            <div class="accordion-body">
+              <a href="javascript:void(0)" onclick="navigateTo('master-guru')" class="nav-link-custom" data-page="master-guru" id="menuMasterGuru" style="display:none;">
+                <i class="bi bi-person-badge"></i> <span>Data Guru</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('master-murid')" class="nav-link-custom" data-page="master-murid" id="menuMasterMurid" style="display:none;">
+                <i class="bi bi-people"></i> <span>Data Siswa</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('master-bimbingan')" class="nav-link-custom" data-page="master-bimbingan" id="menuMasterBimbingan" style="display:none;">
+                <i class="bi bi-person-heart"></i> <span>Data Siswa Bimbingan</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('master-ekstra')" class="nav-link-custom" data-page="master-ekstra" id="menuMasterEkstra" style="display:none;">
+                <i class="bi bi-trophy"></i> <span>Siswa Ekstrakurikuler</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Group (Pencatatan & Form) -->
+    <div id="menuFormGroup">
+      <div class="menu-category">Pencatatan & Form</div>
+      <div class="accordion sidebar-accordion" id="accordionForm">
+        <div class="accordion-item bg-transparent border-0">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseForm">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-pencil-square text-warning"></i>
+              <span>Form Inputan</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+          </button>
+          <div id="collapseForm" class="accordion-collapse collapse" data-bs-parent="#accordionForm">
+            <div class="accordion-body">
+              <a href="javascript:void(0)" onclick="navigateTo('form-absen')" class="nav-link-custom" data-page="form-absen" id="menuFormAbsen">
+                <i class="bi bi-check2-circle"></i> <span>Presensi / Absensi</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('form-jurnal')" class="nav-link-custom" data-page="form-jurnal" id="menuFormJurnal">
+                <i class="bi bi-journal-bookmark"></i> <span>Jurnal Mengajar</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('form-guruwali')" class="nav-link-custom" data-page="form-guruwali" id="menuFormGuruWali">
+                <i class="bi bi-chat-heart"></i> <span>Bimbingan Guru Wali</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('form-wali')" class="nav-link-custom" data-page="form-wali" id="menuFormWali">
+                <i class="bi bi-calendar2-week"></i> <span>Kegiatan Wali Kelas</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('form-ekstra')" class="nav-link-custom" data-page="form-ekstra" id="menuFormEkstra">
+                <i class="bi bi-activity"></i> <span>Kegiatan Ekstrakurikuler</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Laporan Group -->
+    <div id="menuLaporanGroup">
+      <div class="menu-category">Rekap & Laporan</div>
+      <div class="accordion sidebar-accordion" id="accordionLaporan">
+        <div class="accordion-item bg-transparent border-0">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLaporan">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-bar-graph text-success"></i>
+              <span>Laporan Hasil</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+          </button>
+          <div id="collapseLaporan" class="accordion-collapse collapse" data-bs-parent="#accordionLaporan">
+            <div class="accordion-body">
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-absen')" class="nav-link-custom" data-page="laporan-absen">
+                <i class="bi bi-file-earmark-check"></i> <span>Laporan Kehadiran</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-jurnal')" class="nav-link-custom" data-page="laporan-jurnal">
+                <i class="bi bi-journal-text"></i> <span>Laporan Jurnal Guru</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-wali')" class="nav-link-custom" data-page="laporan-wali">
+                <i class="bi bi-clipboard-data"></i> <span>Laporan Wali Kelas</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-guruwali')" class="nav-link-custom" data-page="laporan-guruwali">
+                <i class="bi bi-heart-pulse"></i> <span>Laporan Guru Wali</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-ekstra')" class="nav-link-custom" data-page="laporan-ekstra">
+                <i class="bi bi-award"></i> <span>Laporan Ekstrakurikuler</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pengaturan Group -->
+    <div id="menuPengaturanGroup" style="display:none;">
+      <div class="menu-category">Pengaturan Sistem</div>
+      <div class="accordion sidebar-accordion" id="accordionPengaturan">
+        <div class="accordion-item bg-transparent border-0">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePengaturan">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-sliders2 text-primary"></i>
+              <span>Pengaturan</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+          </button>
+          <div id="collapsePengaturan" class="accordion-collapse collapse" data-bs-parent="#accordionPengaturan">
+            <div class="accordion-body">
+              <a href="javascript:void(0)" onclick="navigateTo('pengaturan')" class="nav-link-custom" data-page="pengaturan">
+                <i class="bi bi-gear-wide-connected"></i> <span>Pengaturan Sistem</span>
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('user-management')" class="nav-link-custom" data-page="user-management">
+                <i class="bi bi-shield-lock"></i> <span>Manajemen User</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Card -->
+  <div class="sidebar-user-card p-2 mx-2 mb-2 rounded-2" id="sidebarUserCard">
+    <div class="d-flex align-items-center justify-content-between">
+      <a href="javascript:void(0)" onclick="navigateTo('profil')" class="d-flex align-items-center gap-2 text-decoration-none overflow-hidden" title="Profil Saya">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 30px; height: 30px; font-size: 0.75rem; flex-shrink: 0;" id="sidebarAvatar">U</div>
+        <div class="overflow-hidden" style="max-width: 125px;">
+          <div class="text-white fw-semibold small text-truncate" style="font-size: 0.8rem;" id="sidebarUserName">Pengguna</div>
+          <div class="text-white-50 text-truncate" style="font-size: 0.68rem;" id="sidebarUserRole">Guru</div>
+        </div>
+      </a>
+      <div class="d-flex align-items-center">
+        <a href="javascript:void(0)" onclick="navigateTo('profil')" class="btn btn-sm btn-link text-white-50 p-1" title="Profil"><i class="bi bi-gear" style="font-size: 0.85rem;"></i></a>
+        <a href="javascript:void(0)" onclick="logout()" class="btn btn-sm btn-link text-danger p-1" title="Logout"><i class="bi bi-box-arrow-right" style="font-size: 0.85rem;"></i></a>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<script>
+// Fungsi resolver pengguna mandiri (tidak bergantung pada urutan include file)
+function getSidebarUser() {
+  try {
+    if (typeof getCurrentUser === 'function') {
+      const u = getCurrentUser();
+      if (u) return u;
+    }
+    const raw = localStorage.getItem('siguru_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+function checkSidebarAccess(module, user) {
+  if (!user || !user.username) {
+    return false;
+  }
+  const role = user.hak_akses || 'Guru';
+  if (role === 'Super Admin' || role === 'admin') return true;
+  if (role === 'Pelihat') return module.startsWith('laporan');
+
+  const roles = role.split(',').map(r => r.trim());
+  switch(module) {
+    case 'master_guru': return role === 'Super Admin' || role === 'admin';
+    case 'master_murid': return role === 'Super Admin' || role === 'admin';
+    case 'master_bimbingan': return role === 'Super Admin' || role === 'admin' || roles.includes('Guru Wali');
+    case 'master_ekstra': return role === 'Super Admin' || role === 'admin' || roles.includes('Pembina Ekstra');
+    case 'form_absen': return roles.includes('Guru') || roles.includes('Wali Kelas');
+    case 'form_jurnal': return roles.includes('Guru');
+    case 'form_guruwali': return roles.includes('Guru Wali') || roles.includes('Guru');
+    case 'form_wali': return roles.includes('Wali Kelas');
+    case 'form_ekstra': return roles.includes('Pembina Ekstra') || roles.includes('Guru');
+    case 'laporan': return true;
+    case 'pengaturan': case 'user_management': return role === 'Super Admin' || role === 'admin';
+    default: return false;
+  }
+}
+
+function updateSidebarUI() {
+  const user = getSidebarUser();
+
+  // Update profil user di pojok bawah sidebar
+  const avatarEl = document.getElementById('sidebarAvatar');
+  const nameEl = document.getElementById('sidebarUserName');
+  const roleEl = document.getElementById('sidebarUserRole');
+  if (avatarEl) avatarEl.textContent = (user && user.nama ? user.nama.charAt(0).toUpperCase() : 'U');
+  if (nameEl) nameEl.textContent = (user && user.nama ? user.nama : 'Pengguna');
+  if (roleEl) roleEl.textContent = (user && user.hak_akses ? user.hak_akses : 'Guru');
+
+  const isSuper = user && (user.hak_akses === 'Super Admin' || user.hak_akses === 'admin');
+
+  // 1. Data Master
+  let hasMaster = false;
+  const mg = document.getElementById('menuMasterGuru');
+  const mm = document.getElementById('menuMasterMurid');
+  const mb = document.getElementById('menuMasterBimbingan');
+  const me = document.getElementById('menuMasterEkstra');
+  if (mg) { const show = checkSidebarAccess('master_guru', user); mg.style.display = show ? 'flex' : 'none'; if (show) hasMaster = true; }
+  if (mm) { const show = checkSidebarAccess('master_murid', user); mm.style.display = show ? 'flex' : 'none'; if (show) hasMaster = true; }
+  if (mb) { const show = checkSidebarAccess('master_bimbingan', user); mb.style.display = show ? 'flex' : 'none'; if (show) hasMaster = true; }
+  if (me) { const show = checkSidebarAccess('master_ekstra', user); me.style.display = show ? 'flex' : 'none'; if (show) hasMaster = true; }
+  const masterGroup = document.getElementById('menuMasterGroup');
+  if (masterGroup) masterGroup.style.display = hasMaster ? 'block' : 'none';
+
+  // 2. Form Inputan
+  let hasForm = false;
+  const fa = document.getElementById('menuFormAbsen');
+  const fj = document.getElementById('menuFormJurnal');
+  const fgw = document.getElementById('menuFormGuruWali');
+  const fw = document.getElementById('menuFormWali');
+  const fe = document.getElementById('menuFormEkstra');
+  if (fa) { const show = checkSidebarAccess('form_absen', user); fa.style.display = show ? 'flex' : 'none'; if (show) hasForm = true; }
+  if (fj) { const show = checkSidebarAccess('form_jurnal', user); fj.style.display = show ? 'flex' : 'none'; if (show) hasForm = true; }
+  if (fgw) { const show = checkSidebarAccess('form_guruwali', user); fgw.style.display = show ? 'flex' : 'none'; if (show) hasForm = true; }
+  if (fw) { const show = checkSidebarAccess('form_wali', user); fw.style.display = show ? 'flex' : 'none'; if (show) hasForm = true; }
+  if (fe) { const show = checkSidebarAccess('form_ekstra', user); fe.style.display = show ? 'flex' : 'none'; if (show) hasForm = true; }
+  const formGroup = document.getElementById('menuFormGroup');
+  if (formGroup) formGroup.style.display = hasForm ? 'block' : 'none';
+
+  // 3. Laporan
+  const lapGroup = document.getElementById('menuLaporanGroup');
+  if (lapGroup) {
+    lapGroup.style.display = checkSidebarAccess('laporan', user) ? 'block' : 'none';
+  }
+
+  // 4. Pengaturan Sistem (Super Admin Only)
+  const pengGroup = document.getElementById('menuPengaturanGroup');
+  if (pengGroup) {
+    pengGroup.style.display = isSuper ? 'block' : 'none';
+  }
+
+  // Active Menu Highlight & Accordion Auto-Expand
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentPage = window.SIGURU_CURRENT_PAGE || urlParams.get('page') || 'dashboard';
+
+    document.querySelectorAll('.nav-link-custom[data-page]').forEach(function(link) {
+      if (link.getAttribute('data-page') === currentPage) {
+        link.classList.add('active');
+        const accordion = link.closest('.accordion-collapse');
+        if (accordion) {
+          accordion.classList.add('show');
+          const parentBtn = accordion.previousElementSibling;
+          if (parentBtn) {
+            parentBtn.classList.remove('collapsed');
+            parentBtn.classList.add('active-parent');
+          }
+        }
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  } catch(e) {}
+}
+
+// Fallback toggle accordion jika Bootstrap terlambat memuat
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.sidebar-accordion .accordion-button').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      const targetSelector = btn.getAttribute('data-bs-target');
+      if (!targetSelector) return;
+      const target = document.querySelector(targetSelector);
+      if (!target) return;
+      
+      // Jika bootstrap bundle belum siap, toggle manual
+      if (typeof bootstrap === 'undefined') {
+        e.preventDefault();
+        const isShown = target.classList.contains('show');
+        if (isShown) {
+          target.classList.remove('show');
+          btn.classList.add('collapsed');
+        } else {
+          target.classList.add('show');
+          btn.classList.remove('collapsed');
+        }
+      }
+    });
+  });
+});
+
+// Jalankan segera (sinkron), saat DOM siap, dan simpan referensi global
+updateSidebarUI();
+document.addEventListener('DOMContentLoaded', updateSidebarUI);
+window.addEventListener('load', updateSidebarUI);
+window.renderSidebarMenu = updateSidebarUI;
+</script>

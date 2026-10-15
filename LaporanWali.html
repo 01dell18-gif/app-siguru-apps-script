@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Kegiatan Wali Kelas - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-clipboard-data-fill text-info me-2"></i>Laporan Kegiatan Wali
+          Kelas</h4>
+        <p class="text-muted small mb-0">Rekapitulasi pembinaan kelas binaan, koordinasi paguyuban, dan administrasi
+          kesiswaan.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataWali()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-primary rounded-pill px-3 btn-sm shadow-sm" onclick="openPrintLaporan()">
+          <i class="bi bi-printer me-1"></i> Cetak PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Multi-Kriteria -->
+    <div class="card p-3 mb-4 shadow-xs">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Tahun Ajaran</label>
+          <select id="filterTA" class="form-select form-select-sm" onchange="loadLaporan()"></select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Semester</label>
+          <select id="filterSemester" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="Ganjil">Ganjil</option>
+            <option value="Genap">Genap</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Kelas / Rombel</label>
+          <select id="filterKelas" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Nama Wali Kelas</label>
+          <div id="divGuruFilter"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableWali">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;">No</th>
+              <th>Tanggal</th>
+              <th>Kelas</th>
+              <th>Nama Wali Kelas</th>
+              <th>Rincian Deskripsi Kegiatan</th>
+              <th>Bukti</th>
+              <th class="text-center" style="width: 80px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyWali">
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">Memuat data kegiatan wali kelas...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Edit Wali -->
+  <div class="modal fade" id="modalEditWali" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Edit Catatan Kegiatan Wali Kelas</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formEditWali" onsubmit="saveEditWali(event)">
+          <div class="modal-body">
+            <input type="hidden" id="editWaliId">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Tanggal</label>
+                <input type="date" id="editWaliTanggal" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Kelas</label>
+                <input type="text" id="editWaliKelas" class="form-control" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Rincian Deskripsi Kegiatan</label>
+              <textarea id="editWaliDeskripsi" class="form-control" rows="4" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
+              <div class="input-group">
+                <input type="text" id="editWaliBukti" class="form-control" placeholder="https://drive.google.com/...">
+                <label class="btn btn-outline-secondary" for="fileEditWali" title="Unggah Berkas Pengganti ke Drive"><i
+                    class="bi bi-upload"></i></label>
+                <input type="file" id="fileEditWali" class="d-none"
+                  onchange="uploadReplacementFile(this, 'editWaliBukti', 'folder_wali')">
+              </div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
+                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Laporan Wali Kelas';
+
+    let allLaporanWali = [];
+
+    function getModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return { show: function () { }, hide: function () { } };
+      let inst = bootstrap.Modal.getInstance(el);
+      if (!inst) inst = new bootstrap.Modal(el);
+      return inst;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Hidrasi instan dari AppBundle (0 detik)
+      hydrateFromCache();
+
+      // 2. Tarik data laporan dan sinkronisasi filter sekaligus dalam 1 panggilan cepat
+      loadLaporan();
+    });
+
+    function hydrateFromCache() {
+      const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+      if (!bundle) return;
+      applyBundleOptions(bundle);
+    }
+
+    function applyBundleOptions(b) {
+      if (!b) return;
+
+      // Dropdown TA
+      const taList = b.tahunAjaran || [];
+      if (taList.length > 0) {
+        const selTA = document.getElementById('filterTA');
+        const curTA = selTA.value;
+        selTA.innerHTML = '<option value="">Semua TA</option>';
+        taList.forEach(function (t) {
+          selTA.innerHTML += '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+        });
+        if (curTA) selTA.value = curTA;
+        else if (b.settings && b.settings.tahun_ajaran) selTA.value = b.settings.tahun_ajaran;
+        else selTA.value = taList[0];
+      }
+
+      // Semester
+      if (b.settings && b.settings.semester) {
+        const selSem = document.getElementById('filterSemester');
+        if (!selSem.value) selSem.value = b.settings.semester;
+      }
+
+      // Dropdown Kelas
+      const kList = b.kelas || [];
+      if (kList.length > 0) {
+        const selKelas = document.getElementById('filterKelas');
+        const curKls = selKelas.value;
+        selKelas.innerHTML = '<option value="">Semua Kelas</option>';
+        kList.forEach(function (k) {
+          selKelas.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+        if (curKls) selKelas.value = curKls;
+      }
+
+      // Guru Filter
+      setupGuruFilter(b.guruList || b.guruNama || b.guru);
+    }
+
+    function setupGuruFilter(guruList) {
+      const container = document.getElementById('divGuruFilter');
+      if (!container) return;
+      if (isSuperAdmin()) {
+        const sel = document.getElementById('filterGuru');
+        const cur = sel ? sel.value : '';
+        let html = '<select id="filterGuru" class="form-select form-select-sm" onchange="loadLaporan()"><option value="">Semua Wali Kelas</option>';
+        if (guruList && Array.isArray(guruList)) {
+          guruList.forEach(function (g) {
+            const nama = g.nama || g.nama_guru || g;
+            html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+          });
+        }
+        html += '</select>';
+        container.innerHTML = html;
+        const newSel = document.getElementById('filterGuru');
+        if (newSel && cur) newSel.value = cur;
+      } else {
+        container.innerHTML = '<input type="text" id="filterGuru" class="form-control form-control-sm bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci: Hanya melihat rekaman Anda">';
+      }
+    }
+
+    function loadLaporan() {
+      const tbody = document.getElementById('tbodyWali');
+      if (allLaporanWali.length === 0 && tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2 text-primary"></span>Memuat catatan kegiatan wali kelas...</td></tr>';
+      }
+
+      const guruEl = document.getElementById('filterGuru');
+      const filters = {
+        tahun_ajaran: document.getElementById('filterTA') ? document.getElementById('filterTA').value : '',
+        semester: document.getElementById('filterSemester') ? document.getElementById('filterSemester').value : '',
+        kelas: document.getElementById('filterKelas') ? document.getElementById('filterKelas').value : '',
+        nama_wali_kelas: guruEl ? guruEl.value : ''
+      };
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            applyBundleOptions(res);
+            if (typeof updateAppBundle === 'function') {
+              updateAppBundle({
+                settings: res.settings,
+                tahunAjaran: res.tahunAjaran,
+                kelas: res.kelas,
+                mapel: res.mapel,
+                guruNama: res.guruList
+              });
+            }
+            allLaporanWali = res.data || [];
+          } else {
+            allLaporanWali = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+          }
+          renderTable();
+        })
+        .withFailureHandler(function (err) {
+          showToast('error', 'Gagal memuat laporan: ' + err.message);
+          renderTable();
+        })
+        .getLaporanFullBundle('wali', filters);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tbodyWali');
+      if (allLaporanWali.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada catatan kegiatan wali kelas yang sesuai filter.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      allLaporanWali.forEach(function (r, idx) {
+        const canManage = canManageReport('wali', r);
+
+        let buktiHtml = '-';
+        if (r.link_bukti_wali) {
+          buktiHtml = '<a href="' + escapeHtml(r.link_bukti_wali) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
+            '<i class="bi bi-link-45deg"></i> Bukti' +
+            '</a>';
+        }
+
+        let aksiHtml = '';
+        if (canManage) {
+          aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="openEditModalByIndex(' + idx + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteRecord(' + r.id + ')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+            '</div>';
+        } else {
+          aksiHtml = '<span class="badge bg-light text-muted border">🔒 Terkunci</span>';
+        }
+
+        html += '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + formatDateIndo(r.tanggal) + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary fw-semibold">' + escapeHtml(r.kelas || '-') + '</span></td>' +
+          '<td><span class="badge bg-light text-dark border"><i class="bi bi-person-badge text-primary me-1"></i>' + escapeHtml(r.nama_wali_kelas) + '</span></td>' +
+          '<td><div class="text-break text-dark" style="max-width: 380px;">' + escapeHtml(r.deskripsi_kegiatan || '-') + '</div></td>' +
+          '<td>' + buktiHtml + '</td>' +
+          '<td class="text-center">' + aksiHtml + '</td>' +
+          '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function openEditModalByIndex(idx) {
+      const record = allLaporanWali[idx];
+      if (!record) return;
+      openEditModal(record);
+    }
+
+    function openEditModal(record) {
+      if (!record) return;
+      document.getElementById('editWaliId').value = record.id;
+      document.getElementById('editWaliTanggal').value = record.tanggal || '';
+      document.getElementById('editWaliKelas').value = record.kelas || '';
+      document.getElementById('editWaliDeskripsi').value = record.deskripsi_kegiatan || '';
+      document.getElementById('editWaliBukti').value = record.link_bukti_wali || '';
+      getModal('modalEditWali').show();
+    }
+
+    function saveEditWali(e) {
+      e.preventDefault();
+      const id = document.getElementById('editWaliId').value;
+      const payload = {
+        id: id,
+        tanggal: document.getElementById('editWaliTanggal').value,
+        kelas: document.getElementById('editWaliKelas').value.trim(),
+        deskripsi_kegiatan: document.getElementById('editWaliDeskripsi').value.trim(),
+        link_bukti_wali: document.getElementById('editWaliBukti').value.trim()
+      };
+
+      showLoading('Menyimpan perubahan...');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          Swal.close();
+          if (res && res.success) {
+            getModal('modalEditWali').hide();
+            showToast('success', 'Catatan kegiatan wali kelas berhasil diperbarui');
+            loadLaporan();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan');
+          }
+        })
+        .withFailureHandler(function (err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .updateLaporan('Hasil Wali', payload);
+    }
+
+    function deleteRecord(id) {
+      Swal.fire({
+        title: 'Hapus Kegiatan Wali Kelas?',
+        text: 'Data yang dihapus tidak dapat dipulihkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data...');
+          google.script.run
+            .withSuccessHandler(function (res) {
+              Swal.close();
+              if (res && res.success) {
+                showToast('success', 'Catatan kegiatan berhasil dihapus');
+                loadLaporan();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function (err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteLaporan('Hasil Wali', id);
+        }
+      });
+    }
+
+    // Export Excel
+    function exportDataWali() {
+      if (allLaporanWali.length === 0) {
+        showToast('info', 'Tidak ada data untuk diekspor');
+        return;
+      }
+      const rows = allLaporanWali.map(function (r, idx) {
+        return {
+          'No': idx + 1,
+          'Tanggal': r.tanggal || '',
+          'Tahun Ajaran': r.tahun_ajaran || '',
+          'Semester': r.semester || '',
+          'Kelas': r.kelas || '',
+          'Nama Wali Kelas': r.nama_wali_kelas || '',
+          'Deskripsi Kegiatan': r.deskripsi_kegiatan || '',
+          'Link Bukti': r.link_bukti_wali || ''
+        };
+      });
+      exportArrayToExcel(rows, 'Laporan_Kegiatan_Wali_' + new Date().toISOString().slice(0, 10), 'Kegiatan Wali Kelas');
+    }
+
+    // Open Print PDF in New Tab
+    function openPrintLaporan() {
+      const ta = document.getElementById('filterTA').value;
+      const sem = document.getElementById('filterSemester').value;
+      const kls = document.getElementById('filterKelas').value;
+      const grEl = document.getElementById('filterGuru');
+      const gr = grEl ? grEl.value : '';
+
+      const printUrl = getBaseUrl() + '?page=print-laporan&type=wali&ta=' + encodeURIComponent(ta) + '&semester=' + encodeURIComponent(sem) + '&kelas=' + encodeURIComponent(kls) + '&guru=' + encodeURIComponent(gr);
+      window.open(printUrl, '_blank');
+    }
+  </script>
+</body>
+
+</html>

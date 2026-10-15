@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGURU — Sistem Informasi Guru Terpadu</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      --navy-dark: #0b1120;
+      --navy-surface: #0f172a;
+      --navy-card: #1e293b;
+      --text-dark: #0f172a;
+      --text-muted: #475569;
+      --border-light: #cbd5e1;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      overflow-x: hidden;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    /* Navbar Modern Glassmorphism */
+    .public-navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    .navbar-brand-logo {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 2px;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background: radial-gradient(120% 120% at 50% 10%, #e0f2fe 0%, #f8fafc 100%);
+      padding: 5.5rem 0 4.5rem;
+      position: relative;
+    }
+    .badge-creator {
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.35rem 0.85rem;
+      border-radius: 50rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(255,0,0,0.25);
+      transition: all 0.25s ease;
+    }
+    .badge-creator:hover {
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255,0,0,0.35);
+    }
+
+    /* Stat Cards */
+    .stat-box {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .stat-box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 20px -3px rgba(0,0,0,0.08);
+    }
+
+    /* Feature Cards */
+    .module-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 2rem;
+      border: 1px solid #e2e8f0;
+      height: 100%;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .module-card:hover {
+      transform: translateY(-6px);
+      border-color: #93c5fd;
+      box-shadow: 0 20px 25px -5px rgba(37,99,235,0.1);
+    }
+    .module-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Footer */
+    .footer-dark {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 4.5rem 0 2rem;
+      border-top: 1px solid #1e293b;
+    }
+    .footer-dark a {
+      color: #cbd5e1;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .footer-dark a:hover {
+      color: #60a5fa;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar Publik -->
+  <nav class="navbar navbar-expand-lg public-navbar sticky-top">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="javascript:void(0)">
+        <img id="navLogo" src="https://drive.google.com/thumbnail?id=1GUfUommgYjV-cnhU0tTB8kRJy8iXagkI" alt="Logo" class="navbar-brand-logo">
+        <div>
+          <span class="fw-bold d-block text-dark" style="font-size: 1.05rem; line-height: 1.2;">SIGURU</span>
+          <span class="text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase;" id="navSchoolName">Sistem Informasi Guru</span>
+        </div>
+      </a>
+      <div class="d-flex align-items-center gap-2">
+        <a href="https://www.youtube.com/@fyjchannel?sub_confirmation=1" target="_blank" class="badge-creator d-none d-sm-inline-flex">
+          <i class="bi bi-youtube"></i> Subscribe FYJ Channel
+        </a>
+        <button class="btn btn-primary rounded-pill px-4 btn-sm fw-bold shadow-sm" onclick="goToLogin()">
+          <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Aplikasi
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-section text-center">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="d-inline-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill border shadow-xs mb-3">
+            <span class="badge bg-primary rounded-pill px-2">Versi 2.5</span>
+            <span class="text-dark small fw-semibold">Platform Administrasi Guru Terpadu — Full Google Sheets & Drive</span>
+          </div>
+
+          <h1 class="display-5 fw-extrabold text-dark mb-3">
+            Sistem Informasi Guru & Administrasi Pendidik
+          </h1>
+          <p class="lead text-muted mb-4" id="heroSchoolTitle">
+            Portal digitalisasi presensi siswa, jurnal KBM harian, layanan bimbingan konseling guru wali, kegiatan wali kelas, dan ekstrakurikuler terintegrasi.
+          </p>
+
+          <div class="d-flex flex-wrap justify-content-center gap-3 mb-5">
+            <button class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow" onclick="goToLogin()">
+              <i class="bi bi-grid-1x2-fill me-2"></i> Akses Portal Guru
+            </button>
+            <a href="https://www.youtube.com/@fyjchannel?sub_confirmation=1" target="_blank" class="btn btn-outline-danger btn-lg rounded-pill px-4 fw-bold">
+              <i class="bi bi-youtube me-2"></i> FYJ Channel YouTube
+            </a>
+          </div>
+
+          <!-- Academic Info Card -->
+          <div class="card p-3 rounded-4 shadow-sm border-0 bg-white text-start">
+            <div class="row g-3 align-items-center">
+              <div class="col-6 col-md-3 border-end">
+                <small class="text-muted d-block">Tahun Ajaran Aktif</small>
+                <strong class="text-primary fs-6" id="infoTA">2026/2027</strong>
+              </div>
+              <div class="col-6 col-md-3 border-end">
+                <small class="text-muted d-block">Semester</small>
+                <strong class="text-dark fs-6" id="infoSemester">Ganjil</strong>
+              </div>
+              <div class="col-6 col-md-3 border-end">
+                <small class="text-muted d-block">Kepala Sekolah</small>
+                <strong class="text-dark fs-6 text-truncate d-block" id="infoKepsek">Drs. H. Ahmad Fauzi, M.Pd.</strong>
+              </div>
+              <div class="col-6 col-md-3">
+                <small class="text-muted d-block">Wilayah / Titimangsa</small>
+                <strong class="text-dark fs-6" id="infoKabupaten">Klungkung</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Statistic Counters -->
+  <section class="py-5 bg-white border-top border-bottom">
+    <div class="container">
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="stat-box text-center">
+            <i class="bi bi-people-fill text-primary fs-2 mb-2 d-block"></i>
+            <h2 class="fw-extrabold text-dark mb-0" id="statGuru">0</h2>
+            <small class="text-muted fw-semibold">Guru & Staf Terdaftar</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-box text-center">
+            <i class="bi bi-mortarboard-fill text-info fs-2 mb-2 d-block"></i>
+            <h2 class="fw-extrabold text-dark mb-0" id="statSiswa">0</h2>
+            <small class="text-muted fw-semibold">Siswa / Peserta Didik</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-box text-center">
+            <i class="bi bi-journal-bookmark-fill text-warning fs-2 mb-2 d-block"></i>
+            <h2 class="fw-extrabold text-dark mb-0" id="statJurnal">0</h2>
+            <small class="text-muted fw-semibold">Jurnal KBM Terlaksana</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-box text-center">
+            <i class="bi bi-trophy-fill text-success fs-2 mb-2 d-block"></i>
+            <h2 class="fw-extrabold text-dark mb-0" id="statEkstra">0</h2>
+            <small class="text-muted fw-semibold">Cabang Ekstrakurikuler</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modul Showcase Section -->
+  <section class="py-5">
+    <div class="container">
+      <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 mb-2 fw-bold">Modul Administrasi</span>
+        <h3 class="fw-bold text-dark">Layanan Terpadu Administrasi Pendidik</h3>
+        <p class="text-muted">6 pilar modul utama untuk mempermudah tugas guru dan wali di sekolah.</p>
+      </div>
+
+      <div class="row g-4">
+        <!-- 1. Presensi -->
+        <div class="col-md-6 col-lg-4">
+          <div class="module-card">
+            <div>
+              <div class="module-icon bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
+              <h5 class="fw-bold text-dark mb-2">Presensi / Absensi Siswa</h5>
+              <p class="text-muted small mb-3">Pencatatan kehadiran grid cepat dengan segmented tombol Hadir (H), Izin (I), Sakit (S), Alpha (A), dan Dispen (D) serta fitur 'Tandai Semua Hadir'.</p>
+            </div>
+            <button class="btn btn-outline-success btn-sm rounded-pill w-100" onclick="goToLogin()">Buka Presensi</button>
+          </div>
+        </div>
+
+        <!-- 2. Jurnal Mengajar -->
+        <div class="col-md-6 col-lg-4">
+          <div class="module-card">
+            <div>
+              <div class="module-icon bg-primary-subtle text-primary"><i class="bi bi-journal-text"></i></div>
+              <h5 class="fw-bold text-dark mb-2">Jurnal Mengajar KBM</h5>
+              <p class="text-muted small mb-3">Rekam agenda KBM dengan auto-hitung Pertemuan Ke, model pembelajaran, ketuntasan materi, dan integrasi upload dokumen ke Google Drive.</p>
+            </div>
+            <button class="btn btn-outline-primary btn-sm rounded-pill w-100" onclick="goToLogin()">Buka Jurnal KBM</button>
+          </div>
+        </div>
+
+        <!-- 3. Guru Wali -->
+        <div class="col-md-6 col-lg-4">
+          <div class="module-card">
+            <div>
+              <div class="module-icon bg-danger-subtle text-danger"><i class="bi bi-chat-heart"></i></div>
+              <h5 class="fw-bold text-dark mb-2">Bimbingan Guru Wali</h5>
+              <p class="text-muted small mb-3">Layanan pendampingan karakter, konseling siswa asuh, komunikasi orang tua via WhatsApp, dan dokumentasi foto pembinaan.</p>
+            </div>
+            <button class="btn btn-outline-danger btn-sm rounded-pill w-100" onclick="goToLogin()">Buka Bimbingan</button>
+          </div>
+        </div>
+
+        <!-- 4. Wali Kelas -->
+        <div class="col-md-6 col-lg-4">
+          <div class="module-card">
+            <div>
+              <div class="module-icon bg-info-subtle text-info"><i class="bi bi-calendar2-week"></i></div>
+              <h5 class="fw-bold text-dark mb-2">Kegiatan Wali Kelas</h5>
+              <p class="text-muted small mb-3">Manajemen pembinaan rombel kelas binaan, agenda home visit, pertemuan paguyuban komite orang tua, dan pembagian rapor.</p>
+            </div>
+            <button class="btn btn-outline-info btn-sm rounded-pill w-100" onclick="goToLogin()">Buka Wali Kelas</button>
+          </div>
+        </div>
+
+        <!-- 5. Ekstrakurikuler -->
+        <div class="col-md-6 col-lg-4">
+          <div class="module-card">
+            <div>
+              <div class="module-icon bg-warning-subtle text-warning"><i class="bi bi-trophy"></i></div>
+              <h5 class="fw-bold text-dark mb-2">Kegiatan Ekstrakurikuler</h5>
+              <p class="text-muted small mb-3">Pencatatan latihan cabang ekstrakurikuler, presensi keanggotaan peserta didik, materi kepelatihan, dan persiapan kejuaraan.</p>
+            </div>
+            <button class="btn btn-outline-warning btn-sm rounded-pill w-100 text-dark" onclick="goToLogin()">Buka Ekstrakurikuler</button>
+          </div>
+        </div>
+
+        <!-- 6. Cetak PDF Resmi -->
+        <div class="col-md-6 col-lg-4">
+          <div class="module-card">
+            <div>
+              <div class="module-icon bg-purple-subtle text-purple" style="background-color: #f3e8ff; color: #6f42c1;"><i class="bi bi-printer"></i></div>
+              <h5 class="fw-bold text-dark mb-2">Rekapitulasi & Cetak PDF</h5>
+              <p class="text-muted small mb-3">Filter fleksibel multi-kriteria, ekspor lembar kerja Excel/CSV, dan pratinjau cetak PDF resmi dengan Kop Surat dan TTD digital Kepala Sekolah.</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill w-100" onclick="goToLogin()">Buka Rekap & Cetak</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer-dark">
+    <div class="container">
+      <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+              <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <h5 class="text-white fw-bold mb-0">SIGURU</h5>
+          </div>
+          <p class="small text-muted mb-3" id="footerDeskripsi">
+            Sistem Informasi Guru Terpadu — Solusi administrasi modern berbasis Google Apps Script & Full Google Sheets Database.
+          </p>
+          <a href="https://www.youtube.com/@fyjchannel?sub_confirmation=1" target="_blank" class="badge-creator">
+            <i class="bi bi-youtube"></i> FYJ Channel (Ferryxz Yamato)
+          </a>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <h6 class="text-white fw-bold mb-3">Navigasi</h6>
+          <ul class="list-unstyled small d-flex flex-column gap-2">
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Portal Login</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Dashboard</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Master Data</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Form Inputan</a></li>
+          </ul>
+        </div>
+
+        <div class="col-6 col-lg-3">
+          <h6 class="text-white fw-bold mb-3">Layanan Modul</h6>
+          <ul class="list-unstyled small d-flex flex-column gap-2">
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Presensi Siswa</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Jurnal Mengajar KBM</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Bimbingan Guru Wali</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Kegiatan Wali Kelas</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin()">Ekstrakurikuler</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-3">
+          <h6 class="text-white fw-bold mb-3">Identitas Sekolah</h6>
+          <p class="small text-muted mb-1" id="footerSekolah">SMK NEGERI 1 CONTOH</p>
+          <p class="small text-muted mb-1" id="footerKabupaten">Kabupaten Klungkung</p>
+          <p class="small text-muted mb-0">Tahun Ajaran: <span id="footerTA">2026/2027</span></p>
+        </div>
+      </div>
+
+      <div class="border-top border-secondary pt-3 d-flex flex-wrap justify-content-between align-items-center small">
+        <p class="mb-0 text-muted">&copy; 2026 SIGURU. Dikembangkan bersama <strong>FYJ Channel</strong>.</p>
+        <p class="mb-0 text-muted">Hak Cipta Dilindungi Undang-Undang.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const SERVER_URL = "<?= (typeof scriptUrl !== 'undefined') ? scriptUrl : '' ?>";
+    if (SERVER_URL) {
+      localStorage.setItem('siguru_script_url', SERVER_URL);
+    }
+
+    function getBaseUrl() {
+      const cached = localStorage.getItem('siguru_script_url');
+      if (cached && cached.indexOf('script.google.com') !== -1) return cached;
+      try {
+        if (window.top && window.top.location && window.top.location.href && window.top.location.href.indexOf('script.google.com') !== -1) {
+          const topUrl = window.top.location.href.split('?')[0];
+          localStorage.setItem('siguru_script_url', topUrl);
+          return topUrl;
+        }
+      } catch(e) {}
+      return window.location.href.split('?')[0];
+    }
+
+    function goToLogin() {
+      const base = getBaseUrl();
+      const targetUrl = base + (base.includes('?') ? '&' : '?') + 'page=login';
+      try {
+        const a = document.createElement('a');
+        a.href = targetUrl;
+        a.target = '_top';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 100);
+      } catch(e) {
+        window.top.location.href = targetUrl;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load public settings & stats
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (!data) return;
+          const st = data.settings || {};
+          if (st.logo) document.getElementById('navLogo').src = st.logo;
+          if (st.nama_sekolah) {
+            document.getElementById('navSchoolName').textContent = st.nama_sekolah;
+            document.getElementById('heroSchoolTitle').textContent = 'Portal digitalisasi administrasi guru untuk ' + st.nama_sekolah + '.';
+            document.getElementById('footerSekolah').textContent = st.nama_sekolah;
+          }
+          if (st.tahun_ajaran) {
+            document.getElementById('infoTA').textContent = st.tahun_ajaran;
+            document.getElementById('footerTA').textContent = st.tahun_ajaran;
+          }
+          if (st.semester) document.getElementById('infoSemester').textContent = st.semester;
+          if (st.kepala_sekolah) document.getElementById('infoKepsek').textContent = st.kepala_sekolah;
+          if (st.kabupaten) {
+            document.getElementById('infoKabupaten').textContent = st.kabupaten;
+            document.getElementById('footerKabupaten').textContent = st.kabupaten;
+          }
+
+          document.getElementById('statGuru').textContent = data.countGuru || 0;
+          document.getElementById('statSiswa').textContent = data.countMurid || 0;
+          document.getElementById('statJurnal').textContent = data.countJurnal || 0;
+          document.getElementById('statEkstra').textContent = data.countEkstra || 0;
+        })
+        .getDashboardData();
+    });
+  </script>
+</body>
+</html>

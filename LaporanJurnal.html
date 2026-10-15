@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Jurnal Mengajar - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-journal-text text-primary me-2"></i>Laporan Jurnal Mengajar
+          Guru</h4>
+        <p class="text-muted small mb-0">Rekapitulasi pelaksanaan KBM, target hari efektif, dan bukti dokumen
+          pembelajaran.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataJurnal()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </button>
+        <button class="btn btn-primary rounded-pill px-3 btn-sm shadow-sm" onclick="openPrintLaporan()">
+          <i class="bi bi-printer me-1"></i> Cetak PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Multi-Kriteria -->
+    <div class="card p-3 mb-4 shadow-xs">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Tahun Ajaran</label>
+          <select id="filterTA" class="form-select form-select-sm" onchange="loadLaporan()"></select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Semester</label>
+          <select id="filterSemester" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="Ganjil">Ganjil</option>
+            <option value="Genap">Genap</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Kelas</label>
+          <select id="filterKelas" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Mata Pelajaran</label>
+          <select id="filterMapel" class="form-select form-select-sm" onchange="loadLaporan()">
+            <option value="">Semua Mapel</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Guru Pengampu</label>
+          <div id="divGuruFilter"></div>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label fw-semibold small text-secondary">Target Hari Efektif</label>
+          <input type="number" id="targetEfektif" class="form-control form-control-sm fw-bold" value="16" min="1"
+            max="100" onchange="calcEfektivitas()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Ringkasan Efektivitas Mengajar Guru -->
+    <div class="card p-3 mb-4 border-0 shadow-xs bg-light">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+              style="width: 48px; height: 48px; font-size: 1.5rem;">
+              <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div>
+              <h6 class="fw-bold text-dark mb-1">Efektivitas KBM Terlaksana: <span id="spanPersen"
+                  class="text-primary">0%</span></h6>
+              <p class="text-muted small mb-0">Total <strong id="spanTotalJurnal" class="text-dark">0</strong> pertemuan
+                terlaksana dari target <strong id="spanTarget" class="text-dark">16</strong> pertemuan efektif.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mt-3 mt-md-0">
+          <div class="progress" style="height: 12px;">
+            <div id="progressBar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+              role="progressbar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Data Jurnal -->
+    <div class="card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tableJurnal">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;">No</th>
+              <th>Tanggal</th>
+              <th>Guru Pengampu</th>
+              <th>Mata Pelajaran (Jam)</th>
+              <th>Kelas</th>
+              <th class="text-center">Ke-</th>
+              <th>Model</th>
+              <th>Materi Pokok Pembelajaran</th>
+              <th>Siswa Tidak Hadir</th>
+              <th>Ketuntasan</th>
+              <th>Bukti</th>
+              <th class="text-center" style="width: 80px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyJurnal">
+            <tr>
+              <td colspan="12" class="text-center text-muted py-4">Memuat data jurnal...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Edit Jurnal -->
+  <div class="modal fade" id="modalEditJurnal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Edit Catatan Jurnal Mengajar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formEditJurnal" onsubmit="saveEditJurnal(event)">
+          <div class="modal-body">
+            <input type="hidden" id="editJurnalId">
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Tanggal</label>
+                <input type="date" id="editJurnalTanggal" class="form-control" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Jam Ke</label>
+                <input type="text" id="editJurnalJamKe" class="form-control">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Pertemuan Ke</label>
+                <input type="number" id="editJurnalPertemuan" class="form-control" min="1" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Model Pembelajaran</label>
+              <input type="text" id="editJurnalModel" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Materi Pembelajaran</label>
+              <textarea id="editJurnalMateri" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Murid Tidak Hadir</label>
+              <input type="text" id="editJurnalAbsent" class="form-control">
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Ketuntasan Materi</label>
+                <div class="input-group">
+                  <input type="text" id="editJurnalTuntas" list="listEditTuntas" class="form-control"
+                    placeholder="Tuntas / Belum / Ketik...">
+                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                    title="Pilih Opsi"></button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm py-1">
+                    <li><a class="dropdown-item py-1 small text-success fw-bold" href="javascript:void(0)"
+                        onclick="document.getElementById('editJurnalTuntas').value = 'tuntas'"><i
+                          class="bi bi-check-circle-fill me-1"></i>Tuntas</a></li>
+                    <li><a class="dropdown-item py-1 small text-danger fw-bold" href="javascript:void(0)"
+                        onclick="document.getElementById('editJurnalTuntas').value = 'belum_tuntas'"><i
+                          class="bi bi-exclamation-circle-fill me-1"></i>Belum Tuntas</a></li>
+                    <li>
+                      <hr class="dropdown-divider my-1">
+                    </li>
+                    <li><a class="dropdown-item py-1 small text-primary" href="javascript:void(0)"
+                        onclick="document.getElementById('editJurnalTuntas').value = ''; document.getElementById('editJurnalTuntas').focus();"><i
+                          class="bi bi-pencil-square me-1"></i>Ketik Manual...</a></li>
+                  </ul>
+                </div>
+                <datalist id="listEditTuntas">
+                  <option value="tuntas">
+                  <option value="belum_tuntas">
+                  <option value="Tuntas Sebagian">
+                  <option value="Perlu Remedial">
+                  <option value="Pengayaan / Lanjutan">
+                  <option value="Tuntas Bersyarat">
+                </datalist>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label small fw-semibold">Keterangan Ketuntasan</label>
+                <input type="text" id="editJurnalKetTuntas" class="form-control">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
+              <div class="input-group">
+                <input type="text" id="editJurnalBukti" class="form-control" placeholder="https://drive.google.com/...">
+                <label class="btn btn-outline-secondary" for="fileEditJurnal"
+                  title="Unggah Berkas Pengganti ke Drive"><i class="bi bi-upload"></i></label>
+                <input type="file" id="fileEditJurnal" class="d-none"
+                  onchange="uploadReplacementFile(this, 'editJurnalBukti', 'folder_jurnal')">
+              </div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
+                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Laporan Jurnal';
+
+    let allLaporanJurnal = [];
+
+    function getModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return { show: function () { }, hide: function () { } };
+      let inst = bootstrap.Modal.getInstance(el);
+      if (!inst) inst = new bootstrap.Modal(el);
+      return inst;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Hidrasi instan dari AppBundle (0 detik)
+      hydrateFromCache();
+
+      // 2. Tarik data laporan dan sinkronisasi filter sekaligus dalam 1 panggilan cepat
+      loadLaporan();
+    });
+
+    function hydrateFromCache() {
+      const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+      if (!bundle) return;
+      applyBundleOptions(bundle);
+    }
+
+    function applyBundleOptions(b) {
+      if (!b) return;
+
+      // Dropdown TA
+      const taList = b.tahunAjaran || [];
+      if (taList.length > 0) {
+        const selTA = document.getElementById('filterTA');
+        const curTA = selTA.value;
+        selTA.innerHTML = '<option value="">Semua TA</option>';
+        taList.forEach(function (t) {
+          selTA.innerHTML += '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+        });
+        if (curTA) selTA.value = curTA;
+        else if (b.settings && b.settings.tahun_ajaran) selTA.value = b.settings.tahun_ajaran;
+        else selTA.value = taList[0];
+      }
+
+      // Semester
+      if (b.settings && b.settings.semester) {
+        const selSem = document.getElementById('filterSemester');
+        if (!selSem.value) selSem.value = b.settings.semester;
+      }
+
+      // Dropdown Kelas
+      const kList = b.kelas || [];
+      if (kList.length > 0) {
+        const selKelas = document.getElementById('filterKelas');
+        const curKls = selKelas.value;
+        selKelas.innerHTML = '<option value="">Semua Kelas</option>';
+        kList.forEach(function (k) {
+          selKelas.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+        if (curKls) selKelas.value = curKls;
+      }
+
+      // Dropdown Mapel
+      const mList = b.mapel || [];
+      if (mList.length > 0) {
+        const selMapel = document.getElementById('filterMapel');
+        const curMpl = selMapel.value;
+        selMapel.innerHTML = '<option value="">Semua Mapel</option>';
+        mList.forEach(function (m) {
+          selMapel.innerHTML += '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
+        });
+        if (curMpl) selMapel.value = curMpl;
+      }
+
+      // Guru Filter
+      setupGuruFilter(b.guruList || b.guruNama || b.guru);
+    }
+
+    function setupGuruFilter(guruList) {
+      const container = document.getElementById('divGuruFilter');
+      if (!container) return;
+      if (isSuperAdmin()) {
+        const sel = document.getElementById('filterGuru');
+        const cur = sel ? sel.value : '';
+        let html = '<select id="filterGuru" class="form-select form-select-sm" onchange="loadLaporan()"><option value="">Semua Guru</option>';
+        if (guruList && Array.isArray(guruList)) {
+          guruList.forEach(function (g) {
+            const nama = g.nama || g.nama_guru || g;
+            html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+          });
+        }
+        html += '</select>';
+        container.innerHTML = html;
+        const newSel = document.getElementById('filterGuru');
+        if (newSel && cur) newSel.value = cur;
+      } else {
+        container.innerHTML = '<input type="text" id="filterGuru" class="form-control form-control-sm bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci: Hanya melihat rekaman Anda">';
+      }
+    }
+
+    function loadLaporan() {
+      const tbody = document.getElementById('tbodyJurnal');
+      if (allLaporanJurnal.length === 0 && tbody) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2 text-primary"></span>Memuat catatan jurnal...</td></tr>';
+      }
+
+      const guruEl = document.getElementById('filterGuru');
+      const filters = {
+        tahun_ajaran: document.getElementById('filterTA') ? document.getElementById('filterTA').value : '',
+        semester: document.getElementById('filterSemester') ? document.getElementById('filterSemester').value : '',
+        kelas: document.getElementById('filterKelas') ? document.getElementById('filterKelas').value : '',
+        mata_pelajaran: document.getElementById('filterMapel') ? document.getElementById('filterMapel').value : '',
+        nama_guru: guruEl ? guruEl.value : ''
+      };
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            applyBundleOptions(res);
+            if (typeof updateAppBundle === 'function') {
+              updateAppBundle({
+                settings: res.settings,
+                tahunAjaran: res.tahunAjaran,
+                kelas: res.kelas,
+                mapel: res.mapel,
+                guruNama: res.guruList
+              });
+            }
+            allLaporanJurnal = res.data || [];
+          } else {
+            allLaporanJurnal = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+          }
+          renderLaporanTable();
+        })
+        .withFailureHandler(function (err) {
+          showToast('error', 'Gagal memuat jurnal: ' + err.message);
+          renderLaporanTable();
+        })
+        .getLaporanFullBundle('jurnal', filters);
+    }
+
+    function calcEfektivitas() {
+      const target = parseInt(document.getElementById('targetEfektif').value) || 16;
+      const total = allLaporanJurnal.length;
+      const pct = target > 0 ? Math.round((total / target) * 100) : 0;
+
+      document.getElementById('spanTotalJurnal').textContent = total;
+      document.getElementById('spanTarget').textContent = target;
+      document.getElementById('spanPersen').textContent = pct + '%';
+
+      const pBar = document.getElementById('progressBar');
+      pBar.style.width = Math.min(pct, 100) + '%';
+      if (pct >= 85) {
+        pBar.className = 'progress-bar bg-success progress-bar-striped progress-bar-animated';
+      } else if (pct >= 70) {
+        pBar.className = 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
+      } else {
+        pBar.className = 'progress-bar bg-warning progress-bar-striped progress-bar-animated';
+      }
+    }
+
+    function renderLaporanTable() {
+      calcEfektivitas();
+      const tbody = document.getElementById('tbodyJurnal');
+
+      if (allLaporanJurnal.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-4">Tidak ada catatan jurnal mengajar yang sesuai filter.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      allLaporanJurnal.forEach(function (r, idx) {
+        const canManage = canManageReport('jurnal', r);
+
+        let buktiHtml = '-';
+        if (r.link_bukti_jurnal) {
+          buktiHtml = '<a href="' + escapeHtml(r.link_bukti_jurnal) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
+            '<i class="bi bi-link-45deg"></i> Bukti' +
+            '</a>';
+        }
+
+        let tuntasBadge = '';
+        const kt = String(r.ketuntasan_materi || '').toLowerCase().trim();
+        if (kt === 'tuntas') {
+          tuntasBadge = '<span class="badge bg-success-subtle text-success">🟢 Tuntas</span>';
+        } else if (kt === 'belum_tuntas' || kt === 'belum tuntas') {
+          tuntasBadge = '<span class="badge bg-danger-subtle text-danger">🔴 Belum</span>';
+        } else {
+          tuntasBadge = '<span class="badge bg-primary-subtle text-primary">✏️ ' + escapeHtml(r.ketuntasan_materi || '-') + '</span>';
+        }
+
+        let aksiHtml = '';
+        if (canManage) {
+          aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="openEditModalByIndex(' + idx + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteRecord(' + r.id + ')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+            '</div>';
+        } else {
+          aksiHtml = '<span class="badge bg-light text-muted border">🔒 Terkunci</span>';
+        }
+
+        html += '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + formatDateIndo(r.tanggal) + '</td>' +
+          '<td><span class="badge bg-light text-dark border"><i class="bi bi-person-badge text-primary me-1"></i>' + escapeHtml(r.nama_guru) + '</span></td>' +
+          '<td>' + escapeHtml(r.mata_pelajaran || '-') + (r.jam_ke ? ' <small class="text-muted">(' + escapeHtml(r.jam_ke) + ')</small>' : '') + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary fw-semibold">' + escapeHtml(r.kelas || '-') + '</span></td>' +
+          '<td class="text-center"><span class="badge bg-primary rounded-pill px-2">#' + (r.pertemuan_ke || 1) + '</span></td>' +
+          '<td><small class="text-muted">' + escapeHtml(r.model_pembelajaran || '-') + '</small></td>' +
+          '<td><div class="fw-semibold text-dark text-break" style="max-width: 250px;">' + escapeHtml(r.materi_pembelajaran || '-') + '</div></td>' +
+          '<td><small class="text-muted">' + escapeHtml(r.murid_tidak_hadir || '-') + '</small></td>' +
+          '<td>' + tuntasBadge + '</td>' +
+          '<td>' + buktiHtml + '</td>' +
+          '<td class="text-center">' + aksiHtml + '</td>' +
+          '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function openEditModalByIndex(idx) {
+      const record = allLaporanJurnal[idx];
+      if (!record) return;
+      openEditModal(record);
+    }
+
+    function openEditModal(record) {
+      if (!record) return;
+      document.getElementById('editJurnalId').value = record.id;
+      document.getElementById('editJurnalTanggal').value = record.tanggal || '';
+      document.getElementById('editJurnalJamKe').value = record.jam_ke || '';
+      document.getElementById('editJurnalPertemuan').value = record.pertemuan_ke || 1;
+      document.getElementById('editJurnalModel').value = record.model_pembelajaran || '';
+      document.getElementById('editJurnalMateri').value = record.materi_pembelajaran || '';
+      document.getElementById('editJurnalAbsent').value = record.murid_tidak_hadir || '';
+      document.getElementById('editJurnalTuntas').value = record.ketuntasan_materi || 'tuntas';
+      document.getElementById('editJurnalKetTuntas').value = record.keterangan_tuntas || '';
+      document.getElementById('editJurnalBukti').value = record.link_bukti_jurnal || '';
+      getModal('modalEditJurnal').show();
+    }
+
+    function saveEditJurnal(e) {
+      e.preventDefault();
+      const id = document.getElementById('editJurnalId').value;
+      const payload = {
+        id: id,
+        tanggal: document.getElementById('editJurnalTanggal').value,
+        jam_ke: document.getElementById('editJurnalJamKe').value.trim(),
+        pertemuan_ke: parseInt(document.getElementById('editJurnalPertemuan').value) || 1,
+        model_pembelajaran: document.getElementById('editJurnalModel').value.trim(),
+        materi_pembelajaran: document.getElementById('editJurnalMateri').value.trim(),
+        murid_tidak_hadir: document.getElementById('editJurnalAbsent').value.trim(),
+        ketuntasan_materi: document.getElementById('editJurnalTuntas').value,
+        keterangan_tuntas: document.getElementById('editJurnalKetTuntas').value.trim(),
+        link_bukti_jurnal: document.getElementById('editJurnalBukti').value.trim()
+      };
+
+      showLoading('Menyimpan perubahan...');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          Swal.close();
+          if (res && res.success) {
+            getModal('modalEditJurnal').hide();
+            showToast('success', 'Catatan jurnal berhasil diperbarui');
+            loadLaporan();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan');
+          }
+        })
+        .withFailureHandler(function (err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .updateLaporan('Hasil Jurnal', payload);
+    }
+
+    function deleteRecord(id) {
+      Swal.fire({
+        title: 'Hapus Jurnal Mengajar?',
+        text: 'Data yang dihapus tidak dapat dipulihkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus data...');
+          google.script.run
+            .withSuccessHandler(function (res) {
+              Swal.close();
+              if (res && res.success) {
+                showToast('success', 'Data jurnal berhasil dihapus');
+                loadLaporan();
+              } else {
+                showToast('error', res.message || 'Gagal menghapus');
+              }
+            })
+            .withFailureHandler(function (err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .deleteLaporan('Hasil Jurnal', id);
+        }
+      });
+    }
+
+    // Export Excel
+    function exportDataJurnal() {
+      if (allLaporanJurnal.length === 0) {
+        showToast('info', 'Tidak ada data untuk diekspor');
+        return;
+      }
+      const rows = allLaporanJurnal.map(function (r, idx) {
+        return {
+          'No': idx + 1,
+          'Tanggal': r.tanggal || '',
+          'Tahun Ajaran': r.tahun_ajaran || '',
+          'Semester': r.semester || '',
+          'Nama Guru': r.nama_guru || '',
+          'Mata Pelajaran': r.mata_pelajaran || '',
+          'Jam Ke': r.jam_ke || '',
+          'Kelas': r.kelas || '',
+          'Pertemuan Ke': r.pertemuan_ke || '',
+          'Model Pembelajaran': r.model_pembelajaran || '',
+          'Materi Pembelajaran': r.materi_pembelajaran || '',
+          'Murid Tidak Hadir': r.murid_tidak_hadir || '',
+          'Ketuntasan Materi': r.ketuntasan_materi || '',
+          'Keterangan Ketuntasan': r.keterangan_tuntas || '',
+          'Link Bukti': r.link_bukti_jurnal || ''
+        };
+      });
+      exportArrayToExcel(rows, 'Laporan_Jurnal_Guru_' + new Date().toISOString().slice(0, 10), 'Jurnal Guru');
+    }
+
+    // Open Print PDF in New Tab
+    function openPrintLaporan() {
+      const ta = document.getElementById('filterTA').value;
+      const sem = document.getElementById('filterSemester').value;
+      const kls = document.getElementById('filterKelas').value;
+      const mp = document.getElementById('filterMapel').value;
+      const grEl = document.getElementById('filterGuru');
+      const gr = grEl ? grEl.value : '';
+      const target = document.getElementById('targetEfektif').value || 16;
+
+      const printUrl = getBaseUrl() + '?page=print-laporan&type=jurnal&ta=' + encodeURIComponent(ta) + '&semester=' + encodeURIComponent(sem) + '&kelas=' + encodeURIComponent(kls) + '&mapel=' + encodeURIComponent(mp) + '&guru=' + encodeURIComponent(gr) + '&target_efektif=' + encodeURIComponent(target);
+      window.open(printUrl, '_blank');
+    }
+  </script>
+</body>
+
+</html>

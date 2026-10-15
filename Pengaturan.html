@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan Sistem - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+  <style>
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      min-height: 48px;
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 500;
+      color: #1e293b;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .tag-chip .btn-remove-tag {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+    }
+    .tag-chip .btn-remove-tag:hover {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-gear-wide-connected text-primary me-2"></i>Pengaturan Sistem</h4>
+        <p class="text-muted small mb-0">Kelola identitas sekolah, periode akademik aktif, tag master dinamis, dan pembersihan database.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="downloadTemplatePengaturan()">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Unduh Template
+        </button>
+        <button type="button" class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportPengaturan">
+          <i class="bi bi-upload me-1"></i> Import Data
+        </button>
+        <button type="button" class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportMasterPilihan()">
+          <i class="bi bi-file-earmark-excel me-1"></i> Export Master Pilihan
+        </button>
+        <button type="button" class="btn btn-danger rounded-pill px-3 btn-sm shadow-sm" onclick="showHapusDataModal()">
+          <i class="bi bi-radioactive me-1"></i> Tombol Sakti: Hapus Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Guide Post-Pembersihan -->
+    <div class="alert alert-primary border-0 shadow-xs rounded-4 p-3 mb-4 d-flex align-items-start gap-3">
+      <i class="bi bi-lightbulb-fill text-primary fs-3"></i>
+      <div>
+        <h6 class="fw-bold mb-1">Panduan Alur Pengisian Data Sekolah:</h6>
+        <div class="small text-muted">
+          <strong>Langkah 1:</strong> Atur Identitas Sekolah, Semester, Dropdown Tahun Ajaran, Rombel Kelas, Mapel, dan Ekstra di bawah lalu klik <em>Simpan Pengaturan</em>.<br>
+          <strong>Langkah 2:</strong> Isi Master Data (Data Guru, Siswa, Binaan, Ekstra) dan buat akun pengguna di <em>Manajemen User</em>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Pengaturan -->
+    <form id="formSettings" onsubmit="saveAllSettings(event)">
+      <!-- Card 1: Identitas Sekolah & Periode Akademik -->
+      <div class="card p-4 shadow-sm mb-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-building me-2 text-primary"></i>Identitas Sekolah & Periode Akademik</h5>
+        
+        <div class="row g-3">
+          <!-- Logo Sekolah -->
+          <div class="col-md-3 col-lg-2 text-center">
+            <label class="form-label fw-semibold small d-block">Logo Sekolah</label>
+            <div class="border rounded-3 p-2 bg-light mb-2 d-flex align-items-center justify-content-center" style="height: 110px;">
+              <img id="previewLogo" src="https://drive.google.com/thumbnail?id=1GUfUommgYjV-cnhU0tTB8kRJy8iXagkI" alt="Logo" class="img-fluid" style="max-height: 95px; object-fit: contain;">
+            </div>
+            <label class="btn btn-outline-secondary btn-sm w-100" for="fileLogo">
+              <i class="bi bi-upload me-1"></i> Ganti Logo
+            </label>
+            <input type="file" id="fileLogo" class="d-none" accept="image/*" onchange="uploadImageSetting(this, 'previewLogo', 'inputLogo')">
+            <input type="hidden" id="inputLogo">
+          </div>
+
+          <!-- Identitas Teks -->
+          <div class="col-md-9 col-lg-10">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label fw-semibold small">Nama Sekolah (Huruf Kapital) <span class="text-danger">*</span></label>
+                <input type="text" id="setNamaSekolah" class="form-control" required placeholder="SMK NEGERI 1 CONTOH">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small">Titimangsa / Kabupaten <span class="text-danger">*</span></label>
+                <input type="text" id="setKabupaten" class="form-control" required placeholder="Kabupaten Klungkung">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Nama Kepala Sekolah & Gelar <span class="text-danger">*</span></label>
+                <input type="text" id="setKepsek" class="form-control" required placeholder="Drs. H. Ahmad Fauzi, M.Pd.">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">NIP Kepala Sekolah <span class="text-danger">*</span></label>
+                <input type="text" id="setNipKepsek" class="form-control" required placeholder="19750815 199903 1 002">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Tahun Ajaran Aktif <span class="text-danger">*</span></label>
+                <select id="setTahunAjaranAktif" class="form-select"></select>
+                <small class="text-muted">Pilihan otomatis tersinkron dari Tag Manager Tahun Ajaran di bawah.</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Semester Aktif <span class="text-danger">*</span></label>
+                <select id="setSemester" class="form-select">
+                  <option value="Ganjil">Semester Ganjil</option>
+                  <option value="Genap">Semester Genap</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Kop Surat & Tanda Tangan Digital Kepala Sekolah -->
+      <div class="card p-4 shadow-sm mb-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-file-earmark-richtext me-2 text-info"></i>Kop Surat & Tanda Tangan Digital</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Kop Surat Resmi (URL Drive / Upload)</label>
+            <div class="input-group">
+              <input type="text" id="setKopSurat" class="form-control" placeholder="https://drive.google.com/...">
+              <label class="btn btn-outline-secondary" for="fileKop"><i class="bi bi-upload"></i></label>
+              <input type="file" id="fileKop" class="d-none" accept="image/*" onchange="uploadFileDirect(this, 'setKopSurat')">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Skala Tinggi Kop Surat PDF</label>
+            <select id="setKopSize" class="form-select">
+              <option value="70">70 px (Compact Ringkas)</option>
+              <option value="85" selected>85 px (Standar Resmi)</option>
+              <option value="105">105 px (Sedang)</option>
+              <option value="125">125 px (Besar Proporsional)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Tanda Tangan Digital Kepala Sekolah (URL Drive / Upload)</label>
+            <div class="input-group">
+              <input type="text" id="setTtdKepsek" class="form-control" placeholder="https://drive.google.com/...">
+              <label class="btn btn-outline-secondary" for="fileTtd"><i class="bi bi-upload"></i></label>
+              <input type="file" id="fileTtd" class="d-none" accept="image/*" onchange="uploadFileDirect(this, 'setTtdKepsek')">
+            </div>
+            <small class="text-muted">Gunakan gambar transparan (.png) untuk hasil cetak terbaik.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Tag Manager Pilihan Master Dinamis -->
+      <div class="card p-4 shadow-sm mb-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-tags-fill me-2 text-warning"></i>Tag Manager Pilihan Master Dinamis</h5>
+        <p class="text-muted small">Kelola daftar pilihan dropdown sistem secara interaktif. Ketik item baru lalu tekan <strong>Enter</strong> atau klik <strong>Tambah</strong>. Hapus dengan mengklik tanda <strong>x</strong>.</p>
+
+        <div class="row g-4">
+          <!-- Tag Manager: Tahun Ajaran -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small text-primary"><i class="bi bi-calendar3 me-1"></i>Daftar Pilihan Tahun Ajaran</label>
+            <div class="input-group input-group-sm mb-2">
+              <input type="text" id="inputNewTA" class="form-control" placeholder="Contoh: 2026/2027" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagItem('ta');}">
+              <button type="button" class="btn btn-primary" onclick="addTagItem('ta')"><i class="bi bi-plus-lg me-1"></i>Tambah</button>
+            </div>
+            <div id="tagsTA" class="tag-container"></div>
+          </div>
+
+          <!-- Tag Manager: Rombel / Kelas -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small text-success"><i class="bi bi-diagram-3 me-1"></i>Daftar Rombel / Kelas</label>
+            <div class="input-group input-group-sm mb-2">
+              <input type="text" id="inputNewKelas" class="form-control" placeholder="Contoh: X RPL 1" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagItem('kelas');}">
+              <button type="button" class="btn btn-success" onclick="addTagItem('kelas')"><i class="bi bi-plus-lg me-1"></i>Tambah</button>
+            </div>
+            <div id="tagsKelas" class="tag-container"></div>
+          </div>
+
+          <!-- Tag Manager: Mata Pelajaran -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small text-info"><i class="bi bi-book me-1"></i>Daftar Mata Pelajaran</label>
+            <div class="input-group input-group-sm mb-2">
+              <input type="text" id="inputNewMapel" class="form-control" placeholder="Contoh: Pemrograman Web" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagItem('mapel');}">
+              <button type="button" class="btn btn-info text-white" onclick="addTagItem('mapel')"><i class="bi bi-plus-lg me-1"></i>Tambah</button>
+            </div>
+            <div id="tagsMapel" class="tag-container"></div>
+          </div>
+
+          <!-- Tag Manager: Ekstrakurikuler -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small text-warning"><i class="bi bi-trophy me-1"></i>Cabang Ekstrakurikuler</label>
+            <div class="input-group input-group-sm mb-2">
+              <input type="text" id="inputNewEkstra" class="form-control" placeholder="Contoh: Pramuka" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagItem('ekstra');}">
+              <button type="button" class="btn btn-warning text-dark" onclick="addTagItem('ekstra')"><i class="bi bi-plus-lg me-1"></i>Tambah</button>
+            </div>
+            <div id="tagsEkstra" class="tag-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Tautan Folder Google Drive Penyimpanan Berkas -->
+      <div class="card p-4 shadow-sm mb-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-google me-2 text-danger"></i>Folder Penyimpanan Google Drive</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Folder Jurnal Mengajar</label>
+            <input type="text" id="setFolderJurnal" class="form-control" placeholder="https://drive.google.com/drive/folders/...">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Folder Foto Siswa</label>
+            <input type="text" id="setFolderFoto" class="form-control" placeholder="https://drive.google.com/drive/folders/...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Folder Bimbingan Guru Wali</label>
+            <input type="text" id="setFolderGuruWali" class="form-control" placeholder="https://drive.google.com/drive/folders/...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Folder Kegiatan Wali Kelas</label>
+            <input type="text" id="setFolderWali" class="form-control" placeholder="https://drive.google.com/drive/folders/...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Folder Ekstrakurikuler</label>
+            <input type="text" id="setFolderEkstra" class="form-control" placeholder="https://drive.google.com/drive/folders/...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button Footer -->
+      <div class="d-flex justify-content-end gap-2 mb-5">
+        <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow">
+          <i class="bi bi-check2-circle me-1"></i> Simpan Pengaturan Sistem
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <!-- Modal Tombol Sakti: Hapus Data -->
+  <div class="modal fade" id="modalHapusData" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-danger">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Tombol Sakti: Pembersihan Database</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-danger fw-bold">PERINGATAN: Tindakan ini akan mengosongkan seluruh data transaksi dan master sekolah untuk persiapan periode tahun ajaran baru!</p>
+          <ul class="small text-muted mb-3">
+            <li>Menghapus semua data presensi, jurnal mengajar, bimbingan, wali kelas, dan ekstra.</li>
+            <li>Menghapus berkas lampiran (foto, gambar, dokumen bukti) terkait di Google Drive.</li>
+            <li>Menghapus seluruh master data siswa dan guru.</li>
+            <li>Menghapus akun di Manajemen User & Hak Akses (RBAC) <strong>kecuali hak akses Super Admin dan Pelihat</strong>.</li>
+            <li class="text-success fw-bold">Menyimpan kembali data default untuk: Identitas Sekolah & Periode Akademik, Kop Surat & Tanda Tangan Digital, serta Folder Penyimpanan Google Drive di database.</li>
+          </ul>
+
+          <div class="form-check p-3 bg-light rounded border mb-3">
+            <input class="form-check-input" type="checkbox" id="chkConfirmReset" onchange="document.getElementById('btnConfirmHapus').disabled = !this.checked">
+            <label class="form-check-label small fw-bold text-dark" for="chkConfirmReset">
+              Saya memahami resiko ini dan setuju menghapus seluruh data transaksi & master sekolah.
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Tidak, Batalkan</button>
+          <button type="button" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold" id="btnConfirmHapus" disabled onclick="executePembersihan()">
+            <i class="bi bi-trash3-fill me-1"></i> Ya, Hapus & Kosongkan Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Import Pengaturan & Master Pilihan -->
+  <div class="modal fade" id="modalImportPengaturan" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Import Pengaturan & Master Pilihan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> Unggah berkas Excel (.xlsx) atau CSV (.csv) untuk mengisi daftar Tahun Ajaran, Kelas/Rombel, Mata Pelajaran, Cabang Ekstra, dan Identitas Sekolah secara instan.
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pilih File Excel / CSV</label>
+            <input type="file" id="fileImportPengaturan" class="form-control" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Mode Import</label>
+            <select id="importModePengaturan" class="form-select">
+              <option value="merge">Gabungkan dengan Data yang Ada (Merge)</option>
+              <option value="replace">Gantikan Seluruh Tag Pilihan Lama (Replace)</option>
+            </select>
+            <small class="text-muted">Mode Merge mempertahankan tag yang sudah ada dan menambahkan pilihan baru.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="processImportPengaturan()">Proses Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    if (!isSuperAdmin()) {
+      showToast('error', 'Akses ditolak: Hanya Super Admin');
+      setTimeout(function(){ navigateTo('dashboard'); }, 1200);
+    }
+    document.getElementById('headerPageTitle').textContent = 'Pengaturan';
+
+    let currentSettings = {};
+    let tagListTA = [];
+    let tagListKelas = [];
+    let tagListMapel = [];
+    let tagListEkstra = [];
+    let modalHapusInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      modalHapusInstance = new bootstrap.Modal(document.getElementById('modalHapusData'));
+      loadSettingsData();
+    });
+
+    function loadSettingsData() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      google.script.run
+        .withSuccessHandler(function(st) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          currentSettings = st || {};
+          populateForm(currentSettings);
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast('error', 'Gagal memuat pengaturan: ' + err.message);
+        })
+        .getSettings();
+    }
+
+    function populateForm(st) {
+      if (st.logo) {
+        document.getElementById('previewLogo').src = st.logo;
+        document.getElementById('inputLogo').value = st.logo;
+      }
+      document.getElementById('setNamaSekolah').value = st.nama_sekolah || '';
+      document.getElementById('setKabupaten').value = st.kabupaten || '';
+      document.getElementById('setKepsek').value = st.kepala_sekolah || '';
+      document.getElementById('setNipKepsek').value = st.nip_kepala_sekolah || '';
+      document.getElementById('setSemester').value = st.semester || 'Ganjil';
+
+      document.getElementById('setKopSurat').value = st.kop_surat || '';
+      document.getElementById('setKopSize').value = st.kop_size || '85';
+      document.getElementById('setTtdKepsek').value = st.ttd_kepsek || '';
+
+      document.getElementById('setFolderJurnal').value = st.folder_jurnal || '';
+      document.getElementById('setFolderFoto').value = st.folder_foto || '';
+      document.getElementById('setFolderGuruWali').value = st.folder_guru_wali || '';
+      document.getElementById('setFolderWali').value = st.folder_wali || '';
+      document.getElementById('setFolderEkstra').value = st.folder_ekstra || '';
+
+      // Parse Tags
+      tagListTA = parseTagString(st.list_tahun_ajaran || '["2025/2026", "2026/2027", "2027/2028"]');
+      tagListKelas = parseTagString(st.kelas || 'X RPL 1, X RPL 2, XI RPL 1, XI RPL 2');
+      tagListMapel = parseTagString(st.mata_pelajaran || 'Matematika, Bahasa Indonesia, Pemrograman Web');
+      tagListEkstra = parseTagString(st.list_ekstrakurikuler || 'Pramuka, Paskibra, Futsal, Basket');
+
+      renderAllTags();
+      syncTADropdown(st.tahun_ajaran);
+    }
+
+    function parseTagString(str) {
+      try {
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) return parsed.map(function(s){ return String(s).trim(); }).filter(Boolean);
+      } catch(e) {}
+      return String(str || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    }
+
+    function renderAllTags() {
+      renderTagContainer('tagsTA', tagListTA, 'ta');
+      renderTagContainer('tagsKelas', tagListKelas, 'kelas');
+      renderTagContainer('tagsMapel', tagListMapel, 'mapel');
+      renderTagContainer('tagsEkstra', tagListEkstra, 'ekstra');
+    }
+
+    function renderTagContainer(containerId, list, type) {
+      const container = document.getElementById(containerId);
+      if (list.length === 0) {
+        container.innerHTML = '<small class="text-muted p-2">Belum ada pilihan.</small>';
+        return;
+      }
+      let html = '';
+      list.forEach(function(item, idx) {
+        html += '<span class="tag-chip">' +
+          escapeHtml(item) +
+          '<button type="button" class="btn-remove-tag" onclick="removeTagItem(\'' + type + '\', ' + idx + ')" title="Hapus"><i class="bi bi-x-circle-fill"></i></button>' +
+        '</span>';
+      });
+      container.innerHTML = html;
+    }
+
+    function addTagItem(type) {
+      let inputEl, targetList, containerId;
+      if (type === 'ta') { inputEl = document.getElementById('inputNewTA'); targetList = tagListTA; containerId = 'tagsTA'; }
+      else if (type === 'kelas') { inputEl = document.getElementById('inputNewKelas'); targetList = tagListKelas; containerId = 'tagsKelas'; }
+      else if (type === 'mapel') { inputEl = document.getElementById('inputNewMapel'); targetList = tagListMapel; containerId = 'tagsMapel'; }
+      else if (type === 'ekstra') { inputEl = document.getElementById('inputNewEkstra'); targetList = tagListEkstra; containerId = 'tagsEkstra'; }
+
+      const val = inputEl.value.trim();
+      if (!val) return;
+      if (!targetList.includes(val)) {
+        targetList.push(val);
+        inputEl.value = '';
+        renderTagContainer(containerId, targetList, type);
+        if (type === 'ta') syncTADropdown();
+      } else {
+        showToast('warning', 'Pilihan sudah ada dalam daftar');
+      }
+    }
+
+    function removeTagItem(type, idx) {
+      let targetList, containerId;
+      if (type === 'ta') { targetList = tagListTA; containerId = 'tagsTA'; }
+      else if (type === 'kelas') { targetList = tagListKelas; containerId = 'tagsKelas'; }
+      else if (type === 'mapel') { targetList = tagListMapel; containerId = 'tagsMapel'; }
+      else if (type === 'ekstra') { targetList = tagListEkstra; containerId = 'tagsEkstra'; }
+
+      targetList.splice(idx, 1);
+      renderTagContainer(containerId, targetList, type);
+      if (type === 'ta') syncTADropdown();
+    }
+
+    function syncTADropdown(currentVal) {
+      const sel = document.getElementById('setTahunAjaranAktif');
+      const prev = currentVal || sel.value;
+      sel.innerHTML = '';
+      tagListTA.forEach(function(t) {
+        sel.innerHTML += '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+      });
+      if (prev && tagListTA.includes(prev)) sel.value = prev;
+    }
+
+    function uploadImageSetting(input, imgId, hiddenId) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      showLoading('Mengunggah logo...');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        const folderId = extractDriveFolderId(document.getElementById('setFolderFoto').value || currentSettings.folder_foto);
+        
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById(imgId).src = res.url;
+              document.getElementById(hiddenId).value = res.url;
+              showToast('success', 'Logo berhasil diunggah!');
+            } else {
+              showToast('error', res.message || 'Gagal unggah');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error: ' + err.message);
+          })
+          .uploadFileToDrive(base64Data, file.name, folderId || 'root');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function uploadFileDirect(input, targetInputId) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      showLoading('Mengunggah file ke Google Drive...');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        const folderId = extractDriveFolderId(document.getElementById('setFolderFoto').value || currentSettings.folder_foto);
+        
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById(targetInputId).value = res.url;
+              showToast('success', 'File berhasil diunggah!');
+            } else {
+              showToast('error', res.message || 'Gagal unggah');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error: ' + err.message);
+          })
+          .uploadFileToDrive(base64Data, file.name, folderId || 'root');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function extractDriveFolderId(url) {
+      if (!url) return null;
+      const m = String(url).match(/folders\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    function saveAllSettings(e) {
+      e.preventDefault();
+      const payload = {
+        logo: document.getElementById('inputLogo').value || currentSettings.logo,
+        nama_sekolah: document.getElementById('setNamaSekolah').value.trim(),
+        kabupaten: document.getElementById('setKabupaten').value.trim(),
+        kepala_sekolah: document.getElementById('setKepsek').value.trim(),
+        nip_kepala_sekolah: document.getElementById('setNipKepsek').value.trim(),
+        tahun_ajaran: document.getElementById('setTahunAjaranAktif').value,
+        list_tahun_ajaran: JSON.stringify(tagListTA),
+        semester: document.getElementById('setSemester').value,
+        kelas: tagListKelas.join(', '),
+        mata_pelajaran: JSON.stringify(tagListMapel),
+        list_ekstrakurikuler: JSON.stringify(tagListEkstra),
+        kop_surat: document.getElementById('setKopSurat').value.trim(),
+        kop_size: document.getElementById('setKopSize').value,
+        ttd_kepsek: document.getElementById('setTtdKepsek').value.trim(),
+        folder_jurnal: document.getElementById('setFolderJurnal').value.trim(),
+        folder_foto: document.getElementById('setFolderFoto').value.trim(),
+        folder_guru_wali: document.getElementById('setFolderGuruWali').value.trim(),
+        folder_wali: document.getElementById('setFolderWali').value.trim(),
+        folder_ekstra: document.getElementById('setFolderEkstra').value.trim()
+      };
+
+      showLoading('Menyimpan pengaturan sistem...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            showToast('success', res.message || 'Pengaturan berhasil disimpan!');
+            currentSettings = payload;
+            if (typeof invalidateAppBundle === 'function') invalidateAppBundle();
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .saveSettings(payload);
+    }
+
+    function showHapusDataModal() {
+      document.getElementById('chkConfirmReset').checked = false;
+      document.getElementById('btnConfirmHapus').disabled = true;
+      modalHapusInstance.show();
+    }
+
+    function executePembersihan() {
+      modalHapusInstance.hide();
+      Swal.fire({
+        title: 'Konfirmasi Terakhir!',
+        text: 'Apakah Anda benar-benar yakin ingin mengosongkan seluruh database transaksi dan master? Tindakan ini tidak dapat dibatalkan!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Ya, Kosongkan Sekarang',
+        cancelButtonText: 'Batal'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          showLoading('Mengosongkan seluruh data transaksi & master sekolah...');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              Swal.close();
+              if (res && res.success) {
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Database Berhasil Dibersihkan!',
+                  text: res.message || 'Seluruh data transaksi dan master telah dikosongkan. Pengaturan dan akun Super Admin tetap aman.',
+                  confirmButtonText: 'OK'
+                }).then(function() {
+                  if (typeof reloadCurrentAppPage === 'function') {
+                    reloadCurrentAppPage();
+                  } else {
+                    navigateTo('pengaturan');
+                  }
+                });
+              } else {
+                showToast('error', res.message || 'Gagal membersihkan data');
+              }
+            })
+            .withFailureHandler(function(err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .hapusSemuaData();
+        }
+      });
+    }
+
+    function exportMasterPilihan() {
+      const maxLen = Math.max(tagListTA.length, tagListKelas.length, tagListMapel.length, tagListEkstra.length);
+      const rows = [];
+      for (let i = 0; i < maxLen; i++) {
+        rows.push({
+          'No': i + 1,
+          'Tahun Ajaran': tagListTA[i] || '',
+          'Kelas / Rombel': tagListKelas[i] || '',
+          'Mata Pelajaran': tagListMapel[i] || '',
+          'Cabang Ekstrakurikuler': tagListEkstra[i] || ''
+        });
+      }
+      exportArrayToExcel(rows, 'Master_Pilihan_' + new Date().toISOString().slice(0,10), 'Master Pilihan');
+    }
+
+    function downloadTemplatePengaturan() {
+      const headers = ['No', 'Tahun Ajaran', 'Kelas / Rombel', 'Mata Pelajaran', 'Cabang Ekstrakurikuler', 'Nama Sekolah', 'Kepala Sekolah', 'NIP Kepala Sekolah', 'Kabupaten'];
+      const sampleRows = [
+        ['1', '2026/2027', 'X RPL 1', 'Matematika', 'Pramuka', 'SMK NEGERI 1 CONTOH', 'Drs. H. Ahmad Fauzi, M.Pd.', '19750815 199903 1 002', 'Klungkung'],
+        ['2', '2025/2026', 'X RPL 2', 'Bahasa Indonesia', 'PMR', '', '', '', ''],
+        ['3', '', 'XI RPL 1', 'Bahasa Inggris', 'Paskibra', '', '', '', ''],
+        ['4', '', 'XI RPL 2', 'Informatika', 'KIR', '', '', '', ''],
+        ['5', '', 'XII RPL 1', 'Pendidikan Agama', 'Rohis', '', '', '', '']
+      ];
+      downloadExcelTemplate(headers, sampleRows, 'Template_Pengaturan_Sistem', 'Pengaturan');
+    }
+
+    function processImportPengaturan() {
+      const fileInput = document.getElementById('fileImportPengaturan');
+      const mode = document.getElementById('importModePengaturan').value;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('warning', 'Pilih file Excel / CSV terlebih dahulu');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      readExcelOrCsvFile(file, function(rows) {
+        if (!rows || rows.length <= 1) {
+          showToast('error', 'File kosong atau tidak memiliki data.');
+          return;
+        }
+
+        const newTA = [];
+        const newKelas = [];
+        const newMapel = [];
+        const newEkstra = [];
+        let schoolInfo = null;
+
+        for (let i = 1; i < rows.length; i++) {
+          const parts = rows[i] || [];
+          if (parts.length >= 2) {
+            const ta = String(parts[1] !== undefined ? parts[1] : '').trim();
+            const kls = String(parts[2] !== undefined ? parts[2] : '').trim();
+            const mpl = String(parts[3] !== undefined ? parts[3] : '').trim();
+            const eks = String(parts[4] !== undefined ? parts[4] : '').trim();
+
+            if (ta) newTA.push(ta);
+            if (kls) newKelas.push(kls);
+            if (mpl) newMapel.push(mpl);
+            if (eks) newEkstra.push(eks);
+
+            if (i === 1) {
+              schoolInfo = {
+                nama_sekolah: String(parts[5] !== undefined ? parts[5] : '').trim(),
+                kepala_sekolah: String(parts[6] !== undefined ? parts[6] : '').trim(),
+                nip_kepala_sekolah: String(parts[7] !== undefined ? parts[7] : '').trim(),
+                kabupaten: String(parts[8] !== undefined ? parts[8] : '').trim()
+              };
+            }
+          }
+        }
+
+        if (mode === 'replace') {
+          tagListTA = [...new Set(newTA)];
+          tagListKelas = [...new Set(newKelas)];
+          tagListMapel = [...new Set(newMapel)];
+          tagListEkstra = [...new Set(newEkstra)];
+        } else {
+          newTA.forEach(function(t) { if (!tagListTA.includes(t)) tagListTA.push(t); });
+          newKelas.forEach(function(k) { if (!tagListKelas.includes(k)) tagListKelas.push(k); });
+          newMapel.forEach(function(m) { if (!tagListMapel.includes(m)) tagListMapel.push(m); });
+          newEkstra.forEach(function(e) { if (!tagListEkstra.includes(e)) tagListEkstra.push(e); });
+        }
+
+        if (schoolInfo) {
+          if (schoolInfo.nama_sekolah) document.getElementById('setNamaSekolah').value = schoolInfo.nama_sekolah;
+          if (schoolInfo.kepala_sekolah) document.getElementById('setKepsek').value = schoolInfo.kepala_sekolah;
+          if (schoolInfo.nip_kepala_sekolah) document.getElementById('setNipKepsek').value = schoolInfo.nip_kepala_sekolah;
+          if (schoolInfo.kabupaten) document.getElementById('setKabupaten').value = schoolInfo.kabupaten;
+        }
+
+        renderAllTags();
+        syncTADropdown();
+
+        // Tutup modal
+        const modalEl = document.getElementById('modalImportPengaturan');
+        if (modalEl) {
+          const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          inst.hide();
+        }
+        fileInput.value = '';
+
+        // Otomatis simpan ke server & invalidasi cache
+        saveAllSettings({ preventDefault: function(){} });
+      }, function(err) {
+        showToast('error', 'Gagal membaca berkas: ' + err.message);
+      });
+    }
+  </script>
+</body>
+</html>

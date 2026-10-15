@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kegiatan Ekstrakurikuler - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-activity text-warning me-2"></i>Formulir Kegiatan Ekstrakurikuler</h4>
+        <p class="text-muted small mb-0">Catat agenda latihan, presensi anggota, materi kepelatihan, dan dokumentasi ekstrakurikuler.</p>
+      </div>
+      <div class="d-flex gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-primary rounded-pill btn-sm" onclick="navigateTo('laporan-ekstra')">
+          <i class="bi bi-award me-1"></i> Lihat Laporan Ekstra
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card p-4 shadow-sm mb-4">
+      <form id="formEkstra" onsubmit="saveKegiatan(event)">
+        <!-- Row 1: Tanggal, Pembina, Cabang Ekstra -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Tanggal Kegiatan <span class="text-danger">*</span></label>
+            <input type="date" id="ekstraTanggal" class="form-control" required>
+          </div>
+          <div class="col-md-5 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Nama Pembina / Pelatih Ekstra <span class="text-danger">*</span></label>
+            <div id="divPembinaContainer">
+              <!-- Dropdown for Super Admin or Readonly Input for Teacher -->
+            </div>
+          </div>
+          <div class="col-md-4 col-sm-12">
+            <label class="form-label fw-semibold small text-secondary">Cabang Ekstrakurikuler <span class="text-danger">*</span></label>
+            <select id="ekstraCabang" class="form-select" required onchange="filterPesertaByEkstra()"></select>
+          </div>
+        </div>
+
+        <!-- Row 2: Kehadiran Anggota Ekstra -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
+            <span>Anggota Siswa yang Hadir Latihan <span class="text-danger">*</span></span>
+            <div class="d-flex gap-2">
+              <small class="text-success cursor-pointer fw-semibold" onclick="selectAllPeserta()"><i class="bi bi-check-all me-1"></i>Pilih Semua</small>
+              <small class="text-muted cursor-pointer" onclick="clearPesertaSelection()"><i class="bi bi-x-circle me-1"></i>Reset</small>
+            </div>
+          </label>
+          <div id="containerPesertaEkstra" class="p-3 border rounded bg-light d-flex flex-wrap gap-2" style="max-height: 180px; overflow-y: auto;">
+            <small class="text-muted">Pilih cabang ekstrakurikuler di atas.</small>
+          </div>
+          <small class="text-muted d-block mt-1">Daftar siswa disaring berdasarkan siswa yang terdaftar pada cabang ekstrakurikuler ini.</small>
+        </div>
+
+        <!-- Row 3: Materi / Agenda Latihan -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Ringkasan Materi / Latihan Ekstrakurikuler <span class="text-danger">*</span></label>
+          <textarea id="ekstraKegiatan" class="form-control" rows="3" required placeholder="Tuliskan materi kepelatihan, latihan fisik, persiapan lomba, pemantapan keterampilan, atau evaluasi program..."></textarea>
+        </div>
+
+        <!-- Row 4: Keterangan / Prestasi / Catatan -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Keterangan Tambahan / Catatan Khusus Latihan</label>
+          <input type="text" id="ekstraKeterangan" class="form-control" placeholder="Contoh: Latihan berjalan kondusif, persiapan turnamen antar sekolah minggu depan">
+        </div>
+
+        <!-- Row 5: Dokumentasi Bukti -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold small text-secondary d-block">Dokumentasi / Bukti Foto Kegiatan</label>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-8">
+              <input type="text" id="ekstraLinkBukti" class="form-control" placeholder="Tautan Google Drive atau klik tombol unggah di samping...">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+              <label class="btn btn-outline-primary w-100 mb-0" for="fileBuktiEkstra">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Unggah ke Drive
+              </label>
+              <input type="file" id="fileBuktiEkstra" class="d-none" accept="image/*,.pdf,.doc,.docx" onchange="handleBuktiUpload(this)">
+            </div>
+          </div>
+          <small class="text-muted d-block mt-1">Berkas disimpan ke folder Google Drive Ekstrakurikuler.</small>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <button type="reset" class="btn btn-light rounded-pill px-4">Reset</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSubmitEkstra">
+            <i class="bi bi-save2-fill me-1"></i> Simpan Kegiatan Ekstra
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Kegiatan Ekstrakurikuler';
+
+    let allMuridEkstra = [];
+    let driveFolderEkstra = '';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('ekstraTanggal').value = new Date().toISOString().slice(0,10);
+      setupPembinaField();
+      loadInitialData();
+    });
+
+    function setupPembinaField() {
+      const container = document.getElementById('divPembinaContainer');
+      if (isSuperAdmin()) {
+        container.innerHTML = '<select id="ekstraPembina" class="form-select"></select>';
+        google.script.run.withSuccessHandler(function(guruList) {
+          const sel = document.getElementById('ekstraPembina');
+          sel.innerHTML = '';
+          guruList.forEach(function(g) {
+            sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
+          });
+          if (user && user.nama) sel.value = user.nama;
+        }).getDaftarGuruNama();
+      } else {
+        container.innerHTML = '<input type="text" id="ekstraPembina" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci sesuai akun login Anda">';
+      }
+    }
+
+    function loadInitialData() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load Settings
+      google.script.run.withSuccessHandler(function(st) {
+        if (st && st.folder_ekstra) driveFolderEkstra = st.folder_ekstra;
+      }).getSettings();
+
+      // Load Cabang Ekstra
+      google.script.run.withSuccessHandler(function(ekstraList) {
+        const sel = document.getElementById('ekstraCabang');
+        sel.innerHTML = '';
+        ekstraList.forEach(function(e) {
+          sel.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
+        });
+
+        // Load Murid Ekstra
+        google.script.run.withSuccessHandler(function(dataEkstra) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          allMuridEkstra = dataEkstra || [];
+          filterPesertaByEkstra();
+        }).getDataMuridEkstra();
+      }).getDaftarEkstra();
+    }
+
+    function filterPesertaByEkstra() {
+      const ekstraVal = document.getElementById('ekstraCabang').value;
+      const container = document.getElementById('containerPesertaEkstra');
+
+      if (!ekstraVal) {
+        container.innerHTML = '<small class="text-muted">Pilih cabang ekstra di atas.</small>';
+        return;
+      }
+
+      let filtered = allMuridEkstra.filter(function(m){
+        return String(m.nama_ekstra || '').includes(ekstraVal);
+      });
+
+      if (filtered.length === 0) {
+        // Fallback jika belum ada yang terdaftar spesifik pada nama_ekstra ini
+        filtered = allMuridEkstra;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<small class="text-muted">Belum ada siswa terdaftar di cabang ekstra ini. Tambahkan di menu Siswa Ekstrakurikuler.</small>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(function(s) {
+        html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white">' +
+          '<input class="form-check-input peserta-chk" type="checkbox" id="peserta_' + s.id + '" value="' + escapeHtml(s.nama_murid) + '" checked>' +
+          '<label class="form-check-label small" for="peserta_' + s.id + '"><span class="fw-semibold">' + escapeHtml(s.nama_murid) + '</span> <span class="badge bg-secondary-subtle text-secondary">' + escapeHtml(s.kelas || '-') + '</span></label>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function selectAllPeserta() {
+      document.querySelectorAll('.peserta-chk').forEach(function(c){ c.checked = true; });
+    }
+
+    function clearPesertaSelection() {
+      document.querySelectorAll('.peserta-chk').forEach(function(c){ c.checked = false; });
+    }
+
+    function handleBuktiUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      showLoading('Mengunggah bukti ke Google Drive...');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        const folderId = extractDriveFolderId(driveFolderEkstra);
+
+        if (!folderId) {
+          Swal.close();
+          showToast('warning', 'Folder Ekstra Drive belum dikonfigurasi di Pengaturan');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById('ekstraLinkBukti').value = res.url;
+              showToast('success', 'Bukti berhasil diunggah!');
+            } else {
+              showToast('error', res.message || 'Gagal unggah');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error unggah: ' + err.message);
+          })
+          .uploadFileToDrive(base64Data, file.name, folderId);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function extractDriveFolderId(url) {
+      if (!url) return null;
+      const m = String(url).match(/folders\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    function saveKegiatan(e) {
+      e.preventDefault();
+      const pembinaEl = document.getElementById('ekstraPembina');
+      const pembina = pembinaEl ? pembinaEl.value : (user.nama || '');
+
+      const checkedStudents = [];
+      document.querySelectorAll('.peserta-chk:checked').forEach(function(c){ checkedStudents.push(c.value); });
+
+      if (checkedStudents.length === 0) {
+        showToast('warning', 'Pilih minimal satu siswa yang hadir');
+        return;
+      }
+
+      const cabang = (document.getElementById('ekstraCabang') && document.getElementById('ekstraCabang').value.trim()) || '';
+      const materi = (document.getElementById('ekstraKegiatan') && document.getElementById('ekstraKegiatan').value.trim()) || '';
+      const catatan = (document.getElementById('ekstraKeterangan') && document.getElementById('ekstraKeterangan').value.trim()) || '';
+      const fullKeterangan = materi ? (materi + (catatan ? ' (' + catatan + ')' : '')) : catatan;
+
+      const payload = {
+        tanggal: document.getElementById('ekstraTanggal').value,
+        pembina_ekstra: pembina,
+        kegiatan_ekstra: cabang || materi,
+        keterangan: fullKeterangan,
+        nama_murid: checkedStudents.join(', '),
+        link_bukti_ekstra: document.getElementById('ekstraLinkBukti').value.trim()
+      };
+
+      showLoading('Menyimpan kegiatan ekstra...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Kegiatan Ekstra Berhasil Disimpan!',
+              text: 'Catatan latihan ekstra berhasil disimpan.',
+              showCancelButton: true,
+              confirmButtonText: 'Lihat Laporan Ekstra',
+              cancelButtonText: 'Input Kegiatan Lain'
+            }).then(function(result) {
+              if (result.isConfirmed) {
+                navigateTo('laporan-ekstra');
+              } else {
+                document.getElementById('ekstraKegiatan').value = '';
+                document.getElementById('ekstraKeterangan').value = '';
+                document.getElementById('ekstraLinkBukti').value = '';
+              }
+            });
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan data');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .saveKegiatanEkstra(payload);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jurnal Mengajar Guru - SIGURU</title>
+  <?!= include('StyleCSS'); ?>
+</head>
+<body>
+  <?!= include('Sidebar'); ?>
+  <?!= include('Header'); ?>
+  
+  <main class="content-wrapper">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Formulir Jurnal Mengajar Guru</h4>
+        <p class="text-muted small mb-0">Catat keterlaksanaan KBM, materi pokok, kehadiran siswa, dan bukti dokumentasi pembelajaran.</p>
+      </div>
+      <div class="d-flex gap-2 mt-2 mt-md-0">
+        <button class="btn btn-outline-primary rounded-pill btn-sm" onclick="navigateTo('laporan-jurnal')">
+          <i class="bi bi-journal-text me-1"></i> Lihat Laporan Jurnal
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Jurnal Card -->
+    <div class="card p-4 shadow-sm mb-4">
+      <form id="formJurnal" onsubmit="saveJurnalKBM(event)">
+        <!-- Row 1: Identitas & Tanggal -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Tanggal KBM <span class="text-danger">*</span></label>
+            <input type="date" id="jurnalTanggal" class="form-control" required onchange="calcPertemuanKe()">
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Nama Guru Pengampu <span class="text-danger">*</span></label>
+            <div id="divGuruContainer">
+              <!-- Dropdown for Super Admin or Readonly Input for Teacher -->
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Mata Pelajaran <span class="text-danger">*</span></label>
+            <select id="jurnalMapel" class="form-select" required onchange="calcPertemuanKe()"></select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Kelas / Rombel <span class="text-danger">*</span></label>
+            <select id="jurnalKelas" class="form-select" required onchange="calcPertemuanKe(); loadStudentsForAbsence();"></select>
+          </div>
+        </div>
+
+        <!-- Row 2: Jam Ke, Pertemuan Ke, Model Pembelajaran -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Jam Ke</label>
+            <input type="text" id="jurnalJamKe" class="form-control" placeholder="Contoh: Jam Ke 1 - 4" value="Jam Ke 1 - 4">
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold small text-secondary">Pertemuan Ke <small class="text-primary fw-normal">(Otomatis)</small></label>
+            <div class="input-group">
+              <span class="input-group-text bg-light fw-bold text-primary">#</span>
+              <input type="number" id="jurnalPertemuanKe" class="form-control fw-bold" min="1" value="1" required>
+            </div>
+            <small class="text-muted">Dihitung otomatis dari riwayat jurnal kelas & mapel ini.</small>
+          </div>
+          <div class="col-md-4 col-sm-12">
+            <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
+              <span>Model / Metode Pembelajaran</span>
+              <small class="text-muted fw-normal">Pilih / Ketik Bebas</small>
+            </label>
+            <div class="input-group">
+              <input type="text" id="jurnalModel" list="listModelPembelajaran" class="form-control" placeholder="Pilih dari daftar atau ketik..." value="Problem Based Learning (PBL)">
+              <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Pilih Model Pembelajaran"></button>
+              <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="max-height: 280px; overflow-y: auto;">
+                <li><h6 class="dropdown-header small text-uppercase fw-bold text-muted">Pilihan Model Pembelajaran</h6></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Problem Based Learning (PBL)')"><i class="bi bi-check2 me-1 text-primary"></i>Problem Based Learning (PBL)</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Project Based Learning (PjBL)')"><i class="bi bi-check2 me-1 text-primary"></i>Project Based Learning (PjBL)</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Discovery / Inquiry Learning')"><i class="bi bi-check2 me-1 text-primary"></i>Discovery / Inquiry Learning</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Direct Instruction (Pengajaran Langsung)')"><i class="bi bi-check2 me-1 text-primary"></i>Direct Instruction (Pengajaran Langsung)</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Demonstrasi & Praktikum')"><i class="bi bi-check2 me-1 text-primary"></i>Demonstrasi & Praktikum</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Diskusi & Kolaborasi Kelompok')"><i class="bi bi-check2 me-1 text-primary"></i>Diskusi & Kolaborasi Kelompok</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Blended / Hybrid Learning')"><i class="bi bi-check2 me-1 text-primary"></i>Blended / Hybrid Learning</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Ceramah Interaktif & Tanya Jawab')"><i class="bi bi-check2 me-1 text-primary"></i>Ceramah Interaktif & Tanya Jawab</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Game-Based Learning / Gamifikasi')"><i class="bi bi-check2 me-1 text-primary"></i>Game-Based Learning / Gamifikasi</a></li>
+                <li><a class="dropdown-item py-1 small" href="javascript:void(0)" onclick="selectModelPreset('Diferensiasi Konten & Proses')"><i class="bi bi-check2 me-1 text-primary"></i>Diferensiasi Konten & Proses</a></li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li><a class="dropdown-item py-1 small text-primary fw-semibold" href="javascript:void(0)" onclick="focusModelInput()"><i class="bi bi-pencil-square me-1"></i>Ketik Model Kustom...</a></li>
+              </ul>
+            </div>
+            <datalist id="listModelPembelajaran">
+              <option value="Problem Based Learning (PBL)">
+              <option value="Project Based Learning (PjBL)">
+              <option value="Discovery / Inquiry Learning">
+              <option value="Direct Instruction (Pengajaran Langsung)">
+              <option value="Demonstrasi & Praktikum">
+              <option value="Diskusi & Kolaborasi Kelompok">
+              <option value="Blended / Hybrid Learning">
+              <option value="Ceramah Interaktif & Tanya Jawab">
+              <option value="Game-Based Learning / Gamifikasi">
+              <option value="Diferensiasi Konten & Proses">
+              <option value="Flipped Classroom">
+              <option value="Role Playing & Simulasi">
+              <option value="Contextual Teaching & Learning (CTL)">
+            </datalist>
+          </div>
+        </div>
+
+        <!-- Row 3: Materi Pokok -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Materi Pembelajaran / Kompetensi Dasar <span class="text-danger">*</span></label>
+          <textarea id="jurnalMateri" class="form-control" rows="3" required placeholder="Tuliskan materi pokok, topik pembahasan KBM, atau rincian praktikum siswa hari ini..."></textarea>
+        </div>
+
+        <!-- Row 4: Siswa Tidak Hadir (Multiselect Checkboxes) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
+            <span>Siswa yang Tidak Hadir <small class="text-muted fw-normal">(Opsional)</small></span>
+            <small class="text-primary cursor-pointer" onclick="clearAbsenceCheckboxes()"><i class="bi bi-x-circle me-1"></i>Hapus Pilihan</small>
+          </label>
+          <div id="containerMuridAbsent" class="p-3 border rounded bg-light d-flex flex-wrap gap-2" style="max-height: 150px; overflow-y: auto;">
+            <small class="text-muted">Pilih kelas di atas untuk memuat daftar siswa.</small>
+          </div>
+        </div>
+
+        <!-- Row 5: Ketuntasan Materi & Keterangan -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
+              <span>Ketuntasan Materi KBM</span>
+              <small class="text-muted fw-normal">Pilih / Ketik Manual</small>
+            </label>
+            <div class="p-2 border rounded bg-light">
+              <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="form-check m-0">
+                  <input class="form-check-input" type="radio" name="ketuntasan" id="tuntasYa" value="tuntas" checked onchange="handleKetuntasanRadioChange()">
+                  <label class="form-check-label text-success fw-bold small cursor-pointer" for="tuntasYa">
+                    <i class="bi bi-check-circle-fill me-1"></i>Tuntas
+                  </label>
+                </div>
+                <div class="form-check m-0">
+                  <input class="form-check-input" type="radio" name="ketuntasan" id="tuntasTidak" value="belum_tuntas" onchange="handleKetuntasanRadioChange()">
+                  <label class="form-check-label text-danger fw-bold small cursor-pointer" for="tuntasTidak">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>Belum Tuntas
+                  </label>
+                </div>
+                <div class="form-check m-0">
+                  <input class="form-check-input" type="radio" name="ketuntasan" id="tuntasManualRadio" value="manual" onchange="handleKetuntasanRadioChange()">
+                  <label class="form-check-label text-primary fw-semibold small cursor-pointer" for="tuntasManualRadio">
+                    <i class="bi bi-pencil-square me-1"></i>Ketik Manual
+                  </label>
+                </div>
+              </div>
+              <div id="divKetuntasanManual" class="mt-2" style="display: none;">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white text-primary"><i class="bi bi-pencil"></i></span>
+                  <input type="text" id="jurnalKetuntasanManual" list="listPresetKetuntasan" class="form-control" placeholder="Ketik status ketuntasan (misal: Tuntas Sebagian, Perlu Remedial, dll)...">
+                </div>
+                <datalist id="listPresetKetuntasan">
+                  <option value="Tuntas Sebagian">
+                  <option value="Perlu Remedial">
+                  <option value="Pengayaan / Lanjutan">
+                  <option value="Tuntas Bersyarat">
+                  <option value="75% Tercapai">
+                  <option value="Materi Diulang">
+                </datalist>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <label class="form-label fw-semibold small text-secondary">Keterangan / Catatan Hambatan Pembelajaran</label>
+            <input type="text" id="jurnalKetTuntas" class="form-control" placeholder="Contoh: KBM berjalan lancar sesuai RPP / Ada materi lanjutan di pertemuan berikutnya">
+          </div>
+        </div>
+
+        <!-- Row 6: Upload Bukti / Dokumentasi KBM -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold small text-secondary d-block">Dokumentasi / Bukti Pembelajaran (Foto / RPP / Lembar Kerja)</label>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-8">
+              <input type="text" id="jurnalLinkBukti" class="form-control" placeholder="Tautan Google Drive berkas / foto atau klik unggah di samping...">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+              <label class="btn btn-outline-primary w-100 mb-0" for="fileBuktiJurnal">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Unggah ke Drive
+              </label>
+              <input type="file" id="fileBuktiJurnal" class="d-none" accept="image/*,.pdf,.doc,.docx" onchange="handleBuktiUpload(this)">
+            </div>
+          </div>
+          <small class="text-muted d-block mt-1">Berkas yang diunggah akan otomatis disimpan ke Google Drive folder jurnal.</small>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <button type="reset" class="btn btn-light rounded-pill px-4">Reset</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSubmitJurnal">
+            <i class="bi bi-save2-fill me-1"></i> Simpan Jurnal Mengajar
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <?!= include('AppJS'); ?>
+  <script>
+    const user = requireLogin();
+    document.getElementById('headerPageTitle').textContent = 'Jurnal Mengajar';
+
+    let allMuridData = [];
+    let driveFolderJurnal = '';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('jurnalTanggal').value = new Date().toISOString().slice(0,10);
+      setupGuruField();
+      loadFilterOptions();
+    });
+
+    function setupGuruField() {
+      const container = document.getElementById('divGuruContainer');
+      if (isSuperAdmin()) {
+        container.innerHTML = '<select id="jurnalGuru" class="form-select" onchange="calcPertemuanKe()"></select>';
+        google.script.run.withSuccessHandler(function(guruList) {
+          const sel = document.getElementById('jurnalGuru');
+          sel.innerHTML = '';
+          guruList.forEach(function(g) {
+            sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
+          });
+          if (user && user.nama) sel.value = user.nama;
+          calcPertemuanKe();
+        }).getDaftarGuruNama();
+      } else {
+        container.innerHTML = '<input type="text" id="jurnalGuru" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci sesuai akun login Anda">';
+      }
+    }
+
+    function loadFilterOptions() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      // Load Settings for Drive Folder
+      google.script.run.withSuccessHandler(function(st) {
+        if (st && st.folder_jurnal) driveFolderJurnal = st.folder_jurnal;
+      }).getSettings();
+
+      // Load Mapel
+      google.script.run.withSuccessHandler(function(mapelList) {
+        const selMapel = document.getElementById('jurnalMapel');
+        selMapel.innerHTML = '';
+        mapelList.forEach(function(m) {
+          selMapel.innerHTML += '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
+        });
+        calcPertemuanKe();
+      }).getDaftarMapel();
+
+      // Load Kelas
+      google.script.run.withSuccessHandler(function(kelasList) {
+        const selKelas = document.getElementById('jurnalKelas');
+        selKelas.innerHTML = '';
+        kelasList.forEach(function(k) {
+          selKelas.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+
+        // Load all murid
+        google.script.run.withSuccessHandler(function(dataMurid) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          allMuridData = dataMurid || [];
+          loadStudentsForAbsence();
+          calcPertemuanKe();
+        }).getDataMurid();
+      }).getDaftarKelas();
+    }
+
+    function calcPertemuanKe() {
+      const guruEl = document.getElementById('jurnalGuru');
+      const guru = guruEl ? guruEl.value : (user.nama || '');
+      const mapel = document.getElementById('jurnalMapel').value;
+      const kelas = document.getElementById('jurnalKelas').value;
+
+      if (!guru || !mapel || !kelas) return;
+
+      google.script.run.withSuccessHandler(function(ke) {
+        document.getElementById('jurnalPertemuanKe').value = ke || 1;
+      }).getPertemuanKe(guru, mapel, kelas);
+    }
+
+    function loadStudentsForAbsence() {
+      const kelas = document.getElementById('jurnalKelas').value;
+      const container = document.getElementById('containerMuridAbsent');
+
+      if (!kelas) {
+        container.innerHTML = '<small class="text-muted">Pilih kelas di atas.</small>';
+        return;
+      }
+
+      const filtered = allMuridData.filter(function(m){ return m.kelas === kelas; });
+      if (filtered.length === 0) {
+        container.innerHTML = '<small class="text-muted">Tidak ada siswa terdaftar di kelas ' + escapeHtml(kelas) + '.</small>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(function(s) {
+        html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white">' +
+          '<input class="form-check-input absent-chk" type="checkbox" id="abs_' + s.id + '" value="' + escapeHtml(s.nama_murid) + '">' +
+          '<label class="form-check-label small" for="abs_' + s.id + '">' + escapeHtml(s.nama_murid) + '</label>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function clearAbsenceCheckboxes() {
+      document.querySelectorAll('.absent-chk').forEach(function(c){ c.checked = false; });
+    }
+
+    function handleBuktiUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      showLoading('Mengunggah bukti ke Google Drive...');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        const folderId = extractDriveFolderId(driveFolderJurnal);
+
+        if (!folderId) {
+          Swal.close();
+          showToast('warning', 'Folder Jurnal Drive belum dikonfigurasi di Pengaturan');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById('jurnalLinkBukti').value = res.url;
+              showToast('success', 'Bukti berhasil diunggah!');
+            } else {
+              showToast('error', res.message || 'Gagal unggah bukti');
+            }
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error unggah: ' + err.message);
+          })
+          .uploadFileToDrive(base64Data, file.name, folderId);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function extractDriveFolderId(url) {
+      if (!url) return null;
+      const m = String(url).match(/folders\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    function selectModelPreset(val) {
+      const inp = document.getElementById('jurnalModel');
+      if (inp) {
+        inp.value = val;
+        inp.focus();
+      }
+    }
+
+    function focusModelInput() {
+      const inp = document.getElementById('jurnalModel');
+      if (inp) {
+        inp.value = '';
+        inp.placeholder = 'Ketik model / metode pembelajaran kustom...';
+        inp.focus();
+      }
+    }
+
+    function handleKetuntasanRadioChange() {
+      const isManual = document.getElementById('tuntasManualRadio') && document.getElementById('tuntasManualRadio').checked;
+      const div = document.getElementById('divKetuntasanManual');
+      if (div) {
+        div.style.display = isManual ? 'block' : 'none';
+        if (isManual) {
+          const inp = document.getElementById('jurnalKetuntasanManual');
+          if (inp) inp.focus();
+        }
+      }
+    }
+
+    function saveJurnalKBM(e) {
+      e.preventDefault();
+      const guruEl = document.getElementById('jurnalGuru');
+      const guru = guruEl ? guruEl.value : (user.nama || '');
+
+      const absentList = [];
+      document.querySelectorAll('.absent-chk:checked').forEach(function(c){ absentList.push(c.value); });
+      const absentStr = absentList.length > 0 ? absentList.join(', ') : '-';
+
+      const ketuntasanRadio = document.querySelector('input[name="ketuntasan"]:checked');
+      let ketuntasan = ketuntasanRadio ? ketuntasanRadio.value : 'tuntas';
+      if (ketuntasan === 'manual') {
+        const manualVal = document.getElementById('jurnalKetuntasanManual').value.trim();
+        ketuntasan = manualVal || 'Tuntas Sebagian';
+      }
+
+      const payload = {
+        tanggal: document.getElementById('jurnalTanggal').value,
+        nama_guru: guru,
+        mata_pelajaran: document.getElementById('jurnalMapel').value,
+        jam_ke: document.getElementById('jurnalJamKe').value.trim(),
+        kelas: document.getElementById('jurnalKelas').value,
+        pertemuan_ke: parseInt(document.getElementById('jurnalPertemuanKe').value) || 1,
+        model_pembelajaran: document.getElementById('jurnalModel').value.trim(),
+        materi_pembelajaran: document.getElementById('jurnalMateri').value.trim(),
+        murid_tidak_hadir: absentStr,
+        ketuntasan_materi: ketuntasan,
+        keterangan_tuntas: document.getElementById('jurnalKetTuntas').value.trim(),
+        link_bukti_jurnal: document.getElementById('jurnalLinkBukti').value.trim()
+      };
+
+      showLoading('Menyimpan jurnal mengajar...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          Swal.close();
+          if (res && res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Jurnal Berhasil Disimpan!',
+              text: 'Catatan KBM pertemuan ke-' + payload.pertemuan_ke + ' berhasil disimpan.',
+              showCancelButton: true,
+              confirmButtonText: 'Lihat Laporan Jurnal',
+              cancelButtonText: 'Input Pertemuan Lain'
+            }).then(function(result) {
+              if (result.isConfirmed) {
+                navigateTo('laporan-jurnal');
+              } else {
+                document.getElementById('jurnalMateri').value = '';
+                document.getElementById('jurnalKetTuntas').value = '';
+                document.getElementById('jurnalLinkBukti').value = '';
+                document.getElementById('tuntasYa').checked = true;
+                handleKetuntasanRadioChange();
+                document.getElementById('jurnalKetuntasanManual').value = '';
+                clearAbsenceCheckboxes();
+                calcPertemuanKe();
+              }
+            });
+          } else {
+            showToast('error', res.message || 'Gagal menyimpan jurnal');
+          }
+        })
+        .withFailureHandler(function(err) {
+          Swal.close();
+          showToast('error', 'Error: ' + err.message);
+        })
+        .saveJurnal(payload);
+    }
+  </script>
+</body>
+</html>
