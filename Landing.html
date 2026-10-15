@@ -122,20 +122,72 @@
       margin-bottom: 1.25rem;
     }
 
-    /* Footer */
+    /* Footer Modern High-Contrast & Clear Typography */
     .footer-dark {
-      background: #0f172a;
-      color: #94a3b8;
-      padding: 4.5rem 0 2rem;
-      border-top: 1px solid #1e293b;
+      background: linear-gradient(180deg, #0b1329 0%, #060b18 100%);
+      color: #e2e8f0;
+      padding: 4.5rem 0 2.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .footer-dark a {
-      color: #cbd5e1;
+    .footer-dark h5, .footer-dark h6 {
+      color: #ffffff !important;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .footer-dark p, 
+    .footer-dark .footer-desc {
+      color: #cbd5e1 !important;
+      line-height: 1.65;
+    }
+    .footer-dark .footer-school-title {
+      color: #ffffff !important;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+    }
+    .footer-dark .footer-school-sub {
+      color: #cbd5e1 !important;
+      font-size: 0.86rem;
+    }
+    .footer-dark .badge-ta {
+      background: rgba(37, 99, 235, 0.22);
+      color: #93c5fd !important;
+      border: 1px solid rgba(96, 165, 250, 0.4);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    .footer-dark a.footer-nav-link {
+      color: #cbd5e1 !important;
       text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.86rem;
+    }
+    .footer-dark a.footer-nav-link:hover {
+      color: #60a5fa !important;
+      transform: translateX(4px);
+    }
+    .footer-dark a.footer-nav-link i {
+      color: #64748b;
+      font-size: 0.72rem;
       transition: color 0.2s ease;
     }
-    .footer-dark a:hover {
+    .footer-dark a.footer-nav-link:hover i {
       color: #60a5fa;
+    }
+    .footer-dark .footer-bottom-divider {
+      border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+    .footer-dark .footer-copy {
+      color: #94a3b8 !important;
+      font-size: 0.82rem;
+    }
+    .footer-dark .footer-copy strong {
+      color: #ffffff !important;
     }
   </style>
 </head>
@@ -155,7 +207,7 @@
         <a href="https://www.youtube.com/@fyjchannel?sub_confirmation=1" target="_blank" class="badge-creator d-none d-sm-inline-flex">
           <i class="bi bi-youtube"></i> Subscribe FYJ Channel
         </a>
-        <button class="btn btn-primary rounded-pill px-4 btn-sm fw-bold shadow-sm" onclick="goToLogin()">
+        <button class="btn btn-primary rounded-pill px-4 btn-sm fw-bold shadow-sm" id="btnNavMasuk" onclick="goToLogin()">
           <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Aplikasi
         </button>
       </div>
@@ -180,7 +232,7 @@
           </p>
 
           <div class="d-flex flex-wrap justify-content-center gap-3 mb-5">
-            <button class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow" onclick="goToLogin()">
+            <button class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow" id="btnHeroMasuk" onclick="goToLogin()">
               <i class="bi bi-grid-1x2-fill me-2"></i> Akses Portal Guru
             </button>
             <a href="https://www.youtube.com/@fyjchannel?sub_confirmation=1" target="_blank" class="btn btn-outline-danger btn-lg rounded-pill px-4 fw-bold">
@@ -341,12 +393,12 @@
       <div class="row g-4 mb-4">
         <div class="col-lg-4">
           <div class="d-flex align-items-center gap-2 mb-3">
-            <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+            <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px;">
               <i class="bi bi-mortarboard-fill"></i>
             </div>
             <h5 class="text-white fw-bold mb-0">SIGURU</h5>
           </div>
-          <p class="small text-muted mb-3" id="footerDeskripsi">
+          <p class="small mb-3 footer-desc" id="footerDeskripsi">
             Sistem Informasi Guru Terpadu — Solusi administrasi modern berbasis Google Apps Script & Full Google Sheets Database.
           </p>
           <a href="https://www.youtube.com/@fyjchannel?sub_confirmation=1" target="_blank" class="badge-creator">
@@ -355,37 +407,40 @@
         </div>
 
         <div class="col-6 col-lg-2">
-          <h6 class="text-white fw-bold mb-3">Navigasi</h6>
-          <ul class="list-unstyled small d-flex flex-column gap-2">
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Portal Login</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Dashboard</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Master Data</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Form Inputan</a></li>
+          <h6 class="text-white fw-bold mb-3"><i class="bi bi-compass me-1 text-primary"></i> Navigasi</h6>
+          <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+            <li><a href="javascript:void(0)" onclick="goToLogin('login')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Portal Login</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('dashboard')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Dashboard</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('master-guru')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Master Data</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('form-absen')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Form Inputan</a></li>
           </ul>
         </div>
 
         <div class="col-6 col-lg-3">
-          <h6 class="text-white fw-bold mb-3">Layanan Modul</h6>
-          <ul class="list-unstyled small d-flex flex-column gap-2">
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Presensi Siswa</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Jurnal Mengajar KBM</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Bimbingan Guru Wali</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Kegiatan Wali Kelas</a></li>
-            <li><a href="javascript:void(0)" onclick="goToLogin()">Ekstrakurikuler</a></li>
+          <h6 class="text-white fw-bold mb-3"><i class="bi bi-grid-fill me-1 text-info"></i> Layanan Modul</h6>
+          <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+            <li><a href="javascript:void(0)" onclick="goToLogin('form-absen')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Presensi Siswa</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('form-jurnal')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Jurnal Mengajar KBM</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('form-guruwali')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Bimbingan Guru Wali</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('form-wali')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Kegiatan Wali Kelas</a></li>
+            <li><a href="javascript:void(0)" onclick="goToLogin('form-ekstra')" class="footer-nav-link"><i class="bi bi-chevron-right"></i> Ekstrakurikuler</a></li>
           </ul>
         </div>
 
         <div class="col-lg-3">
-          <h6 class="text-white fw-bold mb-3">Identitas Sekolah</h6>
-          <p class="small text-muted mb-1" id="footerSekolah">SMK NEGERI 1 CONTOH</p>
-          <p class="small text-muted mb-1" id="footerKabupaten">Kabupaten Klungkung</p>
-          <p class="small text-muted mb-0">Tahun Ajaran: <span id="footerTA">2026/2027</span></p>
+          <h6 class="text-white fw-bold mb-3"><i class="bi bi-building me-1 text-warning"></i> Identitas Sekolah</h6>
+          <p class="footer-school-title mb-1" id="footerSekolah">SMK NEGERI 1 CONTOH</p>
+          <p class="footer-school-sub mb-2" id="footerKabupaten"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Kabupaten Klungkung</p>
+          <div class="d-flex align-items-center gap-2 mt-2">
+            <span class="footer-school-sub">Tahun Ajaran:</span>
+            <span id="footerTA" class="badge-ta">2026/2027</span>
+          </div>
         </div>
       </div>
 
-      <div class="border-top border-secondary pt-3 d-flex flex-wrap justify-content-between align-items-center small">
-        <p class="mb-0 text-muted">&copy; 2026 SIGURU. Dikembangkan bersama <strong>FYJ Channel</strong>.</p>
-        <p class="mb-0 text-muted">Hak Cipta Dilindungi Undang-Undang.</p>
+      <div class="footer-bottom-divider pt-3 d-flex flex-wrap justify-content-between align-items-center small">
+        <p class="mb-0 footer-copy">&copy; 2026 SIGURU. Dikembangkan bersama <strong>FYJ Channel</strong>.</p>
+        <p class="mb-0 footer-copy">Hak Cipta Dilindungi Undang-Undang.</p>
       </div>
     </div>
   </footer>
@@ -409,22 +464,66 @@
       return window.location.href.split('?')[0];
     }
 
-    function goToLogin() {
+    function goToLogin(requestedPage) {
       const base = getBaseUrl();
-      const targetUrl = base + (base.includes('?') ? '&' : '?') + 'page=login';
+      let user = null;
+      try {
+        const raw = localStorage.getItem('siguru_user');
+        if (raw) user = JSON.parse(raw);
+      } catch(e) {}
+
+      let targetPage = 'login';
+      if (user && user.username) {
+        if (requestedPage && requestedPage !== 'login') {
+          targetPage = requestedPage;
+        } else {
+          targetPage = (user.hak_akses === 'Pelihat') ? 'laporan-absen' : 'dashboard';
+        }
+      } else {
+        targetPage = 'login';
+        if (requestedPage && requestedPage !== 'login') {
+          try { sessionStorage.setItem('siguru_redirect_target', requestedPage); } catch(e) {}
+        }
+      }
+
+      const targetUrl = base + (base.includes('?') ? '&' : '?') + 'page=' + encodeURIComponent(targetPage);
       try {
         const a = document.createElement('a');
         a.href = targetUrl;
         a.target = '_top';
-        document.body.appendChild(a);
+        (document.body || document.documentElement).appendChild(a);
         a.click();
         setTimeout(() => a.remove(), 100);
       } catch(e) {
-        window.top.location.href = targetUrl;
+        try {
+          window.top.location.href = targetUrl;
+        } catch(e2) {
+          window.location.href = targetUrl;
+        }
       }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+      // Check active user session
+      try {
+        const raw = localStorage.getItem('siguru_user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u && u.username) {
+            const btnNav = document.getElementById('btnNavMasuk');
+            if (btnNav) {
+              const displayName = (u.nama ? u.nama.split(' ')[0] : 'Akun');
+              btnNav.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Dashboard (' + displayName + ')';
+              btnNav.classList.replace('btn-primary', 'btn-success');
+            }
+            const btnHero = document.getElementById('btnHeroMasuk');
+            if (btnHero) {
+              btnHero.innerHTML = '<i class="bi bi-speedometer2 me-2"></i> Buka Dashboard';
+            }
+          }
+        }
+      } catch(e) {}
+
       // Load public settings & stats
       google.script.run
         .withSuccessHandler(function(data) {
@@ -444,7 +543,7 @@
           if (st.kepala_sekolah) document.getElementById('infoKepsek').textContent = st.kepala_sekolah;
           if (st.kabupaten) {
             document.getElementById('infoKabupaten').textContent = st.kabupaten;
-            document.getElementById('footerKabupaten').textContent = st.kabupaten;
+            document.getElementById('footerKabupaten').innerHTML = '<i class="bi bi-geo-alt-fill text-danger me-1"></i> ' + st.kabupaten;
           }
 
           document.getElementById('statGuru').textContent = data.countGuru || 0;

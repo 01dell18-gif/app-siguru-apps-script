@@ -58,17 +58,19 @@ flowchart TD
 
 ### Penjelasan Alur Tiap Modul
 
-#### A. Alur Autentikasi, Keamanan URL, & Multi-Role RBAC
+#### A. Alur Beranda Publik, Autentikasi, Keamanan URL, & Multi-Role RBAC
 
-1. **Proteksi Akses URL Langsung (Zero-Flicker Guard)**:
+1. **Beranda Publik Pertama Kali Dibuka ([Landing.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Landing.html))**:
+   - Saat tautan web app pertama kali dibuka tanpa parameter tambahan di peramban, sistem secara otomatis menampilkan **Landing Page** publik terlebih dahulu yang memuat profil sekolah, statistik akademik terkini (jumlah guru, siswa, jurnal KBM, dan ekstra), serta tombol akses menuju portal guru.
+2. **Proteksi Akses URL Langsung (Zero-Flicker Guard)**:
    - Jika peramban membuka URL aplikasi dengan parameter menu internal (seperti `?page=form-absen`, `?page=dashboard`, dll.) tanpa memiliki sesi login aktif, pelindung instan di `<head>` ([StyleCSS.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/StyleCSS.html)) langsung **menyembunyikan seluruh tampilan seketika (0 piksel/flicker)** dan me-redirect peramban ke halaman [Login.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Login.html) disertai pesan peringatan *"Sesi Belum Aktif"*.
    - Target menu awal disimpan sementara di `sessionStorage` (`siguru_redirect_target`), sehingga setelah pengguna berhasil login, sistem langsung mengantarkan pengguna kembali ke menu yang dituju secara mulus (apabila memiliki hak akses).
-2. **Proses Masuk (Login)**:
+3. **Proses Masuk (Login)**:
    - Pengguna memasukkan **Username** dan **Password** di halaman [Login.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Login.html).
    - Server memvalidasi terhadap sheet `Data User`. Kata sandi akun utama `SAdmin` diproteksi secara khusus dan tidak dapat diintip oleh admin biasa.
-3. **Penyimpanan Sesi & Pengalihan Cerdas**:
+4. **Penyimpanan Sesi & Pengalihan Cerdas**:
    - Sesi disimpan aman di `localStorage` peramban. Jika sesi valid, pengguna diarahkan ke [Dashboard.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Dashboard.html) (atau langsung ke [LaporanAbsen.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/LaporanAbsen.html) untuk peran *Pelihat*).
-4. **Penegakan Hak Akses Berlapis (RBAC Enforcement)**:
+5. **Penegakan Hak Akses Berlapis (RBAC Enforcement)**:
    - Bagi pengguna dengan peran Guru / Wali Kelas / Pembina Ekstra, sistem secara otomatis mengunci (*lock*) pilihan nama guru pada seluruh formulir dan menyaring laporan hanya untuk data milik guru bersangkutan.
    - Jika pengguna dengan hak akses terbatas mencoba mengakses URL yang dilarang (misal akun *Pelihat* mengetikkan `?page=form-absen` atau akun *Guru* mengetikkan `?page=pengaturan`), sistem langsung memblokir akses dan mengembalikannya ke beranda/laporan resmi mereka dengan notifikasi *"Akses Ditolak"*.
 

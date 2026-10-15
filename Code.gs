@@ -22,11 +22,11 @@ const SHEET_NAMES = {
 };
 
 // === ROUTING & WEB APP ===
-let _activePage = 'login';
+let _activePage = 'landing';
 let _activeParams = {};
 
 function doGet(e) {
-  const page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'login';
+  const page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'landing';
   const userJson = (e && e.parameter && e.parameter.user) ? e.parameter.user : '';
   _activePage = page;
   _activeParams = (e && e.parameter) ? e.parameter : {};
@@ -35,6 +35,9 @@ function doGet(e) {
   switch(page) {
     case 'landing':
       template = HtmlService.createTemplateFromFile('Landing');
+      break;
+    case 'login':
+      template = HtmlService.createTemplateFromFile('Login');
       break;
     case 'dashboard':
       template = HtmlService.createTemplateFromFile('Dashboard');
@@ -94,7 +97,7 @@ function doGet(e) {
       template = HtmlService.createTemplateFromFile('PrintLaporan');
       break;
     default:
-      template = HtmlService.createTemplateFromFile('Login');
+      template = HtmlService.createTemplateFromFile('Landing');
   }
   
   // Expose URL parameters, active page, and scriptUrl to template
