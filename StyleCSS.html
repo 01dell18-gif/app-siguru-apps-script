@@ -1,14 +1,9 @@
 <!-- StyleCSS.html - Shared Styles for SIGURU Apps Script -->
 <script>
-  window.SIGURU_SCRIPT_URL = '<?= (typeof scriptUrl !== "undefined" && scriptUrl) ? scriptUrl : "" ?>';
-  window.SIGURU_CURRENT_PAGE = '<?= (typeof currentPage !== "undefined" && currentPage) ? currentPage : "" ?>';
-  window.SIGURU_PARAMS = (function() {
-    try {
-      return JSON.parse('<?= (typeof params !== "undefined" && params) ? JSON.stringify(params).replace(/\\/g, "\\\\").replace(/\'/g, "\\'") : "{}" ?>' || '{}');
-    } catch(e) {
-      return {};
-    }
-  })();
+  window.SIGURU_SCRIPT_URL = "<?= (typeof scriptUrl !== 'undefined' && scriptUrl) ? scriptUrl : '' ?>";
+  window.SIGURU_CURRENT_PAGE = "<?= (typeof currentPage !== 'undefined' && currentPage) ? currentPage : '' ?>";
+  window.SIGURU_AUTH = "<?= (typeof params !== 'undefined' && params && params.auth) ? params.auth : '' ?>";
+  window.SIGURU_PARAMS = { auth: window.SIGURU_AUTH };
   
   if (window.SIGURU_SCRIPT_URL && window.SIGURU_SCRIPT_URL.indexOf('script.google.com') !== -1) {
     try { localStorage.setItem('siguru_script_url', window.SIGURU_SCRIPT_URL); } catch(e) {}
