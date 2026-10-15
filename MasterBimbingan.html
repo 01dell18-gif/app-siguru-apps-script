@@ -145,9 +145,11 @@
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold small">Guru Wali Penanggung Jawab <span class="text-danger">*</span></label>
-                <select class="form-select" id="bimGuruWali" required>
-                  <option value="">-- Pilih Guru Wali --</option>
-                </select>
+                <div id="divGuruWaliContainer">
+                  <select class="form-select" id="bimGuruWali" required>
+                    <option value="">-- Pilih Guru Wali --</option>
+                  </select>
+                </div>
               </div>
 
               <!-- Kontak & Ortu -->
@@ -244,6 +246,7 @@
     let rawBimbingan = [];
     let filteredBimbingan = [];
     let allMuridInduk = [];
+    let cachedGuruList = [];
     let currentPage = 1;
     let driveFolderFoto = '';
 
@@ -257,6 +260,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+      // Non-superadmin: filter guru wali otomatis terkunci sesuai akun login
+      if (!isSuperAdmin() && user && user.nama) {
+        const selFilter = document.getElementById('filterGuruWali');
+        if (selFilter) {
+          selFilter.innerHTML = '<option value="' + escapeHtml(user.nama) + '">' + escapeHtml(user.nama) + '</option>';
+          selFilter.value = user.nama;
+          selFilter.disabled = true;
+          selFilter.title = 'Terkunci otomatis sesuai akun login Anda';
+        }
+      }
+
       loadInitialData();
       // Failsafe: pastikan spinner selalu tertutup maksimal dalam 5 detik
       setTimeout(function() {
@@ -314,34 +328,54 @@
       if (kList.length > 0) {
         const selFilter = document.getElementById('filterKelas');
         const selModal = document.getElementById('bimKelas');
-        const curFilterKls = selFilter.value;
-        const curModalKls = selModal.value;
-        selFilter.innerHTML = '<option value="">Semua Kelas</option>';
-        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-        kList.forEach(function(k) {
-          selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-        });
-        if (curFilterKls) selFilter.value = curFilterKls;
-        if (curModalKls) selModal.value = curModalKls;
+        const curFilterKls = selFilter ? selFilter.value : '';
+        const curModalKls = selModal ? selModal.value : '';
+        if (selFilter) {
+          selFilter.innerHTML = '<option value="">Semua Kelas</option>';
+          kList.forEach(function(k) {
+            selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+          });
+          if (curFilterKls) selFilter.value = curFilterKls;
+        }
+        if (selModal) {
+          selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+          kList.forEach(function(k) {
+            selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+          });
+          if (curModalKls) selModal.value = curModalKls;
+        }
       }
 
       // Dropdown Guru Wali
       const gList = b.guruNama || b.guruList || b.guru || [];
       if (gList.length > 0) {
+        cachedGuruList = gList;
         const selFilter = document.getElementById('filterGuruWali');
-        const selModal = document.getElementById('bimGuruWali');
-        const curFilterGW = selFilter.value;
-        const curModalGW = selModal.value;
-        selFilter.innerHTML = '<option value="">Semua Guru Wali</option>';
-        selModal.innerHTML = '<option value="">-- Pilih Guru Wali --</option>';
-        gList.forEach(function(g) {
-          const nama = g.nama || g.nama_guru || g;
-          selFilter.innerHTML += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
-          selModal.innerHTML += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
-        });
-        if (curFilterGW) selFilter.value = curFilterGW;
-        if (curModalGW) selModal.value = curModalGW;
+        if (selFilter) {
+          const curFilterGW = selFilter.value;
+          selFilter.innerHTML = '<option value="">Semua Guru Wali</option>';
+          gList.forEach(function(g) {
+            const nama = g.nama || g.nama_guru || g;
+            selFilter.innerHTML += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+          });
+
+          if (isSuperAdmin()) {
+            selFilter.disabled = false;
+            selFilter.title = '';
+            if (curFilterGW) selFilter.value = curFilterGW;
+          } else {
+            // Non-superadmin: otomatis terkunci sesuai akun login
+            if (user && user.nama) {
+              selFilter.value = user.nama;
+              if (selFilter.value !== user.nama) {
+                selFilter.innerHTML += '<option value="' + escapeHtml(user.nama) + '">' + escapeHtml(user.nama) + '</option>';
+                selFilter.value = user.nama;
+              }
+            }
+            selFilter.disabled = true;
+            selFilter.title = 'Terkunci otomatis sesuai akun login Anda';
+          }
+        }
       }
 
       // Dropdown Murid Induk Autofill
@@ -349,17 +383,43 @@
       if (mList.length > 0) {
         allMuridInduk = mList;
         const sel = document.getElementById('selectMuridAutofill');
-        sel.innerHTML = '<option value="">-- Pilih Siswa Berstatus Guru Wali atau Ketik Manual di Bawah --</option>';
-        const eligible = allMuridInduk.filter(function(m){ return String(m.status || '').includes('Guru Wali'); });
-        eligible.forEach(function(m) {
-          sel.innerHTML += '<option value="' + m.id + '">' + escapeHtml(m.nama_murid) + ' (' + escapeHtml(m.kelas || '-') + ')</option>';
-        });
+        if (sel) {
+          sel.innerHTML = '<option value="">-- Pilih Siswa Berstatus Guru Wali atau Ketik Manual di Bawah --</option>';
+          const eligible = allMuridInduk.filter(function(m){ return String(m.status || '').includes('Guru Wali'); });
+          eligible.forEach(function(m) {
+            sel.innerHTML += '<option value="' + m.id + '">' + escapeHtml(m.nama_murid) + ' (' + escapeHtml(m.kelas || '-') + ')</option>';
+          });
+        }
       }
 
       // Data Bimbingan
       if (b.bimbingan) {
         rawBimbingan = b.bimbingan || [];
         handleFilterChange();
+      }
+    }
+
+    function setupGuruWaliModalField(val) {
+      const container = document.getElementById('divGuruWaliContainer');
+      if (!container) return;
+      if (isSuperAdmin()) {
+        let html = '<select class="form-select" id="bimGuruWali" required>';
+        html += '<option value="">-- Pilih Guru Wali --</option>';
+        cachedGuruList.forEach(function(g) {
+          const nama = g.nama || g.nama_guru || g;
+          html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+        });
+        html += '</select>';
+        container.innerHTML = html;
+        const sel = document.getElementById('bimGuruWali');
+        if (val) {
+          sel.value = val;
+        } else if (user && user.nama) {
+          sel.value = user.nama;
+        }
+      } else {
+        const teacherName = (user && user.nama) ? user.nama : (val || '');
+        container.innerHTML = '<input type="text" id="bimGuruWali" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(teacherName) + '" readonly required title="Terkunci otomatis sesuai akun login Anda">';
       }
     }
 
@@ -382,7 +442,9 @@
 
     function handleFilterChange() {
       const q = document.getElementById('searchInput').value.trim().toLowerCase();
-      const gw = document.getElementById('filterGuruWali').value;
+      const gw = isSuperAdmin() 
+        ? document.getElementById('filterGuruWali').value 
+        : ((user && user.nama) ? user.nama : document.getElementById('filterGuruWali').value);
       const kls = document.getElementById('filterKelas').value;
 
       filteredBimbingan = rawBimbingan.filter(function(b) {
@@ -398,7 +460,11 @@
 
     function resetFilter() {
       document.getElementById('searchInput').value = '';
-      document.getElementById('filterGuruWali').value = '';
+      if (isSuperAdmin()) {
+        document.getElementById('filterGuruWali').value = '';
+      } else {
+        document.getElementById('filterGuruWali').value = (user && user.nama) ? user.nama : '';
+      }
       document.getElementById('filterKelas').value = '';
       handleFilterChange();
     }
@@ -454,6 +520,16 @@
         if (!waMuridStr && !ortuNama && !ortuKontakStr) kontakHtml += '<span class="text-muted">-</span>';
         kontakHtml += '</div>';
 
+        const canManage = isSuperAdmin() || (!b.guru_wali || (user && user.nama && b.guru_wali === user.nama));
+        let actionBtns = '';
+        if (canManage) {
+          actionBtns = 
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editBimbingan(' + b.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteBimbingan(' + b.id + ', \'' + escapeHtml(b.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>';
+        } else {
+          actionBtns = '<span class="text-muted small" title="Hanya Super Admin atau Guru Wali bersangkutan yang dapat mengedit/menghapus"><i class="bi bi-lock-fill"></i></span>';
+        }
+
         html += '<tr>' +
           '<td>' + no + '</td>' +
           '<td><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(nisnPad) + '</span></td>' +
@@ -464,8 +540,7 @@
           '<td><small class="text-muted text-break" style="max-width: 250px; display: inline-block;">' + escapeHtml(b.catatan_khusus || '-') + '</small></td>' +
           '<td class="text-center">' +
             '<div class="d-flex justify-content-center gap-1">' +
-              '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editBimbingan(' + b.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
-              '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteBimbingan(' + b.id + ', \'' + escapeHtml(b.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+              actionBtns +
             '</div>' +
           '</td>' +
         '</tr>';
@@ -530,7 +605,7 @@
       document.getElementById('bimNama').value = '';
       document.getElementById('bimJk').value = 'L';
       document.getElementById('bimKelas').value = '';
-      document.getElementById('bimGuruWali').value = (user && user.nama) ? user.nama : '';
+      setupGuruWaliModalField((user && user.nama) ? user.nama : '');
       document.getElementById('bimNoWa').value = '';
       document.getElementById('bimNamaOrtu').value = '';
       document.getElementById('bimKontakOrtu').value = '';
@@ -543,6 +618,11 @@
       const b = rawBimbingan.find(function(x){ return x.id == id; });
       if (!b) return;
 
+      if (!isSuperAdmin() && b.guru_wali && user && user.nama && b.guru_wali !== user.nama) {
+        showToast('warning', 'Anda hanya dapat mengedit data siswa binaan Anda sendiri.');
+        return;
+      }
+
       document.getElementById('modalBimbinganTitle').textContent = 'Edit Data Binaan';
       document.getElementById('divSelectMurid').style.display = 'none';
       document.getElementById('bimbinganId').value = b.id;
@@ -550,7 +630,7 @@
       document.getElementById('bimNama').value = b.nama_murid || '';
       document.getElementById('bimJk').value = b.jenis_kelamin || 'L';
       document.getElementById('bimKelas').value = b.kelas || '';
-      document.getElementById('bimGuruWali').value = b.guru_wali || '';
+      setupGuruWaliModalField(isSuperAdmin() ? (b.guru_wali || '') : ((user && user.nama) ? user.nama : (b.guru_wali || '')));
       document.getElementById('bimNoWa').value = b.no_wa_murid || '';
       document.getElementById('bimNamaOrtu').value = b.nama_ortu || '';
       document.getElementById('bimKontakOrtu').value = b.kontak_ortu || '';
@@ -644,6 +724,14 @@
     }
 
     function deleteBimbingan(id, nama) {
+      if (!isSuperAdmin() && user && user.nama) {
+        const b = rawBimbingan.find(function(x){ return x.id == id; });
+        if (b && b.guru_wali && b.guru_wali !== user.nama) {
+          showToast('warning', 'Anda hanya dapat menghapus data siswa binaan Anda sendiri.');
+          return;
+        }
+      }
+
       Swal.fire({
         title: 'Hapus Binaan?',
         text: 'Apakah Anda yakin ingin menghapus data binaan "' + nama + '"?',
@@ -736,7 +824,7 @@
               kelas: String(parts[3] || '').trim(),
               jenis_kelamin: String(parts[4] || 'L').toUpperCase().startsWith('P') ? 'P' : 'L',
               foto_murid: String(parts[5] || '').trim(),
-              guru_wali: String(parts[6] || '').trim(),
+              guru_wali: (!isSuperAdmin() && user && user.nama) ? user.nama : String(parts[6] || '').trim(),
               no_wa_murid: String(parts[7] || '').trim(),
               nama_ortu: String(parts[8] || '').trim(),
               kontak_ortu: String(parts[9] || '').trim(),

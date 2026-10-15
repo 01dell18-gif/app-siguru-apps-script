@@ -249,17 +249,26 @@
           ? '<span class="badge bg-success-subtle text-success">Ya</span>' 
           : '<span class="badge bg-secondary-subtle text-secondary">Tidak</span>';
         
-        html += '<tr>' +
-          '<td>' + (i+1) + '</td>' +
-          '<td class="fw-bold text-dark">' + escapeHtml(g.nama_guru) + '</td>' +
-          '<td><small class="text-muted">' + escapeHtml(g.nip || '-') + '</small></td>' +
-          '<td>' + gwBadge + '</td>' +
-          '<td><span class="badge bg-secondary-subtle text-secondary">' + escapeHtml(g.sebagai_wali_kelas || '-') + '</span></td>' +
-          '<td><span class="badge bg-warning-subtle text-dark border">' + escapeHtml(g.pembina_ekstra || '-') + '</span></td>' +
-          '<td class="text-center"><div class="d-flex justify-content-center gap-1">' +
-            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editGuru(' + g.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
-            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteGuru(' + g.id + ', \'' + escapeHtml(g.nama_guru) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
-          '</div></td></tr>';
+          const canManage = isSuperAdmin() || (user && user.nama && g.nama_guru === user.nama);
+          let actionBtns = '';
+          if (canManage) {
+            actionBtns = 
+              '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editGuru(' + g.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+              '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteGuru(' + g.id + ', \'' + escapeHtml(g.nama_guru) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>';
+          } else {
+            actionBtns = '<span class="text-muted small" title="Terkunci"><i class="bi bi-lock-fill"></i></span>';
+          }
+
+          html += '<tr>' +
+            '<td>' + (i+1) + '</td>' +
+            '<td class="fw-bold text-dark">' + escapeHtml(g.nama_guru) + '</td>' +
+            '<td><small class="text-muted">' + escapeHtml(g.nip || '-') + '</small></td>' +
+            '<td>' + gwBadge + '</td>' +
+            '<td><span class="badge bg-secondary-subtle text-secondary">' + escapeHtml(g.sebagai_wali_kelas || '-') + '</span></td>' +
+            '<td><span class="badge bg-warning-subtle text-dark border">' + escapeHtml(g.pembina_ekstra || '-') + '</span></td>' +
+            '<td class="text-center"><div class="d-flex justify-content-center gap-1">' +
+              actionBtns +
+            '</div></td></tr>';
       });
       tbody.innerHTML = html;
     }
@@ -289,8 +298,19 @@
     function showAddModal() {
       document.getElementById('modalGuruTitle').textContent = 'Tambah Data Guru';
       document.getElementById('guruId').value = '';
-      document.getElementById('namaGuru').value = '';
-      document.getElementById('nipGuru').value = '';
+      const namaInput = document.getElementById('namaGuru');
+      if (isSuperAdmin()) {
+        namaInput.value = '';
+        namaInput.readOnly = false;
+        namaInput.title = '';
+        namaInput.classList.remove('bg-light');
+      } else {
+        namaInput.value = (user && user.nama) ? user.nama : '';
+        namaInput.readOnly = true;
+        namaInput.title = 'Terkunci otomatis sesuai akun login Anda';
+        namaInput.classList.add('bg-light');
+      }
+      document.getElementById('nipGuru').value = (user && user.nip && !isSuperAdmin()) ? user.nip : '';
       document.getElementById('sebagaiGuruWali').value = 'Tidak';
       document.getElementById('sebagaiWaliKelas').value = '-';
       document.getElementById('pembinaEkstra').value = '-';
@@ -300,9 +320,24 @@
     function editGuru(id) {
       const g = allGuru.find(function(x) { return x.id == id; });
       if (!g) return;
+      if (!isSuperAdmin() && user && user.nama && g.nama_guru !== user.nama) {
+        showToast('warning', 'Anda hanya dapat mengedit data profil Anda sendiri.');
+        return;
+      }
       document.getElementById('modalGuruTitle').textContent = 'Edit Data Guru';
       document.getElementById('guruId').value = g.id;
-      document.getElementById('namaGuru').value = g.nama_guru || '';
+      const namaInput = document.getElementById('namaGuru');
+      if (isSuperAdmin()) {
+        namaInput.value = g.nama_guru || '';
+        namaInput.readOnly = false;
+        namaInput.title = '';
+        namaInput.classList.remove('bg-light');
+      } else {
+        namaInput.value = (user && user.nama) ? user.nama : (g.nama_guru || '');
+        namaInput.readOnly = true;
+        namaInput.title = 'Terkunci otomatis sesuai akun login Anda';
+        namaInput.classList.add('bg-light');
+      }
       document.getElementById('nipGuru').value = g.nip || '';
       document.getElementById('sebagaiGuruWali').value = g.sebagai_guru_wali || 'Tidak';
       document.getElementById('sebagaiWaliKelas').value = g.sebagai_wali_kelas || '-';
@@ -311,6 +346,10 @@
     }
     
     function deleteGuru(id, nama) {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Hanya Super Admin yang berhak menghapus data guru.');
+        return;
+      }
       Swal.fire({
         title: 'Hapus Data Guru?',
         text: 'Apakah Anda yakin ingin menghapus data "' + nama + '"?',
