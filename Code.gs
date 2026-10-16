@@ -311,6 +311,30 @@ function loginUser(username, password) {
     );
     
     if (user) {
+      let waliKelas = '-';
+      let guruWali = '-';
+      let pembinaEkstra = '-';
+
+      try {
+        const guruList = getSheetData(SHEET_NAMES.DATA_GURU) || [];
+        const userNip = String(user.nip || '').trim();
+        const userNama = String(user.nama || '').trim().toLowerCase();
+
+        const matchG = guruList.find(g => {
+          const gNip = String(g.nip || '').trim();
+          const gNama = String(g.nama_guru || '').trim().toLowerCase();
+          return (userNip && gNip && userNip === gNip) || (userNama && gNama && userNama === gNama);
+        });
+
+        if (matchG) {
+          waliKelas = matchG.sebagai_wali_kelas || '-';
+          guruWali = matchG.sebagai_guru_wali || '-';
+          pembinaEkstra = matchG.pembina_ekstra || '-';
+        }
+      } catch(errGuru) {
+        Logger.log('Could not load guru data during login: ' + errGuru.message);
+      }
+
       return {
         success: true,
         user: {
@@ -318,7 +342,10 @@ function loginUser(username, password) {
           username: user.username,
           nama: user.nama,
           nip: user.nip || '',
-          hak_akses: user.hak_akses
+          hak_akses: user.hak_akses,
+          sebagai_wali_kelas: waliKelas,
+          sebagai_guru_wali: guruWali,
+          pembina_ekstra: pembinaEkstra
         }
       };
     }

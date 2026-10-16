@@ -22,7 +22,7 @@
         <p class="text-muted small mb-0">Daftar induk siswa dengan fitur quick-edit status terhubung (Murid, Guru Wali, Wali Kelas, Ekstra).</p>
       </div>
       <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
-        <button class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm" onclick="showAddModal()">
+        <button id="btnTambahSiswa" class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm" onclick="showAddModal()">
           <i class="bi bi-person-plus-fill me-1"></i> Tambah Siswa
         </button>
         <button class="btn btn-outline-success rounded-pill px-3 btn-sm" onclick="exportDataMurid()">
@@ -31,7 +31,7 @@
         <button class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="downloadTemplateMurid()">
           <i class="bi bi-file-earmark-arrow-down me-1"></i> Unduh Template
         </button>
-        <button class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportMurid">
+        <button id="btnImportSiswa" class="btn btn-outline-primary rounded-pill px-3 btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportMurid">
           <i class="bi bi-upload me-1"></i> Import Siswa
         </button>
       </div>
@@ -217,6 +217,9 @@
 
     let rawMurid = [];
     let filteredMurid = [];
+    let allGuruList = [];
+    let cachedKelasList = [];
+    let assignedClasses = null; // null: Super Admin, []: tidak mengampu, ['X RPL 1']: mengampu kelas
     let currentPage = 1;
 
     function getModal(id) {
@@ -227,8 +230,140 @@
       return inst;
     }
 
+    function resolveTeacherClasses(guruList) {
+      if (isSuperAdmin()) {
+        assignedClasses = null;
+        return;
+      }
+
+      let g = null;
+      const userNip = String(user.nip || '').trim();
+      const userNama = String(user.nama || '').trim().toLowerCase();
+
+      if (Array.isArray(guruList) && guruList.length > 0) {
+        g = guruList.find(function(x) {
+          const gNip = String(x.nip || '').trim();
+          const gNama = String(x.nama_guru || x.nama || '').trim().toLowerCase();
+          return (userNip && gNip && userNip === gNip) || (userNama && gNama && userNama === gNama);
+        });
+      }
+
+      let rawKelas = '';
+      if (g && g.sebagai_wali_kelas) {
+        rawKelas = g.sebagai_wali_kelas;
+      } else if (user && user.sebagai_wali_kelas) {
+        rawKelas = user.sebagai_wali_kelas;
+      }
+
+      rawKelas = String(rawKelas || '').trim();
+      if (!rawKelas || rawKelas === '-' || rawKelas.toLowerCase() === 'tidak' || rawKelas.toLowerCase() === 'null') {
+        assignedClasses = [];
+      } else {
+        assignedClasses = rawKelas.split(',').map(function(k) { return k.trim(); }).filter(Boolean);
+      }
+    }
+
+    function setupClassFilter(kelasList) {
+      if (kelasList && Array.isArray(kelasList) && kelasList.length > 0) {
+        cachedKelasList = kelasList;
+      }
+      const selFilter = document.getElementById('filterKelas');
+      const selModal = document.getElementById('muridKelas');
+      if (!selFilter) return;
+
+      if (isSuperAdmin()) {
+        selFilter.disabled = false;
+        selFilter.title = 'Filter berdasarkan kelas';
+        const curVal = selFilter.value;
+        selFilter.innerHTML = '<option value="">Semua Kelas</option>';
+        cachedKelasList.forEach(function(k) {
+          selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+        if (curVal) selFilter.value = curVal;
+      } else {
+        // Hak akses Guru, Guru Wali, Pembina Ekstra, Wali Kelas:
+        // Jika tidak mengampu kelas: datanya dikosongkan dan tidak dapat memilih kelas
+        if (!assignedClasses || assignedClasses.length === 0) {
+          selFilter.innerHTML = '<option value="" selected>Tidak Mengampu Kelas</option>';
+          selFilter.value = '';
+          selFilter.disabled = true;
+          selFilter.title = 'Anda tidak mengampu kelas (Terkunci)';
+        } else if (assignedClasses.length === 1) {
+          // Otomatis terisi sesuai gurunya dan terkunci jika 1 kelas
+          const k = assignedClasses[0];
+          selFilter.innerHTML = '<option value="' + escapeHtml(k) + '" selected>' + escapeHtml(k) + ' (Kelas Diampu)</option>';
+          selFilter.value = k;
+          selFilter.disabled = true;
+          selFilter.title = 'Terkunci otomatis: Mengampu kelas ' + k;
+        } else {
+          // Mengampu lebih dari 1 kelas: hanya dapat memilih kelas yang diampu
+          let html = '';
+          assignedClasses.forEach(function(k, idx) {
+            html += '<option value="' + escapeHtml(k) + '"' + (idx === 0 ? ' selected' : '') + '>' + escapeHtml(k) + ' (Kelas Diampu)</option>';
+          });
+          selFilter.innerHTML = html;
+          if (!selFilter.value) selFilter.value = assignedClasses[0];
+          selFilter.disabled = false;
+          selFilter.title = 'Pilih kelas yang Anda ampu';
+        }
+      }
+
+      // Populate modal kelas jika superadmin
+      if (selModal && cachedKelasList.length > 0) {
+        const curModal = selModal.value;
+        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        cachedKelasList.forEach(function(k) {
+          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+        });
+        if (curModal) selModal.value = curModal;
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+      // Tombol tambah dan import khusus Super Admin
+      if (!isSuperAdmin()) {
+        const btnAdd = document.getElementById('btnTambahSiswa');
+        const btnImp = document.getElementById('btnImportSiswa');
+        if (btnAdd) btnAdd.style.display = 'none';
+        if (btnImp) btnImp.style.display = 'none';
+      }
+
+      resolveTeacherClasses(allGuruList);
+      setupClassFilter([]);
+
       loadInitialData();
+
+      // Jika non-superadmin dan daftar guru belum ada di bundle lokal, ambil untuk deteksi kelas
+      if (!isSuperAdmin() && allGuruList.length === 0) {
+        google.script.run
+          .withSuccessHandler(function(list) {
+            if (list && Array.isArray(list)) {
+              allGuruList = list;
+              resolveTeacherClasses(allGuruList);
+              // Perbarui session user di localStorage
+              const u = getCurrentUser();
+              if (u) {
+                const matchG = allGuruList.find(function(x) {
+                  const uNip = String(u.nip || '').trim();
+                  const uNama = String(u.nama || '').trim().toLowerCase();
+                  const gNip = String(x.nip || '').trim();
+                  const gNama = String(x.nama_guru || x.nama || '').trim().toLowerCase();
+                  return (uNip && gNip && uNip === gNip) || (uNama && gNama && uNama === gNama);
+                });
+                if (matchG) {
+                  u.sebagai_wali_kelas = matchG.sebagai_wali_kelas || '-';
+                  u.sebagai_guru_wali = matchG.sebagai_guru_wali || '-';
+                  u.pembina_ekstra = matchG.pembina_ekstra || '-';
+                  localStorage.setItem('siguru_user', JSON.stringify(u));
+                }
+              }
+              setupClassFilter(cachedKelasList);
+              handleFilterChange();
+            }
+          })
+          .getDataGuru();
+      }
+
       setTimeout(function() {
         const ov = document.getElementById('loadingOverlay');
         if (ov) ov.style.display = 'none';
@@ -267,21 +402,13 @@
     }
 
     function applyMuridBundle(bundle) {
+      if (bundle.guru && Array.isArray(bundle.guru)) {
+        allGuruList = bundle.guru;
+        resolveTeacherClasses(allGuruList);
+      }
       if (bundle.kelas && Array.isArray(bundle.kelas)) {
-        const selFilter = document.getElementById('filterKelas');
-        const selModal = document.getElementById('muridKelas');
-        const currentFilter = selFilter.value;
-        const currentModal = selModal.value;
-        
-        selFilter.innerHTML = '<option value="">Semua Kelas</option>';
-        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-        
-        bundle.kelas.forEach(function(k) {
-          selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-        });
-        if (currentFilter) selFilter.value = currentFilter;
-        if (currentModal) selModal.value = currentModal;
+        cachedKelasList = bundle.kelas;
+        setupClassFilter(cachedKelasList);
       }
       if (bundle.murid && Array.isArray(bundle.murid)) {
         document.getElementById('loadingOverlay').style.display = 'none';
@@ -324,9 +451,30 @@
       const q = document.getElementById('searchInput').value.trim().toLowerCase();
       const k = document.getElementById('filterKelas').value;
 
+      if (!isSuperAdmin()) {
+        // Jika tidak mengampu kelas: datanya dikosongkan dan tidak dapat memilih kelas
+        if (!assignedClasses || assignedClasses.length === 0) {
+          filteredMurid = [];
+          currentPage = 1;
+          renderTable();
+          return;
+        }
+      }
+
       filteredMurid = rawMurid.filter(function(m) {
         const matchQ = !q || String(m.nama_murid || '').toLowerCase().includes(q) || String(m.nisn || '').includes(q);
-        const matchK = !k || m.kelas === k;
+        
+        let matchK = false;
+        if (isSuperAdmin()) {
+          matchK = !k || m.kelas === k;
+        } else {
+          if (assignedClasses && assignedClasses.length > 0) {
+            matchK = assignedClasses.includes(m.kelas) && (!k || m.kelas === k);
+          } else {
+            matchK = false;
+          }
+        }
+
         return matchQ && matchK;
       });
 
@@ -336,26 +484,50 @@
 
     function resetFilter() {
       document.getElementById('searchInput').value = '';
-      document.getElementById('filterKelas').value = '';
+      if (isSuperAdmin()) {
+        document.getElementById('filterKelas').value = '';
+      } else {
+        if (assignedClasses && assignedClasses.length > 0) {
+          document.getElementById('filterKelas').value = assignedClasses[0];
+        } else {
+          document.getElementById('filterKelas').value = '';
+        }
+      }
       handleFilterChange();
     }
 
     function renderTable() {
       const limit = parseInt(document.getElementById('limitPerPage').value) || 50;
       const total = filteredMurid.length;
+      const isSuper = isSuperAdmin();
+      const tbody = document.getElementById('tbodyMurid');
+      const wrapper = document.getElementById('paginationWrapper');
+
+      if (total === 0) {
+        if (!isSuper && (!assignedClasses || assignedClasses.length === 0)) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5">' +
+            '<div class="py-3">' +
+              '<i class="bi bi-person-x-fill text-warning fs-1 d-block mb-2"></i>' +
+              '<h6 class="fw-bold text-dark mb-1">Anda Tidak Mengampu Kelas</h6>' +
+              '<p class="small text-muted mb-0">Data siswa dikosongkan karena akun Anda belum ditugaskan mengampu kelas di Master Data Guru.<br>Silakan hubungi Super Admin untuk penugasan kelas binaan.</p>' +
+            '</div>' +
+          '</td></tr>';
+        } else {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">' +
+            '<i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>' +
+            '<span>Tidak ada data siswa yang cocok dengan kriteria filter.</span>' +
+          '</td></tr>';
+        }
+        wrapper.style.setProperty('display', 'none', 'important');
+        return;
+      }
+
       const totalPages = Math.ceil(total / limit) || 1;
       if (currentPage > totalPages) currentPage = totalPages;
 
       const start = (currentPage - 1) * limit;
       const end = Math.min(start + limit, total);
       const pageData = filteredMurid.slice(start, end);
-
-      const tbody = document.getElementById('tbodyMurid');
-      if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data siswa yang cocok.</td></tr>';
-        document.getElementById('paginationWrapper').style.setProperty('display', 'none', 'important');
-        return;
-      }
 
       let html = '';
       pageData.forEach(function(m, idx) {
@@ -373,6 +545,19 @@
           photoHtml = '<span class="avatar-initials bg-secondary-subtle text-secondary rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width: 34px; height: 34px; font-size: 0.75rem;">' + init + '</span>';
         }
 
+        const chkDisabledAttr = !isSuper ? ' disabled title="Hanya Super Admin yang dapat mengubah status terhubung siswa"' : '';
+        const chkChangeAttr = isSuper ? ' onchange="toggleStudentStatus(' + m.id + ', \'{ROLE}\', this)"' : '';
+
+        let aksiHtml = '';
+        if (isSuper) {
+          aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editMurid(' + m.id + ')" title="Edit Siswa"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteMurid(' + m.id + ', \'' + escapeHtml(m.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+          '</div>';
+        } else {
+          aksiHtml = '<span class="badge bg-light text-muted border py-1 px-2" title="Hanya dapat dilihat"><i class="bi bi-lock-fill me-1"></i>Terkunci</span>';
+        }
+
         html += '<tr>' +
           '<td>' + no + '</td>' +
           '<td><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(nisnPad) + '</span></td>' +
@@ -382,35 +567,29 @@
           '<td>' +
             '<div class="d-flex flex-wrap gap-2">' +
               '<div class="form-check form-check-inline m-0">' +
-                '<input class="form-check-input" type="checkbox" id="st_m_' + m.id + '" ' + (stArr.includes('Murid') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Murid\', this)">' +
+                '<input class="form-check-input" type="checkbox" id="st_m_' + m.id + '" ' + (stArr.includes('Murid') ? 'checked' : '') + chkDisabledAttr + chkChangeAttr.replace('{ROLE}', 'Murid') + '>' +
                 '<label class="form-check-label small" for="st_m_' + m.id + '">Murid</label>' +
               '</div>' +
               '<div class="form-check form-check-inline m-0">' +
-                '<input class="form-check-input" type="checkbox" id="st_gw_' + m.id + '" ' + (stArr.includes('Guru Wali') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Guru Wali\', this)">' +
+                '<input class="form-check-input" type="checkbox" id="st_gw_' + m.id + '" ' + (stArr.includes('Guru Wali') ? 'checked' : '') + chkDisabledAttr + chkChangeAttr.replace('{ROLE}', 'Guru Wali') + '>' +
                 '<label class="form-check-label small text-info fw-semibold" for="st_gw_' + m.id + '">Guru Wali</label>' +
               '</div>' +
               '<div class="form-check form-check-inline m-0">' +
-                '<input class="form-check-input" type="checkbox" id="st_wk_' + m.id + '" ' + (stArr.includes('Wali Kelas') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Wali Kelas\', this)">' +
+                '<input class="form-check-input" type="checkbox" id="st_wk_' + m.id + '" ' + (stArr.includes('Wali Kelas') ? 'checked' : '') + chkDisabledAttr + chkChangeAttr.replace('{ROLE}', 'Wali Kelas') + '>' +
                 '<label class="form-check-label small text-primary fw-semibold" for="st_wk_' + m.id + '">Wali Kelas</label>' +
               '</div>' +
               '<div class="form-check form-check-inline m-0">' +
-                '<input class="form-check-input" type="checkbox" id="st_ek_' + m.id + '" ' + (stArr.includes('Ekstra') ? 'checked' : '') + ' onchange="toggleStudentStatus(' + m.id + ', \'Ekstra\', this)">' +
+                '<input class="form-check-input" type="checkbox" id="st_ek_' + m.id + '" ' + (stArr.includes('Ekstra') ? 'checked' : '') + chkDisabledAttr + chkChangeAttr.replace('{ROLE}', 'Ekstra') + '>' +
                 '<label class="form-check-label small text-success fw-semibold" for="st_ek_' + m.id + '">Ekstra</label>' +
               '</div>' +
             '</div>' +
           '</td>' +
-          '<td class="text-center">' +
-            '<div class="d-flex justify-content-center gap-1">' +
-              '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editMurid(' + m.id + ')" title="Edit Siswa"><i class="bi bi-pencil"></i></button>' +
-              '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteMurid(' + m.id + ', \'' + escapeHtml(m.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
-            '</div>' +
-          '</td>' +
+          '<td class="text-center">' + aksiHtml + '</td>' +
         '</tr>';
       });
       tbody.innerHTML = html;
 
       // Render Pagination
-      const wrapper = document.getElementById('paginationWrapper');
       wrapper.style.setProperty('display', 'flex', 'important');
       document.getElementById('paginationInfo').textContent = 'Menampilkan ' + (start + 1) + ' - ' + end + ' dari total ' + total + ' data';
 
@@ -464,6 +643,12 @@
 
     // Toggle Checkbox Status Terhubung (Quick Edit)
     function toggleStudentStatus(id, roleName, chk) {
+      if (!isSuperAdmin()) {
+        if (chk) chk.checked = !chk.checked;
+        showToast('warning', 'Akses Terbatas', 'Hanya Super Admin yang dapat mengubah status terhubung siswa');
+        return;
+      }
+
       const murid = rawMurid.find(function(m){ return m.id == id; });
       if (!murid) return;
 
@@ -495,6 +680,11 @@
     }
 
     function showAddModal() {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Akses Terbatas', 'Hanya Super Admin yang dapat menambah data siswa');
+        return;
+      }
+
       document.getElementById('modalMuridTitle').textContent = 'Tambah Data Siswa';
       document.getElementById('muridId').value = '';
       document.getElementById('muridNisn').value = '';
@@ -511,6 +701,11 @@
     }
 
     function editMurid(id) {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Akses Terbatas', 'Hanya Super Admin yang dapat mengedit data siswa');
+        return;
+      }
+
       const m = rawMurid.find(function(x){ return x.id == id; });
       if (!m) return;
 
@@ -532,6 +727,11 @@
 
     function saveMurid(e) {
       e.preventDefault();
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Akses Terbatas', 'Hanya Super Admin yang dapat menyimpan data siswa');
+        return;
+      }
+
       const id = document.getElementById('muridId').value;
       const nisn = document.getElementById('muridNisn').value.trim();
       const nama = document.getElementById('muridNama').value.trim();
@@ -578,6 +778,11 @@
     }
 
     function deleteMurid(id, nama) {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Akses Terbatas', 'Hanya Super Admin yang dapat menghapus data siswa');
+        return;
+      }
+
       Swal.fire({
         title: 'Hapus Siswa?',
         text: 'Apakah Anda yakin ingin menghapus data "' + nama + '"?',
@@ -612,11 +817,12 @@
 
     // Export Data Murid to Excel
     function exportDataMurid() {
-      if (rawMurid.length === 0) {
+      const dataToExport = isSuperAdmin() ? (filteredMurid.length > 0 ? filteredMurid : rawMurid) : filteredMurid;
+      if (!dataToExport || dataToExport.length === 0) {
         showToast('info', 'Tidak ada data siswa untuk diekspor');
         return;
       }
-      const rows = rawMurid.map(function(m, idx) {
+      const rows = dataToExport.map(function(m, idx) {
         return {
           'No': idx + 1,
           'NISN': formatNISN(m.nisn),
@@ -642,6 +848,11 @@
 
     // Process Import Excel / CSV
     function processImportCsv() {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Akses Terbatas', 'Hanya Super Admin yang dapat mengimpor data siswa');
+        return;
+      }
+
       const fileInput = document.getElementById('fileImportCsv');
       const mode = document.getElementById('importMode').value;
       if (!fileInput.files || fileInput.files.length === 0) {
