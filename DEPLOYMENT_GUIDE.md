@@ -12,7 +12,7 @@ Sistem ini telah dikonfigurasi terhubung secara langsung dengan tautan Google Sp
 - **ID Google Spreadsheet**: `1QflTpQGL0wwTq-rvu8u__Qzu5fByt3SVrno2vjiX7Zo`  
   *Link Spreadsheet*: [Buka Google Spreadsheet](https://docs.google.com/spreadsheets/d/1QflTpQGL0wwTq-rvu8u__Qzu5fByt3SVrno2vjiX7Zo/edit?usp=sharing)
 - **Folder Drive Jurnal Mengajar**: `1g1iaALpfRo8oovkJNoPxy_MIDLv5axEB`
-- **Folder Drive Foto Siswa / Logo / TTD**: `1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3`
+- **Folder Drive Foto Siswa / Profil / Logo / TTD**: `1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3`
 - **Folder Drive Bimbingan Guru Wali**: `12RUHlItCa8smp58-aixHOTWHld21md9_`
 - **Folder Drive Kegiatan Wali Kelas**: `1uNSsLv2rUUC1c_ykBhnkzQ7y43DRxaDj`
 - **Folder Drive Kegiatan Ekstrakurikuler**: `1Jf8BcS1jHO1wUYCzk6dQi9_sy7BRyroM`
@@ -60,7 +60,7 @@ Sistem ini telah dikonfigurasi terhubung secara langsung dengan tautan Google Sp
    - Log eksekusi akan menampilkan status: *"Otorisasi DriveApp Berhasil!"*.
 5. Klik **Deploy** (Terapkan) di pojok kanan atas > **New deployment** (Penerapan baru) atau **Manage deployments** > **Edit** > **New version**.
 6. Konfigurasi Web App:
-   - **Description**: `SIGURU Production v2.6`
+   - **Description**: `SIGURU Production v2.7`
    - **Execute as**: `Me` (Akun Google Anda)
    - **Who has access**: `Anyone` (Siapa saja)
 7. Klik **Deploy** dan salin URL Web App yang dihasilkan. Aplikasi kini siap digunakan tanpa kendala upload!
@@ -145,6 +145,15 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
     - Target menu awal disimpan sementara di `sessionStorage` (`siguru_redirect_target`), sehingga setelah login berhasil, pengguna dapat langsung diantar kembali ke menu yang dituju.
     - Penegakan Hak Akses (RBAC) pada URL: Memblokir pengguna dengan hak akses terbatas yang mencoba mengakses menu terlarang secara manual dan mengarahkan mereka kembali ke menu resminya.
 
+11. **Upload Foto Profil Pengguna ala Web & Sinkronisasi Global**:
+    - Antarmuka avatar profil interaktif dengan efek *hover overlay* (*"Ubah Foto"*), tombol badge kamera, aksi cepat upload/hapus foto, dan pratinjau lokal instan (`FileReader`).
+    - Foto otomatis diunggah ke Google Drive **Folder Foto** (`02_Foto_Logo_TTD`) dan tautan thumbnail langsung dicatat di sheet **`Data User`** pada kolom `foto`.
+    - Sinkronisasi avatar profil seketika di bagian atas **Header** dan pojok bawah **Sidebar** tanpa perlu memuat ulang peramban secara manual.
+    - Otomatis membersihkan berkas lama di Google Drive saat foto diganti atau dihapus (*drive auto-trash*).
+
+12. **Pencarian Cepat Siswa dari Data Induk (Typeable Student Search)**:
+    - Pemilihan siswa dari Data Induk pada Master Bimbingan (Guru Wali) dan Master Siswa Ekstrakurikuler kini dapat diketik langsung (pencarian nama siswa atau NISN) menggunakan *searchable datalist*, mempercepat pemilihan siswa di antara ratusan data tanpa perlu menggulir menu dropdown yang panjang.
+
 ---
 
 ## 🛠️ 5. PANDUAN PENERAPAN KE GOOGLE SPREADSHEET LAIN
@@ -158,11 +167,11 @@ Jika sistem ini ingin diduplikasi atau dipindahkan ke akun/spreadsheet sekolah l
    - *Catatan*: Tabel dan 11 nama sheet akan terbuat secara otomatis saat web app pertama kali dibuka.
 
 2. **Buat 5 Folder di Google Drive**:
-   - `01_Berkas_Jurnal`
-   - `02_Foto_Logo_TTD`
-   - `03_Berkas_Bimbingan`
-   - `04_Berkas_Wali_Kelas`
-   - `05_Berkas_Ekstrakurikuler`
+   - `01_Berkas_Jurnal` *(untuk bukti KBM guru)*
+   - `02_Foto_Logo_TTD` *(untuk foto siswa, foto profil pengguna, logo instansi, dan ttd kepsek)*
+   - `03_Berkas_Bimbingan` *(untuk dokumentasi konseling guru wali)*
+   - `04_Berkas_Wali_Kelas` *(untuk dokumentasi kegiatan wali kelas)*
+   - `05_Berkas_Ekstrakurikuler` *(untuk dokumentasi kegiatan ekstra)*
    - Pastikan hak akses folder diatur ke *"Siapa saja yang memiliki tautan sebagai Pelihat (Viewer)"*.
 
 3. **Atur Link Folder & Aset di Menu Pengaturan Sistem**:

@@ -79,9 +79,11 @@ flowchart TD
 1. **Master Guru** ([MasterGuru.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/MasterGuru.html)): Mengelola data pendidik, NIP, status kepegawaian, penugasan guru wali, wali kelas, dan pembina ekstra. Bagi pengguna non-Super Admin, nama guru terkunci otomatis pada identitas akun login sendiri. Khusus hak akses Super Admin dapat mengelola dan memilih nama guru secara bebas.
 2. **Master Murid** ([MasterMurid.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/MasterMurid.html)): Mengelola data siswa, NISN, kelas, nomor kontak orang tua, dan foto siswa dengan lightbox pratinjau resolusi tinggi.
 3. **Master Bimbingan (Guru Wali)** ([MasterBimbingan.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/MasterBimbingan.html)): Pemetaan siswa asuh ke masing-masing guru wali penanggung jawab.
+   - **Pencarian Cepat Siswa dari Data Induk (Typeable Search Input)**: Pemilihan siswa dari Data Induk pada form modal tambah/edit dapat diketik langsung (pencarian nama siswa atau NISN) melalui datalist interaktif, mempermudah pemilihan siswa tanpa harus menggulir (*scroll*) daftar panjang.
    - **Penguncian Nama Guru Otomatis Sesuai Hak Akses**: Pada filter tabel dan form modal (tambah/edit/impor), nama guru wali otomatis terisi dan terkunci (*read-only* & *disabled*) sesuai akun guru yang sedang login. Guru wali hanya dapat melihat dan mengelola siswa binaan mereka sendiri.
    - **Hak Akses Istimewa Super Admin**: Khusus Super Admin yang dapat memilih nama guru wali dari daftar dropdown secara leluasa untuk keperluan pemetaan dan pengelolaan lintas guru.
 4. **Master Ekstrakurikuler** ([MasterEkstra.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/MasterEkstra.html)): Pemetaan anggota kegiatan ekstra ke cabang dan pembina terkait.
+   - **Pencarian Cepat Siswa dari Data Induk (Typeable Search Input)**: Pemilihan siswa dari Data Induk dilengkapi kolom input pencarian nama/NISN yang dapat diketik langsung dengan daftar saran otomatis (*searchable datalist*).
    - **Dukungan Multi-Ekstra & Multi-Pembina**: Jika siswa mengikuti lebih dari 1 cabang kegiatan ekstrakurikuler (misalnya Pramuka dan Futsal), sistem secara otomatis menyediakan pemetaan guru pembimbing untuk masing-masing cabang ekstra yang dicentang.
    - **Input Guru Pembina Berdasarkan Hak Akses**: Pada modal tambah/edit siswa ekstra, cabang binaan akun guru non-Super Admin otomatis terkunci pada nama guru yang login (`Binaan Anda`), sedangkan cabang ekstra lainnya terhubung ke pembina terdaftar. Khusus Super Admin dapat memilih guru pembina manapun untuk masing-masing cabang ekstra secara bebas melalui dropdown dinamis.
    - **Filter Guru Pembina Sesuai Hak Akses**: Pada bilah filter tabel, akun guru non-Super Admin otomatis terkunci pada nama guru yang sedang login (siswa dengan multi-pembina tetap muncul bagi masing-masing pembina terkait). Super Admin dapat memilih semua guru pembina atau memfilter guru tertentu.
@@ -126,10 +128,27 @@ flowchart TD
 
 Pada menu [Pengaturan.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Pengaturan.html), tersedia fitur **"Tombol Sakti: Pembersihan Database"** yang dirancang untuk mereset sistem saat pergantian periode tahun ajaran baru:
 
-1. **Pembersihan Berkas Digital Google Drive**: Seluruh file lampiran (foto siswa, modul ajar/RPP, bukti konseling, dokumentasi wali kelas, dan latihan ekstra) yang terhubung dengan data **otomatis dihapus dari Google Drive** (dipindahkan ke trash) sehingga tidak membebani ruang penyimpanan. File template bawaan sistem tetap dilindungi.
+1. **Pembersihan Berkas Digital Google Drive**: Seluruh file lampiran (foto siswa, foto profil pengguna, modul ajar/RPP, bukti konseling, dokumentasi wali kelas, dan latihan ekstra) yang terhubung dengan data **otomatis dihapus dari Google Drive** (dipindahkan ke trash) sehingga tidak membebani ruang penyimpanan. File template bawaan sistem tetap dilindungi.
 2. **Pengosongan Transaksi & Master Data**: Mengosongkan seluruh baris pada lembar presensi, jurnal, bimbingan, wali kelas, ekstra, serta master data siswa dan guru.
 3. **Proteksi Manajemen User & RBAC**: Akun dengan hak akses **Super Admin** (seperti `SAdmin`) dan **Pelihat** (seperti `viewer`) **TIDAK DIHAPUS**, sehingga hak akses pengelola sistem tetap utuh.
 4. **Pemulihan Otomatis Data Pengaturan Default**: Data **Identitas Sekolah & Periode Akademik**, **Kop Surat & Tanda Tangan Digital**, serta **Folder Penyimpanan Google Drive** secara otomatis **disimpan kembali ke nilai defaultnya** di database sheet `Pengaturan`.
+
+#### G. Alur Profil Pengguna & Upload Foto Web ([Profil.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Profil.html))
+
+1. **Antarmuka Avatar Interaktif ala Aplikasi Web Modern**:
+   - Menampilkan bingkai avatar melingkar responsif dengan inisial nama atau foto profil aktif.
+   - Dilengkapi efek *hover overlay* (*"Ubah Foto"*), tombol badge kamera di sudut avatar, serta tombol aksi cepat **Upload Foto** dan **Hapus Foto**.
+   - Input berkas mendukung format gambar (JPG, JPEG, PNG, WebP) dengan batas ukuran maksimal 5 MB.
+2. **Pratinjau Lokal Instan (Instant Local Preview)**:
+   - Menggunakan `FileReader` (`readAsDataURL`) sehingga foto pengguna langsung berubah di layar secara instan sebelum proses unggah server selesai, memberikan kenyamanan pengalaman pengguna (*UX*).
+3. **Penyimpanan di Google Drive Folder Foto**:
+   - Berkas diunggah langsung ke Google Drive pada folder yang ditentukan pada konfigurasi Pengaturan (`folder_foto` / `02_Foto_Logo_TTD`).
+   - Sistem menghasilkan link thumbnail Google Drive beresolusi tinggi (`sz=w1000`) yang dapat dirender langsung tanpa kendala CORS.
+   - Penggantian foto profil atau penghapusan foto profil otomatis menghapus (*trash*) berkas foto lama dari Google Drive untuk menghemat kuota penyimpanan.
+4. **Penyimpanan Tautan di Sheet `Data User`**:
+   - Tautan gambar disimpan permanen pada kolom `foto` (kolom ke-7) di sheet `Data User` pada baris akun pengguna bersangkutan.
+5. **Sinkronisasi Avatar Global Real-Time**:
+   - Pembaruan foto profil atau penghapusannya langsung menyinkronkan avatar pada bilah atas [Header.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Header.html) dan pojok navigasi [Sidebar.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Sidebar.html) secara real-time tanpa perlu memuat ulang peramban secara manual.
 
 ---
 
@@ -143,19 +162,19 @@ Siguru Apps Script/
 ├── Readme.md                 # Dokumentasi komprehensif struktur, alur, konfigurasi & panduan
 │
 ├── StyleCSS.html             # Desain global, variabel warna, responsivitas, dan stylesheet komponen
-├── Sidebar.html              # Navigasi sidebar dinamis berdasarkan peran pengguna
-├── Header.html               # Header atas: auto-hiding navbar, jam real-time, tombol cache, profil
+├── Sidebar.html              # Navigasi sidebar dinamis berdasarkan peran pengguna & avatar profil
+├── Header.html               # Header atas: auto-hiding navbar, jam real-time, tombol cache, profil avatar
 ├── AppJS.html                # Pustaka utilitas client: auth, cache, format tanggal, Excel engine
 │
 ├── Landing.html              # Halaman beranda publik & informasi sekolah
 ├── Login.html                # Formulir autentikasi pengguna & validasi sesi
 ├── Dashboard.html            # Dashboard utama: statistik metrik, ringkasan KBM, & grafik
-├── Profil.html               # Pengaturan profil pengguna yang sedang login & ganti kata sandi
+├── Profil.html               # Pengaturan profil pengguna, upload foto web ke Drive & Sheet Data User
 │
 ├── MasterGuru.html           # Master Data Pendidik & Tenaga Kependidikan (Excel I/O)
 ├── MasterMurid.html          # Master Data Siswa & Foto Siswa (Excel I/O)
-├── MasterBimbingan.html      # Master Pemetaan Siswa Asuh Guru Wali (Excel I/O)
-├── MasterEkstra.html         # Master Anggota & Cabang Ekstrakurikuler (Excel I/O)
+├── MasterBimbingan.html      # Master Pemetaan Siswa Asuh Guru Wali (Typeable Student Search & Excel I/O)
+├── MasterEkstra.html         # Master Anggota & Cabang Ekstrakurikuler (Typeable Student Search & Excel I/O)
 │
 ├── FormAbsen.html            # Formulir Pencatatan Presensi Siswa Harian
 ├── FormJurnal.html           # Formulir Jurnal Mengajar Harian Guru (KBM)
@@ -183,16 +202,16 @@ Database utama disimpan pada Google Spreadsheet dengan 11 Sheet terstruktur:
 | No | Nama Sheet | Deskripsi & Field Utama |
 | --- | --- | --- |
 | 1 | `Pengaturan` | Pengaturan sekolah, nama instansi, logo, link kop surat, TTD kepsek, list Tahun Ajaran, Kelas, Mapel, Ekstra |
-| 2 | `Data User` | Data kredensial pengguna (`id`, `username`, `password`, `nama`, `role`, `nip`) |
-| 3 | `Data Guru` | Master data guru (`id`, `nip`, `nama_guru`, `jenis_kelamin`, `mapel_diampu`, `no_wa`) |
-| 4 | `Data Murid` | Master data siswa (`id`, `nisn`, `nama_murid`, `jenis_kelamin`, `kelas`, `no_wa_ortu`, `foto_siswa`, dll.) |
-| 5 | `Data Murid Guru Wali` | Relasi siswa bimbingan (`id`, `nama_murid`, `kelas`, `guru_wali`, `kontak`) |
-| 6 | `Data Murid Ekstra` | Relasi siswa ekstra (`id`, `nama_murid`, `kelas`, `kegiatan_ekstra`, `pembina`) |
-| 7 | `Hasil Absen` | Log presensi harian siswa (`id`, `tanggal`, `tahun_ajaran`, `semester`, `kelas`, `mapel`, `guru`, `nisn`, `nama_murid`, `keterangan`) |
-| 8 | `Hasil Jurnal` | Catatan KBM guru (`id`, `tanggal`, `tahun_ajaran`, `semester`, `kelas`, `mapel`, `guru`, `pertemuan_ke`, `materi`, `tuntas`, `link_bukti`) |
-| 9 | `Hasil Guru Wali` | Riwayat konseling (`id`, `tanggal`, `tahun_ajaran`, `semester`, `guru_wali`, `nama_murid`, `topik`, `tindak_lanjut`, `file_bukti`) |
-| 10 | `Hasil Wali` | Agenda kegiatan wali kelas (`id`, `tanggal`, `tahun_ajaran`, `semester`, `wali_kelas`, `deskripsi`, `link_bukti`) |
-| 11 | `Hasil Ekstra` | Agenda kegiatan ekstra (`id`, `tanggal`, `tahun_ajaran`, `semester`, `pembina`, `cabang`, `peserta`, `keterangan`, `link_bukti`) |
+| 2 | `Data User` | Data kredensial pengguna (`id`, `username`, `password`, `hak_akses`, `nama`, `nip`, `foto`) |
+| 3 | `Data Guru` | Master data guru (`id`, `nama_guru`, `nip`, `sebagai_guru_wali`, `sebagai_wali_kelas`, `pembina_ekstra`) |
+| 4 | `Data Murid` | Master data siswa (`id`, `nisn`, `nama_murid`, `jenis_kelamin`, `kelas`, `status`) |
+| 5 | `Data Murid Guru Wali` | Relasi siswa bimbingan (`id`, `nisn`, `nama_murid`, `kelas`, `jenis_kelamin`, `foto_murid`, `guru_wali`, `no_wa_murid`, `nama_ortu`, `kontak_ortu`, `catatan_khusus`) |
+| 6 | `Data Murid Ekstra` | Relasi siswa ekstra (`id`, `nisn`, `nama_murid`, `jenis_kelamin`, `kelas`, `nama_ekstra`, `nama_guru`) |
+| 7 | `Hasil Absen` | Log presensi harian siswa (`id`, `tanggal`, `tahun_ajaran`, `semester`, `nisn`, `nama_murid`, `jenis_kelamin`, `kelas`, `keterangan`, `mata_pelajaran`, `nama_guru`, `created_at`) |
+| 8 | `Hasil Jurnal` | Catatan KBM guru (`id`, `tanggal`, `tahun_ajaran`, `semester`, `nama_guru`, `mata_pelajaran`, `jam_ke`, `kelas`, `pertemuan_ke`, `model_pembelajaran`, `materi_pembelajaran`, `murid_tidak_hadir`, `ketuntasan_materi`, `keterangan_tuntas`, `link_bukti_jurnal`, `created_at`) |
+| 9 | `Hasil Guru Wali` | Riwayat konseling (`id`, `tanggal`, `tahun_ajaran`, `semester`, `nama_guru_wali`, `nama_murid`, `kategori`, `topik_masalah`, `tindak_lanjut`, `keterangan`, `file_bukti`, `created_at`) |
+| 10 | `Hasil Wali` | Agenda kegiatan wali kelas (`id`, `tanggal`, `tahun_ajaran`, `semester`, `kelas`, `nama_wali_kelas`, `deskripsi_kegiatan`, `link_bukti_wali`, `created_at`) |
+| 11 | `Hasil Ekstra` | Agenda kegiatan ekstra (`id`, `tanggal`, `tahun_ajaran`, `semester`, `nama_murid`, `kegiatan_ekstra`, `keterangan`, `link_bukti_ekstra`, `pembina_ekstra`, `created_at`) |
 
 ---
 
@@ -201,7 +220,7 @@ Database utama disimpan pada Google Spreadsheet dengan 11 Sheet terstruktur:
 Setiap lampiran berkas yang diunggah disimpan pada folder Google Drive masing-masing untuk menjaga kerapian data:
 
 1. **Folder Jurnal Mengajar**: Penyimpanan foto/dokumen RPP, modul ajar, dan foto pelaksanaan KBM.
-2. **Folder Foto Siswa / Logo / TTD**: Penyimpanan pas foto siswa, gambar logo sekolah, dan tanda tangan digital.
+2. **Folder Foto Siswa / Profil / Logo / TTD**: Penyimpanan pas foto siswa, foto profil pengguna, gambar logo sekolah, dan tanda tangan digital.
 3. **Folder Bimbingan Guru Wali**: Penyimpanan dokumentasi sesi konseling siswa asuh.
 4. **Folder Kegiatan Wali Kelas**: Penyimpanan arsip notula pertemuan paguyuban dan pembinaan kelas.
 5. **Folder Kegiatan Ekstrakurikuler**: Penyimpanan dokumentasi latihan dan kegiatan lomba ekstra.
