@@ -121,8 +121,7 @@ function getAppBundle() {
     const taList = getDaftarTahunAjaran();
     const ekstraList = getDaftarEkstra();
     const bimbingan = getSheetData(SHEET_NAMES.DATA_MURID_GURU_WALI);
-    const murid = getDataMurid();
-    const guruNamaList = guru.map(g => ({ nama: g.nama_guru, nip: g.nip }));
+    const guruNamaList = guru.map(g => ({ nama: g.nama_guru, nip: g.nip, pembina_ekstra: g.pembina_ekstra }));
 
     return {
       settings: settings,
@@ -134,6 +133,7 @@ function getAppBundle() {
       guruNama: guruNamaList,
       murid: murid,
       bimbingan: bimbingan,
+      muridEkstra: getSheetData(SHEET_NAMES.DATA_MURID_EKSTRA),
       timestamp: new Date().getTime()
     };
   } catch(err) {
@@ -218,7 +218,7 @@ function getHeaders(sheetName) {
     case SHEET_NAMES.DATA_MURID_GURU_WALI:
       return ['id','nisn','nama_murid','kelas','jenis_kelamin','foto_murid','guru_wali','no_wa_murid','nama_ortu','kontak_ortu','catatan_khusus'];
     case SHEET_NAMES.DATA_MURID_EKSTRA:
-      return ['id','nisn','nama_murid','jenis_kelamin','kelas','nama_ekstra'];
+      return ['id','nisn','nama_murid','jenis_kelamin','kelas','nama_ekstra','nama_guru'];
     case SHEET_NAMES.HASIL_ABSEN:
       return ['id','tanggal','tahun_ajaran','semester','nisn','nama_murid','jenis_kelamin','kelas','keterangan','mata_pelajaran','nama_guru','created_at'];
     case SHEET_NAMES.HASIL_JURNAL:
@@ -507,7 +507,7 @@ function addDataMurid(formData) {
     if (st.indexOf('Ekstra') !== -1) {
       const ekSheet = getSheet(SHEET_NAMES.DATA_MURID_EKSTRA);
       const newEkId = getNextId(SHEET_NAMES.DATA_MURID_EKSTRA);
-      ekSheet.appendRow([newEkId, formData.nisn || '', formData.nama_murid || '', formData.jenis_kelamin || 'L', formData.kelas || '', 'Pramuka']);
+      ekSheet.appendRow([newEkId, formData.nisn || '', formData.nama_murid || '', formData.jenis_kelamin || 'L', formData.kelas || '', 'Pramuka', '']);
     }
 
     return { success: true, message: 'Data siswa berhasil ditambahkan!' };
@@ -594,7 +594,7 @@ function updateStatusMurid(id, status) {
       const exists = ekData.some(e => String(e.nisn).trim() === String(row.nisn).trim() || String(e.nama_murid).trim().toLowerCase() === String(row.nama_murid).trim().toLowerCase());
       if (!exists) {
         const newEkId = getNextId(SHEET_NAMES.DATA_MURID_EKSTRA);
-        ekSheet.appendRow([newEkId, row.nisn || '', row.nama_murid || '', row.jenis_kelamin || 'L', row.kelas || '', 'Pramuka']);
+        ekSheet.appendRow([newEkId, row.nisn || '', row.nama_murid || '', row.jenis_kelamin || 'L', row.kelas || '', 'Pramuka', '']);
       }
     }
 
@@ -682,13 +682,22 @@ function addDataMuridEkstra(formData) {
   try {
     const sheet = getSheet(SHEET_NAMES.DATA_MURID_EKSTRA);
     const newId = getNextId(SHEET_NAMES.DATA_MURID_EKSTRA);
+
+    // Pastikan header nama_guru ada di baris 1
+    const lastCol = Math.max(sheet.getLastColumn(), 6);
+    const headerVals = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim().toLowerCase());
+    if (!headerVals.includes('nama_guru')) {
+      sheet.getRange(1, lastCol + 1).setValue('nama_guru').setFontWeight('bold');
+    }
+
     sheet.appendRow([
       newId,
       formData.nisn || '',
       formData.nama_murid || '',
       formData.jenis_kelamin || 'L',
       formData.kelas || '',
-      formData.nama_ekstra || ''
+      formData.nama_ekstra || '',
+      formData.nama_guru || formData.guru_pembina || ''
     ]);
     return { success: true, message: 'Data ekstra berhasil ditambahkan!' };
   } catch(e) {
@@ -703,14 +712,17 @@ function updateDataMuridEkstra(formData) {
     const row = data.find(r => r.id == formData.id);
     if (!row) return { success: false, message: 'Data tidak ditemukan!' };
     
-    sheet.getRange(row._rowIndex, 1, 1, 6).setValues([[
-      formData.id,
-      formData.nisn || '',
-      formData.nama_murid || '',
-      formData.jenis_kelamin || 'L',
-      formData.kelas || '',
-      formData.nama_ekstra || ''
-    ]]);
+    // Pastikan header nama_guru ada di baris 1
+    let lastCol = Math.max(sheet.getLastColumn(), 6);
+    let headerVals = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+    if (!headerVals.map(h => h.toLowerCase()).includes('nama_guru')) {
+      sheet.getRange(1, lastCol + 1).setValue('nama_guru').setFontWeight('bold');
+      lastCol++;
+      headerVals = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+    }
+
+    const values = headerVals.map(h => formData[h] !== undefined ? formData[h] : (row[h] || ''));
+    sheet.getRange(row._rowIndex, 1, 1, values.length).setValues([values]);
     return { success: true, message: 'Data ekstra berhasil diperbarui!' };
   } catch(e) {
     return { success: false, message: 'Error: ' + e.message };
@@ -1400,7 +1412,7 @@ function getDaftarTahunAjaran() {
 
 function getDaftarGuruNama() {
   const guru = getSheetData(SHEET_NAMES.DATA_GURU);
-  return guru.map(g => ({ nama: g.nama_guru, nip: g.nip }));
+  return guru.map(g => ({ nama: g.nama_guru, nip: g.nip, pembina_ekstra: g.pembina_ekstra }));
 }
 
 // === OTORISASI GOOGLE DRIVE ===

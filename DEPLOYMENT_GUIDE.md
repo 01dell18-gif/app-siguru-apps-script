@@ -99,7 +99,9 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
 1. **Role-Based Access Control (RBAC) Fleksibel & Multi-Role**:
    - Super Admin, Guru Mapel, Wali Kelas, Guru Wali, Pembina Ekstra, Pelihat (Viewer).
    - Pengguna dapat memiliki kombinasi multi-role (misal: "Guru, Wali Kelas, Pembina Ekstra").
-   - Filter dan penguncian nama guru otomatis (`🔒 [Nama Guru]`) di seluruh menu Master Data (Data Siswa Bimbingan & Data Guru), formulir pencatatan harian, dan laporan bagi selain Super Admin. Khusus hak akses Super Admin yang dapat memilih nama guru secara bebas.
+   - Filter dan penguncian nama guru otomatis (`🔒 [Nama Guru]`) di seluruh menu Master Data (Data Siswa Bimbingan, Data Siswa Ekstrakurikuler, & Data Guru), formulir pencatatan harian, dan laporan bagi selain Super Admin. Khusus hak akses Super Admin yang dapat memilih nama guru secara bebas.
+   - Proteksi Aksi Master Ekstrakurikuler: Tombol Edit dan Hapus dinonaktifkan (`🔒 Terkunci`) bagi selain Super Admin, hanya Super Admin yang berhak memodifikasi/menghapus anggota ekstra.
+   - Otomasi Cabang Ekstrakurikuler: Pada Formulir Kegiatan Ekstrakurikuler, cabang ekstrakurikuler otomatis terisi sesuai penugasan pembina ekstra akun guru yang login dan dikunci (*disabled*) bagi selain Super Admin.
 2. **Auto-Hiding Navbar & Real-Time Device Clock**:
    - Header modern yang otomatis menyusut saat di-scroll ke bawah dan muncul saat di-scroll ke atas.
    - Jam & tanggal real-time sesuai perangkat pengguna (klien).

@@ -46,9 +46,14 @@
             <input type="text" id="searchInput" class="form-control" placeholder="Cari nama, NISN..." oninput="handleFilterChange()">
           </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
+          <select id="filterGuru" class="form-select form-select-sm" onchange="handleFilterChange()">
+            <option value="">Semua Pembina</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
           <select id="filterEkstra" class="form-select form-select-sm" onchange="handleFilterChange()">
-            <option value="">Semua Cabang Ekstra</option>
+            <option value="">Semua Cabang</option>
           </select>
         </div>
         <div class="col-6 col-md-2">
@@ -56,15 +61,15 @@
             <option value="">Semua Kelas</option>
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-1">
           <select id="limitPerPage" class="form-select form-select-sm" onchange="handleFilterChange()">
-            <option value="10">10 data / hal</option>
-            <option value="20">20 data / hal</option>
-            <option value="50" selected>50 data / hal</option>
-            <option value="100">100 data / hal</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
           </select>
         </div>
-        <div class="col-6 col-md-2 d-flex gap-2">
+        <div class="col-12 col-md-2 d-flex gap-2">
           <button class="btn btn-primary btn-sm rounded-pill px-3 w-100" onclick="handleFilterChange()">Filter</button>
           <button class="btn btn-outline-secondary btn-sm rounded-pill px-2" onclick="resetFilter()" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></button>
         </div>
@@ -77,17 +82,18 @@
         <table class="table table-hover align-middle mb-0" id="tableEkstra">
           <thead class="table-light">
             <tr>
-              <th style="width: 50px;">No</th>
+              <th style="width: 40px;">No</th>
               <th>NISN</th>
               <th>Nama Siswa</th>
               <th>L/P</th>
               <th>Kelas</th>
               <th>Cabang Ekstrakurikuler</th>
-              <th class="text-center" style="width: 110px;">Aksi</th>
+              <th>Guru Pembina</th>
+              <th class="text-center" style="width: 100px;">Aksi</th>
             </tr>
           </thead>
           <tbody id="tbodyEkstra">
-            <tr><td colspan="7" class="text-center text-muted py-4">Memuat data siswa ekstra...</td></tr>
+            <tr><td colspan="8" class="text-center text-muted py-4">Memuat data siswa ekstra...</td></tr>
           </tbody>
         </table>
       </div>
@@ -147,6 +153,15 @@
             </div>
 
             <div class="mb-3">
+              <label class="form-label fw-semibold small">Guru Pembina Ekstrakurikuler <span class="text-danger">*</span></label>
+              <div id="divGuruPembinaContainer">
+                <select class="form-select" id="ekstraGuru" required>
+                  <option value="">-- Pilih Guru Pembina --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
               <label class="form-label fw-semibold small d-block mb-1">Cabang Ekstrakurikuler <span class="text-danger">*</span></label>
               <div id="containerEkstraCheckboxes" class="p-3 border rounded bg-light d-flex flex-wrap gap-3">
                 <!-- Checkboxes populated dynamically -->
@@ -174,7 +189,7 @@
         <div class="modal-body">
           <div class="alert alert-info py-2 small mb-3">
             <i class="bi bi-info-circle me-1"></i> Format Excel (.xlsx) atau CSV (.csv) urutan kolom:<br>
-            <strong>No, NISN, Nama Murid, Jenis Kelamin (L/P), Kelas, Nama Ekstrakurikuler</strong>.
+            <strong>No, NISN, Nama Murid, Jenis Kelamin (L/P), Kelas, Nama Ekstrakurikuler, Guru Pembina</strong>.
           </div>
           <div class="mb-3">
             <label class="form-label small fw-semibold">Pilih Berkas Excel / CSV</label>
@@ -205,6 +220,8 @@
     let filteredEkstra = [];
     let allMuridInduk = [];
     let listEkstraGlobal = [];
+    let allGuruList = [];
+    let guruEkstraMap = {};
     let currentPage = 1;
     let modalEkstraInstance = null;
     let modalImportInstance = null;
@@ -212,53 +229,181 @@
     document.addEventListener('DOMContentLoaded', function() {
       modalEkstraInstance = new bootstrap.Modal(document.getElementById('modalEkstra'));
       modalImportInstance = new bootstrap.Modal(document.getElementById('modalImportEkstra'));
+
+      // Non-superadmin: filter pembina langsung terkunci ke user.nama
+      if (!isSuperAdmin() && user && user.nama) {
+        const selFilter = document.getElementById('filterGuru');
+        if (selFilter) {
+          selFilter.innerHTML = '<option value="' + escapeHtml(user.nama) + '">' + escapeHtml(user.nama) + '</option>';
+          selFilter.value = user.nama;
+          selFilter.disabled = true;
+          selFilter.title = 'Terkunci sesuai akun login Anda';
+        }
+      }
+
       loadInitialData();
     });
 
+    function setupFilterGuru(guruList) {
+      const selFilter = document.getElementById('filterGuru');
+      if (!selFilter) return;
+      const curVal = selFilter.value;
+      selFilter.innerHTML = '<option value="">Semua Pembina</option>';
+      guruList.forEach(function(g) {
+        const gn = g.nama_guru || g.nama || '';
+        if (gn) selFilter.innerHTML += '<option value="' + escapeHtml(gn) + '">' + escapeHtml(gn) + '</option>';
+      });
+
+      if (isSuperAdmin()) {
+        selFilter.disabled = false;
+        selFilter.title = '';
+        if (curVal) selFilter.value = curVal;
+      } else {
+        if (user && user.nama) {
+          selFilter.value = user.nama;
+          if (selFilter.value !== user.nama) {
+            selFilter.innerHTML += '<option value="' + escapeHtml(user.nama) + '">' + escapeHtml(user.nama) + '</option>';
+            selFilter.value = user.nama;
+          }
+        }
+        selFilter.disabled = true;
+        selFilter.title = 'Terkunci sesuai akun login Anda';
+      }
+    }
+
+    function setupGuruPembinaModalField(val) {
+      const container = document.getElementById('divGuruPembinaContainer');
+      if (!container) return;
+      if (isSuperAdmin()) {
+        let html = '<select class="form-select" id="ekstraGuru" required>';
+        html += '<option value="">-- Pilih Guru Pembina --</option>';
+        allGuruList.forEach(function(g) {
+          const nama = g.nama_guru || g.nama || '';
+          if (nama) {
+            html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+          }
+        });
+        html += '</select>';
+        container.innerHTML = html;
+        const sel = document.getElementById('ekstraGuru');
+        if (val) {
+          sel.value = val;
+        } else if (user && user.nama) {
+          sel.value = user.nama;
+        }
+      } else {
+        const teacherName = (user && user.nama) ? user.nama : (val || '');
+        container.innerHTML = '<input type="text" id="ekstraGuru" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(teacherName) + '" readonly required title="Terkunci sesuai akun login Anda">';
+      }
+    }
+
     function loadInitialData() {
-      document.getElementById('loadingOverlay').style.display = 'flex';
+      // 1. Cek AppBundle instan jika tersedia
+      if (typeof getAppBundle === 'function') {
+        const bundle = getAppBundle();
+        if (bundle) {
+          applyEkstraBundle(bundle);
+        }
+      }
+
+      if (rawEkstra.length === 0) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+      }
+
+      // 2. Tarik data guru untuk pemetaan pembina ekstra
+      google.script.run
+        .withSuccessHandler(function(guruList) {
+          allGuruList = guruList || [];
+          guruEkstraMap = {};
+          allGuruList.forEach(function(g) {
+            const gn = g.nama_guru || g.nama || '';
+            const pe = g.pembina_ekstra || '';
+            if (gn && pe && pe !== '-') {
+              guruEkstraMap[pe.trim()] = gn.trim();
+            }
+          });
+          setupFilterGuru(allGuruList);
+          renderTable();
+        })
+        .getDataGuru();
 
       // Load Ekstra list
-      google.script.run.withSuccessHandler(function(ekstraList) {
-        listEkstraGlobal = ekstraList || [];
-        const selFilter = document.getElementById('filterEkstra');
-        selFilter.innerHTML = '<option value="">Semua Cabang Ekstra</option>';
-        const chkBoxDiv = document.getElementById('containerEkstraCheckboxes');
-        chkBoxDiv.innerHTML = '';
+      google.script.run
+        .withSuccessHandler(function(ekstraList) {
+          listEkstraGlobal = ekstraList || [];
+          const selFilter = document.getElementById('filterEkstra');
+          const curEks = selFilter ? selFilter.value : '';
+          if (selFilter) selFilter.innerHTML = '<option value="">Semua Cabang</option>';
+          const chkBoxDiv = document.getElementById('containerEkstraCheckboxes');
+          if (chkBoxDiv) chkBoxDiv.innerHTML = '';
 
-        listEkstraGlobal.forEach(function(e, i) {
-          selFilter.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
-          chkBoxDiv.innerHTML += '<div class="form-check">' +
-            '<input class="form-check-input ekstra-chk" type="checkbox" id="chkEkstra_' + i + '" value="' + escapeHtml(e) + '">' +
-            '<label class="form-check-label small" for="chkEkstra_' + i + '">' + escapeHtml(e) + '</label>' +
-          '</div>';
-        });
-      }).getDaftarEkstra();
+          listEkstraGlobal.forEach(function(e, i) {
+            if (selFilter) selFilter.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
+            if (chkBoxDiv) {
+              chkBoxDiv.innerHTML += '<div class="form-check">' +
+                '<input class="form-check-input ekstra-chk" type="checkbox" id="chkEkstra_' + i + '" value="' + escapeHtml(e) + '">' +
+                '<label class="form-check-label small" for="chkEkstra_' + i + '">' + escapeHtml(e) + '</label>' +
+              '</div>';
+            }
+          });
+          if (selFilter && curEks) selFilter.value = curEks;
+        })
+        .getDaftarEkstra();
 
       // Load Kelas
-      google.script.run.withSuccessHandler(function(kelasList) {
-        const selFilter = document.getElementById('filterKelas');
-        const selModal = document.getElementById('ekstraKelas');
-        selFilter.innerHTML = '<option value="">Semua Kelas</option>';
-        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-        kelasList.forEach(function(k) {
-          selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-        });
-      }).getDaftarKelas();
+      google.script.run
+        .withSuccessHandler(function(kelasList) {
+          const selFilter = document.getElementById('filterKelas');
+          const selModal = document.getElementById('ekstraKelas');
+          const curKlsFilter = selFilter ? selFilter.value : '';
+          const curKlsModal = selModal ? selModal.value : '';
+          if (selFilter) selFilter.innerHTML = '<option value="">Semua Kelas</option>';
+          if (selModal) selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+          (kelasList || []).forEach(function(k) {
+            if (selFilter) selFilter.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+            if (selModal) selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
+          });
+          if (selFilter && curKlsFilter) selFilter.value = curKlsFilter;
+          if (selModal && curKlsModal) selModal.value = curKlsModal;
+        })
+        .getDaftarKelas();
 
       // Load Murid Induk for Autofill
-      google.script.run.withSuccessHandler(function(muridList) {
-        allMuridInduk = muridList || [];
-        const sel = document.getElementById('selectMuridAutofill');
-        sel.innerHTML = '<option value="">-- Pilih Siswa Berstatus Ekstra atau Ketik Manual --</option>';
-        const eligible = allMuridInduk.filter(function(m){ return String(m.status || '').includes('Ekstra'); });
-        eligible.forEach(function(m) {
-          sel.innerHTML += '<option value="' + m.id + '">' + escapeHtml(m.nama_murid) + ' (' + escapeHtml(m.kelas || '-') + ')</option>';
-        });
-      }).getDataMurid();
+      google.script.run
+        .withSuccessHandler(function(muridList) {
+          allMuridInduk = muridList || [];
+          const sel = document.getElementById('selectMuridAutofill');
+          if (sel) {
+            sel.innerHTML = '<option value="">-- Pilih Siswa Berstatus Ekstra atau Ketik Manual --</option>';
+            const eligible = allMuridInduk.filter(function(m){ return String(m.status || '').includes('Ekstra'); });
+            eligible.forEach(function(m) {
+              sel.innerHTML += '<option value="' + m.id + '">' + escapeHtml(m.nama_murid) + ' (' + escapeHtml(m.kelas || '-') + ')</option>';
+            });
+          }
+        })
+        .getDataMurid();
 
       loadEkstraData();
+    }
+
+    function applyEkstraBundle(bundle) {
+      if (!bundle) return;
+      if (bundle.guru && Array.isArray(bundle.guru)) {
+        allGuruList = bundle.guru;
+        guruEkstraMap = {};
+        allGuruList.forEach(function(g) {
+          const gn = g.nama_guru || g.nama || '';
+          const pe = g.pembina_ekstra || '';
+          if (gn && pe && pe !== '-') {
+            guruEkstraMap[pe.trim()] = gn.trim();
+          }
+        });
+        setupFilterGuru(allGuruList);
+      }
+      if (bundle.muridEkstra && Array.isArray(bundle.muridEkstra)) {
+        rawEkstra = bundle.muridEkstra;
+        handleFilterChange();
+      }
     }
 
     function loadEkstraData() {
@@ -277,6 +422,9 @@
 
     function handleFilterChange() {
       const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const guruVal = isSuperAdmin() 
+        ? (document.getElementById('filterGuru') ? document.getElementById('filterGuru').value : '') 
+        : ((user && user.nama) ? user.nama : '');
       const eks = document.getElementById('filterEkstra').value;
       const kls = document.getElementById('filterKelas').value;
 
@@ -284,7 +432,14 @@
         const matchQ = !q || String(e.nama_murid || '').toLowerCase().includes(q) || String(e.nisn || '').includes(q);
         const matchEks = !eks || String(e.nama_ekstra || '').includes(eks);
         const matchKls = !kls || e.kelas === kls;
-        return matchQ && matchEks && matchKls;
+
+        let matchGuru = true;
+        if (guruVal) {
+          const assignedGuru = e.nama_guru || (guruEkstraMap[e.nama_ekstra] || '');
+          matchGuru = (assignedGuru.trim().toLowerCase() === guruVal.trim().toLowerCase());
+        }
+
+        return matchQ && matchEks && matchKls && matchGuru;
       });
 
       currentPage = 1;
@@ -293,6 +448,11 @@
 
     function resetFilter() {
       document.getElementById('searchInput').value = '';
+      if (isSuperAdmin()) {
+        if (document.getElementById('filterGuru')) document.getElementById('filterGuru').value = '';
+      } else {
+        if (document.getElementById('filterGuru')) document.getElementById('filterGuru').value = (user && user.nama) ? user.nama : '';
+      }
       document.getElementById('filterEkstra').value = '';
       document.getElementById('filterKelas').value = '';
       handleFilterChange();
@@ -310,7 +470,7 @@
 
       const tbody = document.getElementById('tbodyEkstra');
       if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Data siswa ekstra tidak ditemukan.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Data siswa ekstra tidak ditemukan.</td></tr>';
         document.getElementById('paginationWrapper').style.setProperty('display', 'none', 'important');
         return;
       }
@@ -329,6 +489,19 @@
         });
         if (!badgesHtml) badgesHtml = '<span class="text-muted">-</span>';
 
+        // Guru Pembina
+        const pembinaNama = e.nama_guru || (guruEkstraMap[e.nama_ekstra] || '-');
+
+        // Aksi: dinonaktifkan untuk selain Super Admin
+        let actionBtns = '';
+        if (isSuperAdmin()) {
+          actionBtns = 
+            '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editEkstra(' + e.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteEkstra(' + e.id + ', \'' + escapeHtml(e.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>';
+        } else {
+          actionBtns = '<span class="badge bg-secondary-subtle text-secondary py-1 px-2 small" title="Aksi dinonaktifkan. Hanya Super Admin yang berhak mengubah atau menghapus data."><i class="bi bi-lock-fill me-1"></i>Terkunci</span>';
+        }
+
         html += '<tr>' +
           '<td>' + no + '</td>' +
           '<td><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(nisnPad) + '</span></td>' +
@@ -336,10 +509,10 @@
           '<td>' + jkBadge + '</td>' +
           '<td><span class="badge bg-secondary-subtle text-secondary fw-semibold">' + escapeHtml(e.kelas || '-') + '</span></td>' +
           '<td>' + badgesHtml + '</td>' +
+          '<td><span class="badge bg-primary-subtle text-primary fw-semibold"><i class="bi bi-person-badge me-1"></i>' + escapeHtml(pembinaNama) + '</span></td>' +
           '<td class="text-center">' +
             '<div class="d-flex justify-content-center gap-1">' +
-              '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editEkstra(' + e.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
-              '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteEkstra(' + e.id + ', \'' + escapeHtml(e.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>' +
+              actionBtns +
             '</div>' +
           '</td>' +
         '</tr>';
@@ -387,12 +560,28 @@
       document.getElementById('ekstraNama').value = '';
       document.getElementById('ekstraJk').value = 'L';
       document.getElementById('ekstraKelas').value = '';
+      setupGuruPembinaModalField((user && user.nama) ? user.nama : '');
 
       document.querySelectorAll('.ekstra-chk').forEach(function(c){ c.checked = false; });
+
+      // Jika pembina ekstra non-superadmin memiliki penugasan ekstra tertentu, auto-centang
+      if (!isSuperAdmin() && user && user.nama) {
+        const found = allGuruList.find(function(g){ return (g.nama_guru || g.nama || '') === user.nama; });
+        if (found && found.pembina_ekstra && found.pembina_ekstra !== '-') {
+          document.querySelectorAll('.ekstra-chk').forEach(function(c){
+            if (c.value === found.pembina_ekstra || found.pembina_ekstra.includes(c.value)) c.checked = true;
+          });
+        }
+      }
+
       modalEkstraInstance.show();
     }
 
     function editEkstra(id) {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Hanya Super Admin yang berhak mengubah data anggota ekstra.');
+        return;
+      }
       const e = rawEkstra.find(function(x){ return x.id == id; });
       if (!e) return;
 
@@ -403,6 +592,7 @@
       document.getElementById('ekstraNama').value = e.nama_murid || '';
       document.getElementById('ekstraJk').value = e.jenis_kelamin || 'L';
       document.getElementById('ekstraKelas').value = e.kelas || '';
+      setupGuruPembinaModalField(e.nama_guru || (guruEkstraMap[e.nama_ekstra] || ''));
 
       const ekstraArr = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim(); });
       document.querySelectorAll('.ekstra-chk').forEach(function(c){
@@ -423,13 +613,16 @@
         return;
       }
 
+      const guruVal = document.getElementById('ekstraGuru') ? document.getElementById('ekstraGuru').value.trim() : (user.nama || '');
+
       const formData = {
         id: id,
         nisn: document.getElementById('ekstraNisn').value.trim(),
         nama_murid: document.getElementById('ekstraNama').value.trim(),
         jenis_kelamin: document.getElementById('ekstraJk').value,
         kelas: document.getElementById('ekstraKelas').value,
-        nama_ekstra: checkedEkstra.join(', ')
+        nama_ekstra: checkedEkstra.join(', '),
+        nama_guru: guruVal
       };
 
       showLoading(id ? 'Menyimpan perubahan...' : 'Menambahkan data ekstra...');
@@ -458,6 +651,10 @@
     }
 
     function deleteEkstra(id, nama) {
+      if (!isSuperAdmin()) {
+        showToast('warning', 'Hanya Super Admin yang berhak menghapus data anggota ekstra.');
+        return;
+      }
       Swal.fire({
         title: 'Hapus Anggota Ekstra?',
         text: 'Apakah Anda yakin ingin menghapus data "' + nama + '"?',
@@ -502,7 +699,8 @@
           'Nama Murid': e.nama_murid || '',
           'Jenis Kelamin': e.jenis_kelamin || 'L',
           'Kelas': e.kelas || '',
-          'Nama Ekstrakurikuler': e.nama_ekstra || ''
+          'Nama Ekstrakurikuler': e.nama_ekstra || '',
+          'Guru Pembina': e.nama_guru || (guruEkstraMap[e.nama_ekstra] || '-')
         };
       });
       exportArrayToExcel(rows, 'Data_Murid_Ekstra_' + new Date().toISOString().slice(0,10), 'Siswa Ekstra');
@@ -510,11 +708,11 @@
 
     // Download Template Excel
     function downloadTemplateEkstra() {
-      const headers = ['No', 'NISN', 'Nama Murid', 'Jenis Kelamin', 'Kelas', 'Nama Ekstrakurikuler'];
+      const headers = ['No', 'NISN', 'Nama Murid', 'Jenis Kelamin', 'Kelas', 'Nama Ekstrakurikuler', 'Guru Pembina'];
       const sampleRows = [
-        ['1', '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Pramuka, Futsal'],
-        ['2', '0087654321', 'Annisa Nurul Hidayah', 'P', 'X RPL 1', 'PMR'],
-        ['3', '0091122334', 'Bagas Dimas Saputra', 'L', 'XI RPL 1', 'Basket']
+        ['1', '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Pramuka, Futsal', 'Drs. Budi Santoso, M.Pd.'],
+        ['2', '0087654321', 'Annisa Nurul Hidayah', 'P', 'X RPL 1', 'PMR', 'Siti Nurhaliza, S.Pd.'],
+        ['3', '0091122334', 'Bagas Dimas Saputra', 'L', 'XI RPL 1', 'Basket', 'Ahmad Fauzi, S.Pd.']
       ];
       downloadExcelTemplate(headers, sampleRows, 'Template_Import_Data_Ekstra', 'Template Ekstra');
     }
@@ -544,7 +742,8 @@
               nama_murid: String(parts[2] !== undefined && parts[2] !== '' ? parts[2] : (parts[1] || '')).trim(),
               jenis_kelamin: String(parts[3] || 'L').toUpperCase().startsWith('P') ? 'P' : 'L',
               kelas: String(parts[4] || '').trim(),
-              nama_ekstra: String(parts[5] || 'Pramuka').trim()
+              nama_ekstra: String(parts[5] || 'Pramuka').trim(),
+              nama_guru: (!isSuperAdmin() && user && user.nama) ? user.nama : String(parts[6] || '').trim()
             });
           }
         }

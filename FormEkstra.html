@@ -46,6 +46,9 @@
           <div class="col-md-4 col-sm-12">
             <label class="form-label fw-semibold small text-secondary">Cabang Ekstrakurikuler <span class="text-danger">*</span></label>
             <select id="ekstraCabang" class="form-select" required onchange="filterPesertaByEkstra()"></select>
+            <div id="badgeEkstraLock" class="mt-1" style="display: none;">
+              <small class="badge bg-secondary-subtle text-secondary"><i class="bi bi-lock-fill me-1"></i>Terkunci otomatis sesuai pembina</small>
+            </div>
           </div>
         </div>
 
@@ -111,6 +114,9 @@
 
     let allMuridEkstra = [];
     let driveFolderEkstra = '';
+    let daftarGuru = [];
+    let allEkstraList = [];
+    let assignedEkstraGuru = '';
 
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('ekstraTanggal').value = new Date().toISOString().slice(0,10);
@@ -121,21 +127,109 @@
     function setupPembinaField() {
       const container = document.getElementById('divPembinaContainer');
       if (isSuperAdmin()) {
-        container.innerHTML = '<select id="ekstraPembina" class="form-select"></select>';
+        container.innerHTML = '<select id="ekstraPembina" class="form-select" onchange="onPembinaSelected(this.value)"></select>';
         google.script.run.withSuccessHandler(function(guruList) {
+          daftarGuru = guruList || [];
           const sel = document.getElementById('ekstraPembina');
-          sel.innerHTML = '';
-          guruList.forEach(function(g) {
-            sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
-          });
-          if (user && user.nama) sel.value = user.nama;
+          if (sel) {
+            sel.innerHTML = '';
+            daftarGuru.forEach(function(g) {
+              sel.innerHTML += '<option value="' + escapeHtml(g.nama) + '">' + escapeHtml(g.nama) + '</option>';
+            });
+            if (user && user.nama) sel.value = user.nama;
+            onPembinaSelected(sel.value);
+          }
         }).getDaftarGuruNama();
       } else {
         container.innerHTML = '<input type="text" id="ekstraPembina" class="form-control bg-light fw-semibold text-dark" value="' + escapeHtml(user.nama) + '" readonly title="Terkunci sesuai akun login Anda">';
+        google.script.run.withSuccessHandler(function(guruList) {
+          daftarGuru = guruList || [];
+          onPembinaSelected(user.nama);
+        }).getDaftarGuruNama();
       }
     }
 
+    function onPembinaSelected(pembinaName) {
+      applyCabangByPembina(pembinaName);
+    }
+
+    function applyCabangByPembina(pembinaName) {
+      const selCabang = document.getElementById('ekstraCabang');
+      if (!selCabang) return;
+
+      const pName = pembinaName || (user && user.nama ? user.nama : '');
+      const g = (daftarGuru || []).find(function(item) {
+        return String(item.nama || '').trim().toLowerCase() === String(pName).trim().toLowerCase();
+      });
+
+      let assigned = '';
+      if (g && g.pembina_ekstra && g.pembina_ekstra !== '-') {
+        assigned = String(g.pembina_ekstra).trim();
+      }
+
+      const lockBadge = document.getElementById('badgeEkstraLock');
+
+      if (!isSuperAdmin()) {
+        if (assigned) {
+          assignedEkstraGuru = assigned;
+          let found = false;
+          for (let i = 0; i < selCabang.options.length; i++) {
+            const val = selCabang.options[i].value;
+            if (val === assigned || assigned.includes(val) || val.includes(assigned)) {
+              selCabang.selectedIndex = i;
+              found = true;
+              break;
+            }
+          }
+          if (!found && allEkstraList.length > 0) {
+            const opt = new Option(assigned, assigned, true, true);
+            selCabang.add(opt);
+            selCabang.value = assigned;
+          }
+          selCabang.disabled = true;
+          selCabang.classList.add('bg-light', 'fw-semibold');
+          selCabang.title = 'Terkunci otomatis sesuai cabang ekstra pembina (' + assigned + ')';
+          if (lockBadge) lockBadge.style.display = 'block';
+        } else {
+          selCabang.disabled = false;
+          selCabang.classList.remove('bg-light', 'fw-semibold');
+          selCabang.title = '';
+          if (lockBadge) lockBadge.style.display = 'none';
+        }
+      } else {
+        if (assigned) {
+          for (let i = 0; i < selCabang.options.length; i++) {
+            const val = selCabang.options[i].value;
+            if (val === assigned || assigned.includes(val) || val.includes(assigned)) {
+              selCabang.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        selCabang.disabled = false;
+        selCabang.classList.remove('bg-light', 'fw-semibold');
+        selCabang.title = 'Super Admin dapat memilih cabang ekstra secara bebas';
+        if (lockBadge) lockBadge.style.display = 'none';
+      }
+
+      filterPesertaByEkstra();
+    }
+
     function loadInitialData() {
+      const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+      if (bundle) {
+        if (bundle.settings && bundle.settings.folder_ekstra) driveFolderEkstra = bundle.settings.folder_ekstra;
+        if (bundle.guruNama && bundle.guruNama.length > 0) daftarGuru = bundle.guruNama;
+        if (bundle.ekstra && bundle.ekstra.length > 0) {
+          allEkstraList = bundle.ekstra;
+          populateCabangEkstra(bundle.ekstra);
+        }
+        if (bundle.muridEkstra) {
+          allMuridEkstra = bundle.muridEkstra;
+          filterPesertaByEkstra();
+        }
+      }
+
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       // Load Settings
@@ -145,11 +239,8 @@
 
       // Load Cabang Ekstra
       google.script.run.withSuccessHandler(function(ekstraList) {
-        const sel = document.getElementById('ekstraCabang');
-        sel.innerHTML = '';
-        ekstraList.forEach(function(e) {
-          sel.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
-        });
+        allEkstraList = ekstraList || [];
+        populateCabangEkstra(allEkstraList);
 
         // Load Murid Ekstra
         google.script.run.withSuccessHandler(function(dataEkstra) {
@@ -160,8 +251,23 @@
       }).getDaftarEkstra();
     }
 
+    function populateCabangEkstra(ekstraList) {
+      const sel = document.getElementById('ekstraCabang');
+      if (!sel) return;
+      const currentVal = sel.value;
+      sel.innerHTML = '';
+      (ekstraList || []).forEach(function(e) {
+        sel.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
+      });
+      if (currentVal) sel.value = currentVal;
+
+      const pembinaEl = document.getElementById('ekstraPembina');
+      const pName = pembinaEl ? pembinaEl.value : (user && user.nama ? user.nama : '');
+      applyCabangByPembina(pName);
+    }
+
     function filterPesertaByEkstra() {
-      const ekstraVal = document.getElementById('ekstraCabang').value;
+      const ekstraVal = (document.getElementById('ekstraCabang') && document.getElementById('ekstraCabang').value) || assignedEkstraGuru || '';
       const container = document.getElementById('containerPesertaEkstra');
 
       if (!ekstraVal) {
@@ -255,7 +361,8 @@
         return;
       }
 
-      const cabang = (document.getElementById('ekstraCabang') && document.getElementById('ekstraCabang').value.trim()) || '';
+      const cabangEl = document.getElementById('ekstraCabang');
+      const cabang = (cabangEl && cabangEl.value ? cabangEl.value.trim() : '') || assignedEkstraGuru || '';
       const materi = (document.getElementById('ekstraKegiatan') && document.getElementById('ekstraKegiatan').value.trim()) || '';
       const catatan = (document.getElementById('ekstraKeterangan') && document.getElementById('ekstraKeterangan').value.trim()) || '';
       const fullKeterangan = materi ? (materi + (catatan ? ' (' + catatan + ')' : '')) : catatan;
