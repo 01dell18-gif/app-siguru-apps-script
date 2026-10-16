@@ -272,6 +272,43 @@
       }
     }
 
+    function parsePembinaList(rawStr) {
+      if (!rawStr || rawStr === '-') return [];
+      const str = String(rawStr).trim();
+      if (!str) return [];
+
+      // 1. Jika dipisahkan tanda titik koma (;)
+      if (str.includes(';')) {
+        return str.split(';').map(function(s){ return s.trim(); }).filter(Boolean);
+      }
+
+      // 2. Cocokkan dengan nama guru dari allGuruList (dari nama terpanjang)
+      if (allGuruList && Array.isArray(allGuruList) && allGuruList.length > 0) {
+        const sortedTeachers = allGuruList
+          .map(function(g){ return (g.nama_guru || g.nama || '').trim(); })
+          .filter(Boolean)
+          .sort(function(a, b){ return b.length - a.length; });
+
+        const matchedWithPos = [];
+        let remaining = str;
+        sortedTeachers.forEach(function(tName) {
+          if (tName && remaining.toLowerCase().includes(tName.toLowerCase())) {
+            const idx = remaining.toLowerCase().indexOf(tName.toLowerCase());
+            matchedWithPos.push({ name: tName, pos: idx });
+            remaining = remaining.substring(0, idx) + ' '.repeat(tName.length) + remaining.substring(idx + tName.length);
+          }
+        });
+
+        if (matchedWithPos.length > 0) {
+          matchedWithPos.sort(function(a, b){ return a.pos - b.pos; });
+          return matchedWithPos.map(function(m){ return m.name; });
+        }
+      }
+
+      // 3. Fallback: jika tidak ada pemisah titik koma dan tidak cocok allGuruList, pertahankan seluruh string (jangan di-split koma)
+      return [str];
+    }
+
     function handleEkstraCheckboxChange() {
       renderGuruPerEkstraSection();
     }
@@ -371,7 +408,7 @@
             const gn = g.nama_guru || g.nama || '';
             const pe = g.pembina_ekstra || '';
             if (gn && pe && pe !== '-') {
-              String(pe).split(',').forEach(function(subEks) {
+              String(pe).split(/[,;]/).forEach(function(subEks) {
                 const tr = subEks.trim();
                 if (tr) guruEkstraMap[tr] = gn.trim();
               });
@@ -450,7 +487,7 @@
           const gn = g.nama_guru || g.nama || '';
           const pe = g.pembina_ekstra || '';
           if (gn && pe && pe !== '-') {
-            String(pe).split(',').forEach(function(subEks) {
+            String(pe).split(/[,;]/).forEach(function(subEks) {
               const tr = subEks.trim();
               if (tr) guruEkstraMap[tr] = gn.trim();
             });
@@ -512,8 +549,8 @@
         let matchGuru = true;
         if (guruVal) {
           const rawGuruStr = e.nama_guru || (guruEkstraMap[e.nama_ekstra] || '');
-          const gList = String(rawGuruStr).split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
-          matchGuru = gList.includes(guruVal.trim().toLowerCase()) || rawGuruStr.toLowerCase().includes(guruVal.trim().toLowerCase());
+          const pList = parsePembinaList(rawGuruStr).map(function(s){ return s.trim().toLowerCase(); });
+          matchGuru = pList.includes(guruVal.trim().toLowerCase()) || rawGuruStr.toLowerCase().includes(guruVal.trim().toLowerCase());
         }
 
         return matchQ && matchEks && matchKls && matchGuru;
@@ -568,7 +605,7 @@
 
         // Guru Pembina Badges
         const pembinaStr = e.nama_guru || (guruEkstraMap[e.nama_ekstra] || '-');
-        const pembinaArr = String(pembinaStr).split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        const pembinaArr = parsePembinaList(pembinaStr);
         let pembinaBadges = '';
         pembinaArr.forEach(function(p){
           pembinaBadges += '<span class="badge bg-primary-subtle text-primary fw-semibold me-1 mb-1"><i class="bi bi-person-badge me-1"></i>' + escapeHtml(p) + '</span>';
@@ -678,7 +715,7 @@
       document.getElementById('ekstraKelas').value = e.kelas || '';
 
       const ekstraArr = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-      const guruArr = String(e.nama_guru || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      const guruArr = parsePembinaList(e.nama_guru || '');
 
       document.querySelectorAll('.ekstra-chk').forEach(function(c){
         c.checked = ekstraArr.includes(c.value);
@@ -716,7 +753,7 @@
         if (val && val !== '-') selectedGurus.push(val);
       });
       const uniqueGurus = [...new Set(selectedGurus)];
-      const finalGuruVal = uniqueGurus.length > 0 ? uniqueGurus.join(', ') : (user && user.nama ? user.nama : '');
+      const finalGuruVal = uniqueGurus.length > 0 ? uniqueGurus.join(' ; ') : (user && user.nama ? user.nama : '');
 
       const formData = {
         id: id,

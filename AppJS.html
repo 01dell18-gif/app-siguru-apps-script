@@ -123,16 +123,27 @@ function logout() {
 window.SERVER_BUNDLE = window.SERVER_BUNDLE || null;
 
 function getAppBundle() {
-  if (window.SERVER_BUNDLE && typeof window.SERVER_BUNDLE === 'object') return window.SERVER_BUNDLE;
+  if (window.SERVER_BUNDLE && typeof window.SERVER_BUNDLE === 'object') {
+    if (window.SERVER_BUNDLE.guru && window.SERVER_BUNDLE.guru.length > 0) {
+      return window.SERVER_BUNDLE;
+    }
+  }
   try {
     const raw = sessionStorage.getItem('siguru_app_bundle');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && !parsed.error && parsed.guru && parsed.guru.length > 0) {
+        return parsed;
+      } else {
+        sessionStorage.removeItem('siguru_app_bundle');
+      }
+    }
   } catch(e) {}
   return null;
 }
 
 function updateAppBundle(freshData) {
-  if (!freshData) return;
+  if (!freshData || freshData.error) return;
   const current = getAppBundle() || {};
   const updated = Object.assign({}, current, freshData);
   window.SERVER_BUNDLE = updated;

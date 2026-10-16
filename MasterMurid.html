@@ -253,14 +253,15 @@
       google.script.run
         .withSuccessHandler(function(bundle) {
           document.getElementById('loadingOverlay').style.display = 'none';
-          if (bundle) {
+          if (bundle && bundle.murid && bundle.murid.length > 0) {
             if (typeof updateAppBundle === 'function') updateAppBundle(bundle);
             applyMuridBundle(bundle);
+          } else {
+            loadMuridData();
           }
         })
         .withFailureHandler(function(err) {
-          document.getElementById('loadingOverlay').style.display = 'none';
-          showToast('error', 'Gagal memuat data siswa: ' + err.message);
+          loadMuridData();
         })
         .getAppBundle();
     }

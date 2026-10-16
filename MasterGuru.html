@@ -203,14 +203,22 @@
       google.script.run
         .withSuccessHandler(function(bundle) {
           document.getElementById('loadingOverlay').style.display = 'none';
-          if (bundle) {
+          if (bundle && bundle.guru && bundle.guru.length > 0) {
             if (typeof updateAppBundle === 'function') updateAppBundle(bundle);
             applyGuruBundle(bundle);
+          } else {
+            google.script.run.withSuccessHandler(function(guruData) {
+              allGuru = guruData || [];
+              renderTable(allGuru);
+            }).getDataGuru();
           }
         })
         .withFailureHandler(function(err) {
-          document.getElementById('loadingOverlay').style.display = 'none';
-          showToast('error', 'Error: ' + err.message);
+          google.script.run.withSuccessHandler(function(guruData) {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            allGuru = guruData || [];
+            renderTable(allGuru);
+          }).getDataGuru();
         })
         .getAppBundle();
     }

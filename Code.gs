@@ -116,6 +116,7 @@ function getAppBundle() {
   try {
     const settings = getSettings();
     const guru = getSheetData(SHEET_NAMES.DATA_GURU);
+    const murid = getSheetData(SHEET_NAMES.DATA_MURID);
     const kelasList = getDaftarKelas();
     const mapelList = getDaftarMapel();
     const taList = getDaftarTahunAjaran();
@@ -137,6 +138,7 @@ function getAppBundle() {
       timestamp: new Date().getTime()
     };
   } catch(err) {
+    Logger.log('Error in getAppBundle: ' + err.message);
     return {
       settings: {},
       kelas: [],
@@ -147,6 +149,8 @@ function getAppBundle() {
       guruNama: [],
       murid: [],
       bimbingan: [],
+      muridEkstra: [],
+      error: err.message,
       timestamp: new Date().getTime()
     };
   }
