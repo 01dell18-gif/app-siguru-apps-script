@@ -281,13 +281,13 @@
         });
         if (curVal) selFilter.value = curVal;
       } else {
-        // Hak akses Guru, Guru Wali, Pembina Ekstra, Wali Kelas:
-        // Jika tidak mengampu kelas: datanya dikosongkan dan tidak dapat memilih kelas
+        // Hak akses Guru & Wali Kelas:
+        // Jika tidak mengampu kelas: filternya dikosongkan dan tidak dapat memilih kelas
         if (!assignedClasses || assignedClasses.length === 0) {
-          selFilter.innerHTML = '<option value="" selected>Tidak Mengampu Kelas</option>';
+          selFilter.innerHTML = '<option value="" selected></option>';
           selFilter.value = '';
           selFilter.disabled = true;
-          selFilter.title = 'Anda tidak mengampu kelas (Terkunci)';
+          selFilter.title = 'Anda tidak mengampu kelas (Dikosongkan & Terkunci)';
         } else if (assignedClasses.length === 1) {
           // Otomatis terisi sesuai gurunya dan terkunci jika 1 kelas
           const k = assignedClasses[0];

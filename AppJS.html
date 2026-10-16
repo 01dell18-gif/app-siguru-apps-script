@@ -221,7 +221,7 @@ function hasAccess(module) {
     case 'master_guru': 
       return false;
     case 'master_murid': 
-      return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra') || hasPembina;
+      return hasRole('guru') || hasRole('wali kelas');
     case 'master_bimbingan': 
       return hasRole('guru wali');
     case 'master_ekstra': 
@@ -235,7 +235,7 @@ function hasAccess(module) {
     case 'form_guruwali': 
       return hasRole('guru wali');
     case 'form_wali': 
-      return hasRole('wali kelas') || hasRole('guru wali');
+      return hasRole('wali kelas');
     case 'form_ekstra': 
       return hasRole('pembina ekstra') || hasPembina;
 
@@ -245,7 +245,7 @@ function hasAccess(module) {
     case 'laporan_jurnal': 
       return hasRole('guru');
     case 'laporan_wali': 
-      return hasRole('wali kelas') || hasRole('guru wali');
+      return hasRole('wali kelas');
     case 'laporan_guruwali': 
       return hasRole('guru wali');
     case 'laporan_ekstra': 

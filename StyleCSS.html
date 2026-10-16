@@ -75,30 +75,83 @@
 
     // 2. Jika sudah login, validasi Hak Akses (RBAC) per menu
     var role = user.hak_akses || 'Guru';
-    var roles = role.split(',').map(function(r) { return r.trim(); });
-    var isSuper = (role === 'Super Admin' || role === 'admin');
-    var isViewer = (role === 'Pelihat');
+    var roleLower = String(role).toLowerCase().trim();
+    var isSuper = roleLower.indexOf('super admin') !== -1 || roleLower.indexOf('admin') !== -1 || roleLower === 'sadmin';
+    var isViewer = roleLower.indexOf('pelihat') !== -1 || roleLower.indexOf('pengawas') !== -1;
+
+    var roles = roleLower.split(',').map(function(r) { return r.trim(); });
+    var hasRole = function(rName) { return roles.indexOf(rName.toLowerCase()) !== -1; };
+    var hasPembina = roles.some ? roles.some(function(r) { return r.indexOf('pembina') !== -1; }) : (roleLower.indexOf('pembina') !== -1);
 
     var isAllowed = true;
-    if (page === 'pengaturan' || page === 'user-management' || page === 'master-guru' || page === 'master-murid') {
-      if (!isSuper) isAllowed = false;
-    } else if (page === 'master-bimbingan') {
-      if (!isSuper && roles.indexOf('Guru Wali') === -1) isAllowed = false;
-    } else if (page === 'master-ekstra') {
-      if (!isSuper && roles.indexOf('Pembina Ekstra') === -1) isAllowed = false;
-    } else if (page === 'form-absen') {
-      if (isViewer || (!isSuper && roles.indexOf('Guru') === -1 && roles.indexOf('Wali Kelas') === -1)) isAllowed = false;
-    } else if (page === 'form-jurnal') {
-      if (isViewer || (!isSuper && roles.indexOf('Guru') === -1)) isAllowed = false;
-    } else if (page === 'form-guruwali') {
-      if (isViewer || (!isSuper && roles.indexOf('Guru Wali') === -1 && roles.indexOf('Guru') === -1)) isAllowed = false;
-    } else if (page === 'form-wali') {
-      if (isViewer || (!isSuper && roles.indexOf('Wali Kelas') === -1)) isAllowed = false;
-    } else if (page === 'form-ekstra') {
-      if (isViewer || (!isSuper && roles.indexOf('Pembina Ekstra') === -1 && roles.indexOf('Guru') === -1)) isAllowed = false;
-    } else if (page === 'dashboard' && isViewer) {
-      performRedirect('laporan-absen', 'viewer_redirect');
-      return;
+    if (isSuper) {
+      isAllowed = true;
+    } else if (isViewer) {
+      if (page === 'dashboard') {
+        performRedirect('laporan-absen', 'viewer_redirect');
+        return;
+      }
+      isAllowed = (page.indexOf('laporan') === 0 || page === 'print-laporan' || page === 'profil');
+    } else {
+      switch(page) {
+        case 'dashboard':
+        case 'profil':
+          isAllowed = true;
+          break;
+
+        // 1. Grup Master Data
+        case 'master-guru':
+          isAllowed = false;
+          break;
+        case 'master-murid':
+          isAllowed = hasRole('guru') || hasRole('wali kelas');
+          break;
+        case 'master-bimbingan':
+          isAllowed = hasRole('guru wali');
+          break;
+        case 'master-ekstra':
+          isAllowed = hasRole('pembina ekstra') || hasPembina;
+          break;
+
+        // 2. Grup Form Inputan
+        case 'form-absen':
+        case 'form-jurnal':
+          isAllowed = hasRole('guru');
+          break;
+        case 'form-wali':
+          isAllowed = hasRole('wali kelas');
+          break;
+        case 'form-guruwali':
+          isAllowed = hasRole('guru wali');
+          break;
+        case 'form-ekstra':
+          isAllowed = hasRole('pembina ekstra') || hasPembina;
+          break;
+
+        // 3. Grup Laporan Hasil
+        case 'laporan-absen':
+        case 'laporan-jurnal':
+          isAllowed = hasRole('guru');
+          break;
+        case 'laporan-wali':
+          isAllowed = hasRole('wali kelas');
+          break;
+        case 'laporan-guruwali':
+          isAllowed = hasRole('guru wali');
+          break;
+        case 'laporan-ekstra':
+          isAllowed = hasRole('pembina ekstra') || hasPembina;
+          break;
+
+        // 4. Grup Pengaturan Sistem
+        case 'pengaturan':
+        case 'user-management':
+          isAllowed = false;
+          break;
+
+        default:
+          isAllowed = true;
+      }
     }
 
     if (!isAllowed) {
