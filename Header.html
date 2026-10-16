@@ -115,7 +115,22 @@ function updateHeaderUI() {
     const un = document.getElementById('dropdownUserName');
     const nip = document.getElementById('dropdownUserNIP');
     const ur = document.getElementById('dropdownUserRole');
-    if (av) av.textContent = (user.nama || 'U').charAt(0).toUpperCase();
+    if (av) {
+      av.innerHTML = '';
+      if (user.foto) {
+        const img = document.createElement('img');
+        img.src = user.foto;
+        img.alt = user.nama || 'Avatar';
+        img.className = 'w-100 h-100 rounded-circle';
+        img.style.objectFit = 'cover';
+        img.onerror = function() {
+          av.textContent = (user.nama || 'U').charAt(0).toUpperCase();
+        };
+        av.appendChild(img);
+      } else {
+        av.textContent = (user.nama || 'U').charAt(0).toUpperCase();
+      }
+    }
     if (un) un.textContent = user.nama || 'Pengguna';
     if (nip) nip.textContent = 'NIP: ' + (user.nip || '-');
     if (ur) ur.textContent = user.hak_akses || 'Guru';

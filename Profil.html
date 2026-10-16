@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profil Pengguna - SIGURU</title>
   <?!= include('StyleCSS'); ?>
+  <style>
+    .avatar-wrapper {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .avatar-wrapper:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25) !important;
+    }
+    .avatar-wrapper:hover .avatar-hover-overlay {
+      opacity: 1 !important;
+    }
+    .avatar-initials {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+    .btn-camera-badge {
+      transition: transform 0.15s ease;
+    }
+    .btn-camera-badge:hover {
+      transform: scale(1.1);
+    }
+  </style>
 </head>
 <body>
   <?!= include('Sidebar'); ?>
@@ -19,7 +40,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
       <div>
         <h4 class="fw-bold text-dark mb-1"><i class="bi bi-person-circle text-primary me-2"></i>Profil Pengguna</h4>
-        <p class="text-muted small mb-0">Kelola identitas akun login dan pembaruan kata sandi Anda.</p>
+        <p class="text-muted small mb-0">Kelola identitas akun login, foto profil, dan pembaruan kata sandi Anda.</p>
       </div>
     </div>
 
@@ -27,11 +48,44 @@
       <!-- Left Column: User Card -->
       <div class="col-md-4">
         <div class="card p-4 text-center shadow-sm">
-          <div class="mb-3 d-flex justify-content-center">
-            <div id="profilAvatar" class="avatar-initials bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow" style="width: 80px; height: 80px; font-size: 2rem;">
-              U
+          <!-- Web Avatar Upload Container -->
+          <div class="mb-3 position-relative d-inline-block mx-auto text-center" style="width: 110px;">
+            <div id="profilAvatarWrapper" class="avatar-wrapper position-relative mx-auto rounded-circle overflow-hidden shadow" style="width: 105px; height: 105px; border: 3px solid #2563eb; background: #e2e8f0; cursor: pointer;" onclick="document.getElementById('inputFotoProfil').click()" title="Klik untuk unggah atau ubah foto profil">
+              <!-- Avatar Image -->
+              <img id="profilAvatarImg" src="" alt="Foto Profil" class="w-100 h-100 rounded-circle" style="object-fit: cover; display: none;" onerror="onProfilAvatarError()">
+              <!-- Initials Fallback -->
+              <div id="profilAvatarInitial" class="avatar-initials text-white w-100 h-100 d-flex align-items-center justify-content-center fw-bold" style="font-size: 2.5rem;">
+                U
+              </div>
+              <!-- Hover Overlay for Modern Web Feel -->
+              <div class="avatar-hover-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white" style="background: rgba(15, 23, 42, 0.65); opacity: 0; transition: opacity 0.2s ease;">
+                <i class="bi bi-camera-fill fs-5 mb-1"></i>
+                <span style="font-size: 0.7rem; font-weight: 600;">Ubah Foto</span>
+              </div>
             </div>
+
+            <!-- Camera Badge Button -->
+            <button type="button" class="btn btn-primary btn-sm rounded-circle btn-camera-badge position-absolute d-flex align-items-center justify-content-center shadow" style="bottom: 2px; right: 0; width: 34px; height: 34px; border: 2px solid #fff; z-index: 2;" onclick="document.getElementById('inputFotoProfil').click()" title="Unggah / Ganti Foto Profil">
+              <i class="bi bi-camera-fill" style="font-size: 0.85rem;"></i>
+            </button>
           </div>
+
+          <!-- Hidden File Input for Web Photo Upload -->
+          <input type="file" id="inputFotoProfil" accept="image/png, image/jpeg, image/jpg, image/webp" class="d-none" onchange="handleFotoProfilChange(this)">
+
+          <!-- Quick Action Buttons for Photo -->
+          <div class="d-flex justify-content-center gap-2 mb-2">
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold shadow-xs" onclick="document.getElementById('inputFotoProfil').click()">
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Foto
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold shadow-xs" id="btnHapusFoto" onclick="hapusFotoProfil()" style="display: none;">
+              <i class="bi bi-trash3 me-1"></i> Hapus Foto
+            </button>
+          </div>
+          <p class="text-muted text-center mb-3" style="font-size: 0.72rem; line-height: 1.35;">
+            <i class="bi bi-cloud-check text-primary me-1"></i>Tersimpan di <strong>Folder Foto</strong> Google Drive &amp; sheet <strong>Data User</strong>.
+          </p>
+
           <h5 class="fw-bold text-dark mb-1" id="profilDisplayNama">Memuat...</h5>
           <p class="text-muted small mb-2" id="profilDisplayNip">NIP. -</p>
           <div id="profilDisplayRoles" class="d-flex flex-wrap justify-content-center gap-1 mb-3"></div>
@@ -71,6 +125,24 @@
               <div class="col-md-6">
                 <label class="form-label small fw-semibold">Hak Akses (Role)</label>
                 <input type="text" id="profRoles" class="form-control bg-light" readonly>
+              </div>
+
+              <!-- Foto Profil URL Field with Web Browse & View Buttons -->
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Foto Profil (Folder Foto Drive &amp; Sheet Data User)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-primary"><i class="bi bi-image"></i></span>
+                  <input type="text" id="profFoto" class="form-control bg-light" placeholder="Belum ada foto profil tersimpan..." readonly>
+                  <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('inputFotoProfil').click()">
+                    <i class="bi bi-upload me-1"></i> Pilih Berkas Foto
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" id="btnLihatFoto" onclick="lihatFotoModal()" style="display: none;" title="Pratinjau Foto Penuh">
+                    <i class="bi bi-eye"></i> Lihat
+                  </button>
+                </div>
+                <small class="text-muted" style="font-size: 0.74rem;">
+                  Foto otomatis disimpan ke <strong>Folder Foto</strong> Google Drive dan tautannya dicatat di sheet <strong>Data User</strong>.
+                </small>
               </div>
             </div>
 
@@ -112,6 +184,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       populateProfile();
+      fetchFreshProfile();
     });
 
     function populateProfile() {
@@ -121,7 +194,29 @@
       document.getElementById('profilDisplayNama').textContent = user.nama || user.username;
       document.getElementById('profilDisplayNip').textContent = user.nip ? 'NIP. ' + user.nip : 'NIP. -';
       document.getElementById('profilDisplayUsername').textContent = user.username;
-      document.getElementById('profilAvatar').textContent = (user.nama || user.username).charAt(0).toUpperCase();
+
+      // Foto Profil Avatar
+      const img = document.getElementById('profilAvatarImg');
+      const init = document.getElementById('profilAvatarInitial');
+      const fotoInput = document.getElementById('profFoto');
+      const btnHapus = document.getElementById('btnHapusFoto');
+      const btnLihat = document.getElementById('btnLihatFoto');
+
+      if (user.foto) {
+        img.src = user.foto;
+        img.style.display = 'block';
+        init.style.display = 'none';
+        fotoInput.value = user.foto;
+        btnHapus.style.display = 'inline-flex';
+        btnLihat.style.display = 'inline-flex';
+      } else {
+        img.style.display = 'none';
+        init.style.display = 'flex';
+        init.textContent = (user.nama || user.username || 'U').charAt(0).toUpperCase();
+        fotoInput.value = '';
+        btnHapus.style.display = 'none';
+        btnLihat.style.display = 'none';
+      }
 
       // Roles Badges
       const rolesContainer = document.getElementById('profilDisplayRoles');
@@ -143,6 +238,167 @@
       }
     }
 
+    // Ambil data profil terbaru dari spreadsheet untuk sinkronisasi foto & data
+    function fetchFreshProfile() {
+      if (!user || !user.id || typeof google === 'undefined' || !google.script || !google.script.run) return;
+      google.script.run
+        .withSuccessHandler(function(freshUser) {
+          if (freshUser) {
+            let changed = false;
+            if (freshUser.foto !== undefined && freshUser.foto !== user.foto) {
+              user.foto = freshUser.foto || '';
+              changed = true;
+            }
+            if (freshUser.nama && freshUser.nama !== user.nama) {
+              user.nama = freshUser.nama;
+              changed = true;
+            }
+            if (freshUser.nip && freshUser.nip !== user.nip) {
+              user.nip = freshUser.nip;
+              changed = true;
+            }
+            if (changed) {
+              localStorage.setItem('siguru_user', JSON.stringify(user));
+              populateProfile();
+              if (typeof updateHeaderUI === 'function') updateHeaderUI();
+              if (typeof updateSidebarUI === 'function') updateSidebarUI();
+            }
+          }
+        })
+        .getUserProfile(user.id);
+    }
+
+    function onProfilAvatarError() {
+      document.getElementById('profilAvatarImg').style.display = 'none';
+      document.getElementById('profilAvatarInitial').style.display = 'flex';
+    }
+
+    // Handler Unggah Foto Web
+    function handleFotoProfilChange(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+
+      // Validasi tipe file
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+      if (!validTypes.includes(file.type.toLowerCase())) {
+        showToast('warning', 'Format file tidak didukung! Harap pilih berkas foto (JPG, PNG, WebP).');
+        input.value = '';
+        return;
+      }
+
+      // Validasi ukuran berkas maks 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('warning', 'Ukuran berkas terlalu besar! Maksimal 5 MB.');
+        input.value = '';
+        return;
+      }
+
+      // Pratinjau lokal instan
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const localDataUrl = e.target.result;
+        const img = document.getElementById('profilAvatarImg');
+        const init = document.getElementById('profilAvatarInitial');
+        img.src = localDataUrl;
+        img.style.display = 'block';
+        init.style.display = 'none';
+
+        const base64Data = localDataUrl.split(',')[1];
+        showLoading('Mengunggah foto ke Folder Foto Google Drive & menyimpan link ke Sheet Data User...');
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            Swal.close();
+            if (res && res.success) {
+              document.getElementById('profFoto').value = res.url;
+              img.src = res.url;
+              document.getElementById('btnHapusFoto').style.display = 'inline-flex';
+              document.getElementById('btnLihatFoto').style.display = 'inline-flex';
+
+              // Simpan ke sesi aktif
+              user.foto = res.url;
+              localStorage.setItem('siguru_user', JSON.stringify(user));
+
+              // Perbarui avatar di Header dan Sidebar seketika
+              if (typeof updateHeaderUI === 'function') updateHeaderUI();
+              if (typeof updateSidebarUI === 'function') updateSidebarUI();
+
+              showToast('success', 'Foto profil berhasil diunggah ke Folder Foto & disimpan di Sheet Data User!');
+            } else {
+              showToast('error', res.message || 'Gagal mengunggah foto profil');
+              populateProfile();
+            }
+            input.value = '';
+          })
+          .withFailureHandler(function(err) {
+            Swal.close();
+            showToast('error', 'Error: ' + err.message);
+            populateProfile();
+            input.value = '';
+          })
+          .uploadFotoProfil(base64Data, file.name, user.id);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Handler Hapus Foto Profil
+    function hapusFotoProfil() {
+      Swal.fire({
+        title: 'Hapus Foto Profil?',
+        text: 'Foto profil Anda akan dihapus dari Google Drive dan Sheet Data User.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="bi bi-trash3 me-1"></i> Ya, Hapus',
+        cancelButtonText: 'Batal'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          showLoading('Menghapus foto profil...');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              Swal.close();
+              if (res && res.success) {
+                user.foto = '';
+                localStorage.setItem('siguru_user', JSON.stringify(user));
+                document.getElementById('inputFotoProfil').value = '';
+                populateProfile();
+
+                // Perbarui avatar di Header dan Sidebar seketika
+                if (typeof updateHeaderUI === 'function') updateHeaderUI();
+                if (typeof updateSidebarUI === 'function') updateSidebarUI();
+
+                showToast('success', 'Foto profil berhasil dihapus!');
+              } else {
+                showToast('error', res.message || 'Gagal menghapus foto profil');
+              }
+            })
+            .withFailureHandler(function(err) {
+              Swal.close();
+              showToast('error', 'Error: ' + err.message);
+            })
+            .updateProfil({ id: user.id, foto: '' });
+        }
+      });
+    }
+
+    // Modal / Pop-up Pratinjau Foto Penuh
+    function lihatFotoModal() {
+      const url = document.getElementById('profFoto').value.trim() || (user && user.foto);
+      if (!url) {
+        showToast('info', 'Belum ada foto profil untuk ditampilkan.');
+        return;
+      }
+      Swal.fire({
+        title: user.nama || user.username || 'Foto Profil',
+        imageUrl: url,
+        imageAlt: 'Foto Profil',
+        showCloseButton: true,
+        showConfirmButton: false,
+        background: '#fff'
+      });
+    }
+
     function togglePasswordVisibility(inputId, btn) {
       const el = document.getElementById(inputId);
       if (!el) return;
@@ -162,6 +418,7 @@
       const nip = document.getElementById('profNip').value.trim();
       const pBaru = document.getElementById('profPasswordBaru').value.trim();
       const pKonfirm = document.getElementById('profPasswordKonfirm').value.trim();
+      const foto = document.getElementById('profFoto').value.trim();
 
       if (pBaru) {
         if (pBaru.length < 5) {
@@ -178,7 +435,8 @@
         id: user.id,
         nama: nama,
         nip: nip,
-        password_baru: pBaru
+        password_baru: pBaru,
+        foto: foto
       };
 
       showLoading('Menyimpan perubahan profil...');
@@ -189,12 +447,16 @@
             // Update session
             user.nama = nama;
             user.nip = nip;
+            user.foto = res.foto !== undefined ? res.foto : foto;
             localStorage.setItem('siguru_user', JSON.stringify(user));
             
+            if (typeof updateHeaderUI === 'function') updateHeaderUI();
+            if (typeof updateSidebarUI === 'function') updateSidebarUI();
+
             showToast('success', 'Profil Anda berhasil diperbarui');
             setTimeout(function() {
-              window.location.reload();
-            }, 800);
+              populateProfile();
+            }, 600);
           } else {
             showToast('error', res.message || 'Gagal menyimpan perubahan');
           }

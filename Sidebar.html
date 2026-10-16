@@ -258,7 +258,22 @@ function updateSidebarUI() {
   const avatarEl = document.getElementById('sidebarAvatar');
   const nameEl = document.getElementById('sidebarUserName');
   const roleEl = document.getElementById('sidebarUserRole');
-  if (avatarEl) avatarEl.textContent = (user && user.nama ? user.nama.charAt(0).toUpperCase() : 'U');
+  if (avatarEl) {
+    avatarEl.innerHTML = '';
+    if (user && user.foto) {
+      const img = document.createElement('img');
+      img.src = user.foto;
+      img.alt = (user.nama || 'Avatar');
+      img.className = 'w-100 h-100 rounded-circle';
+      img.style.objectFit = 'cover';
+      img.onerror = function() {
+        avatarEl.textContent = (user && user.nama ? user.nama.charAt(0).toUpperCase() : 'U');
+      };
+      avatarEl.appendChild(img);
+    } else {
+      avatarEl.textContent = (user && user.nama ? user.nama.charAt(0).toUpperCase() : 'U');
+    }
+  }
   if (nameEl) nameEl.textContent = (user && user.nama ? user.nama : 'Pengguna');
   if (roleEl) roleEl.textContent = (user && user.hak_akses ? user.hak_akses : 'Guru');
 

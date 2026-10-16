@@ -227,7 +227,7 @@ function getHeaders(sheetName) {
     case SHEET_NAMES.PENGATURAN:
       return ['id','logo','nama_sekolah','tahun_ajaran','list_tahun_ajaran','semester','kelas','mata_pelajaran','folder_jurnal','folder_foto','folder_guru_wali','folder_wali','folder_ekstra','list_ekstrakurikuler','kepala_sekolah','nip_kepala_sekolah','kop_surat','kop_size','kabupaten','ttd_kepsek'];
     case SHEET_NAMES.DATA_USER:
-      return ['id','username','password','hak_akses','nama','nip'];
+      return ['id','username','password','hak_akses','nama','nip','foto'];
     case SHEET_NAMES.DATA_GURU:
       return ['id','nama_guru','nip','sebagai_guru_wali','sebagai_wali_kelas','pembina_ekstra'];
     case SHEET_NAMES.DATA_MURID:
@@ -343,6 +343,7 @@ function loginUser(username, password) {
           nama: user.nama,
           nip: user.nip || '',
           hak_akses: user.hak_akses,
+          foto: user.foto || '',
           sebagai_wali_kelas: waliKelas,
           sebagai_guru_wali: guruWali,
           pembina_ekstra: pembinaEkstra
@@ -1202,6 +1203,10 @@ function deleteDataUser(id) {
       return { success: false, message: 'Akun Super Admin dan Pelihat dilindungi dan tidak dapat dihapus!' };
     }
     
+    if (row.foto) {
+      deleteDriveFiles(row.foto);
+    }
+    
     sheet.deleteRow(row._rowIndex);
     return { success: true, message: 'Akun pengguna berhasil dihapus!' };
   } catch(e) {
@@ -1209,22 +1214,103 @@ function deleteDataUser(id) {
   }
 }
 
+function ensureUserFotoColumn() {
+  try {
+    const sheet = getSheet(SHEET_NAMES.DATA_USER);
+    const lastCol = Math.max(sheet.getLastColumn(), 6);
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim().toLowerCase());
+    const fotoIdx = headers.indexOf('foto');
+    if (fotoIdx === -1) {
+      sheet.getRange(1, headers.length + 1).setValue('foto').setFontWeight('bold');
+    }
+  } catch(e) {}
+}
+
 // === PROFIL ===
 function updateProfil(formData) {
   try {
     const sheet = getSheet(SHEET_NAMES.DATA_USER);
     const data = getSheetData(SHEET_NAMES.DATA_USER);
-    const row = data.find(r => r.id == formData.id);
-    if (!row) return { success: false, message: 'Data tidak ditemukan!' };
+    const row = data.find(r => (formData.id && r.id == formData.id) || (formData.username && String(r.username).trim().toLowerCase() === String(formData.username).trim().toLowerCase()));
+    if (!row) return { success: false, message: 'Data pengguna tidak ditemukan!' };
     
+    ensureUserFotoColumn();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
+    const fotoColIdx = headers.indexOf('foto') !== -1 ? (headers.indexOf('foto') + 1) : 7;
+
     if (formData.nama) sheet.getRange(row._rowIndex, 5).setValue(formData.nama);
-    if (formData.nip) sheet.getRange(row._rowIndex, 6).setValue(formData.nip);
+    if (formData.nip !== undefined) sheet.getRange(row._rowIndex, 6).setValue(formData.nip);
     if (formData.password_baru) sheet.getRange(row._rowIndex, 3).setValue(formData.password_baru);
+    if (formData.foto !== undefined) {
+      if (row.foto && row.foto !== formData.foto && !row.foto.startsWith('data:image')) {
+        deleteDriveFiles(row.foto);
+      }
+      sheet.getRange(row._rowIndex, fotoColIdx).setValue(formData.foto || '');
+    }
     
-    return { success: true, message: 'Profil berhasil diperbarui!' };
+    return { 
+      success: true, 
+      message: 'Profil berhasil diperbarui!',
+      foto: formData.foto !== undefined ? formData.foto : (row.foto || '')
+    };
   } catch(e) {
     return { success: false, message: 'Error: ' + e.message };
   }
+}
+
+function uploadFotoProfil(fileData, fileName, userId) {
+  try {
+    const settings = getSettings();
+    const folderUrl = settings.folder_foto || '';
+    const folderId = extractFolderId(folderUrl);
+
+    const uploadRes = uploadFileToDrive(fileData, fileName, folderId || 'root');
+    if (!uploadRes.success) {
+      return uploadRes;
+    }
+
+    if (userId) {
+      const sheet = getSheet(SHEET_NAMES.DATA_USER);
+      const data = getSheetData(SHEET_NAMES.DATA_USER);
+      const row = data.find(r => (userId && r.id == userId) || (userId && String(r.username).toLowerCase() === String(userId).toLowerCase()));
+      if (row) {
+        ensureUserFotoColumn();
+        const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
+        const fotoColIdx = headers.indexOf('foto') !== -1 ? (headers.indexOf('foto') + 1) : 7;
+        
+        if (row.foto && row.foto !== uploadRes.url && !row.foto.startsWith('data:image')) {
+          deleteDriveFiles(row.foto);
+        }
+        sheet.getRange(row._rowIndex, fotoColIdx).setValue(uploadRes.url);
+      }
+    }
+
+    return {
+      success: true,
+      url: uploadRes.url,
+      message: 'Foto profil berhasil diunggah ke Folder Foto Google Drive & disimpan ke Data User!'
+    };
+  } catch(e) {
+    return { success: false, message: 'Gagal unggah foto: ' + e.message };
+  }
+}
+
+function getUserProfile(userId) {
+  try {
+    const users = getSheetData(SHEET_NAMES.DATA_USER);
+    const u = users.find(r => r.id == userId);
+    if (u) {
+      return {
+        id: u.id,
+        username: u.username,
+        nama: u.nama,
+        nip: u.nip || '',
+        hak_akses: u.hak_akses,
+        foto: u.foto || ''
+      };
+    }
+  } catch(e) {}
+  return null;
 }
 
 // === TOMBOL SAKTI: HAPUS DATA ===
@@ -1536,6 +1622,7 @@ function extractFolderId(url) {
 
 // === GOOGLE DRIVE FILE CLEANUP & AUTO-SYNC HELPER ===
 const SHEET_FILE_COLUMNS = {
+  'Data User': ['foto'],
   'Data Murid Guru Wali': ['foto_murid'],
   'Hasil Jurnal': ['link_bukti_jurnal'],
   'Hasil Guru Wali': ['file_bukti'],
