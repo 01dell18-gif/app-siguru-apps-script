@@ -239,16 +239,26 @@ function canManageReport(type, record) {
   const nama = String(user.nama || '').trim().toLowerCase();
   
   switch(type) {
-    case 'jurnal': 
-      return !record || !record.nama_guru || String(record.nama_guru).trim().toLowerCase() === nama || role.includes('guru');
-    case 'absen': 
-      return !record || !record.nama_guru || String(record.nama_guru).trim().toLowerCase() === nama || role.includes('guru') || role.includes('wali');
-    case 'wali': 
-      return !record || !record.nama_wali_kelas || String(record.nama_wali_kelas).trim().toLowerCase() === nama || role.includes('wali') || role.includes('guru');
-    case 'guruwali': 
-      return !record || !record.nama_guru_wali || String(record.nama_guru_wali).trim().toLowerCase() === nama || role.includes('guru wali') || role.includes('guru');
-    case 'ekstra': 
-      return !record || !record.pembina_ekstra || String(record.pembina_ekstra).trim().toLowerCase() === nama || role.includes('pembina') || role.includes('guru');
+    case 'jurnal': {
+      const recGuru = record ? String(record.nama_guru || '').trim().toLowerCase() : '';
+      return recGuru ? recGuru === nama : role.includes('guru');
+    }
+    case 'absen': {
+      const recGuru = record ? String(record.nama_guru || '').trim().toLowerCase() : '';
+      return recGuru ? recGuru === nama : (role.includes('guru') || role.includes('wali'));
+    }
+    case 'wali': {
+      const recWali = record ? String(record.nama_wali_kelas || '').trim().toLowerCase() : '';
+      return recWali ? recWali === nama : (role.includes('wali') || role.includes('guru'));
+    }
+    case 'guruwali': {
+      const recGw = record ? String(record.nama_guru_wali || '').trim().toLowerCase() : '';
+      return recGw ? recGw === nama : (role.includes('guru wali') || role.includes('guru'));
+    }
+    case 'ekstra': {
+      const recEkstra = record ? String(record.pembina_ekstra || '').trim().toLowerCase() : '';
+      return recEkstra ? (recEkstra === nama || recEkstra.includes(nama)) : (role.includes('pembina') || role.includes('guru'));
+    }
     default: 
       return true;
   }

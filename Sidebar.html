@@ -196,10 +196,10 @@ function checkSidebarAccess(module, user) {
 
   const roles = role.split(',').map(r => r.trim());
   switch(module) {
-    case 'master_guru': return role === 'Super Admin' || role === 'admin';
-    case 'master_murid': return role === 'Super Admin' || role === 'admin';
-    case 'master_bimbingan': return role === 'Super Admin' || role === 'admin' || roles.includes('Guru Wali');
-    case 'master_ekstra': return role === 'Super Admin' || role === 'admin' || roles.includes('Pembina Ekstra');
+    case 'master_guru': return role === 'Super Admin' || role === 'admin' || roles.some(r => ['Guru', 'Wali Kelas', 'Guru Wali', 'Pembina Ekstra'].includes(r));
+    case 'master_murid': return role === 'Super Admin' || role === 'admin' || roles.some(r => ['Guru', 'Wali Kelas', 'Guru Wali', 'Pembina Ekstra'].includes(r));
+    case 'master_bimbingan': return role === 'Super Admin' || role === 'admin' || roles.includes('Guru Wali') || roles.includes('Guru');
+    case 'master_ekstra': return role === 'Super Admin' || role === 'admin' || roles.includes('Pembina Ekstra') || roles.includes('Guru');
     case 'form_absen': return roles.includes('Guru') || roles.includes('Wali Kelas');
     case 'form_jurnal': return roles.includes('Guru');
     case 'form_guruwali': return roles.includes('Guru Wali') || roles.includes('Guru');

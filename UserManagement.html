@@ -342,7 +342,8 @@
         } else {
           aksiHtml = '<div class="d-flex justify-content-center gap-1">' +
             '<button class="btn btn-outline-primary btn-sm btn-icon" onclick=\'openEditModal(' + JSON.stringify(u) + ')\' title="Edit"><i class="bi bi-pencil"></i></button>';
-          if (!isSAdmin) {
+          const isProtectedAccount = isSAdmin || String(u.username).toLowerCase() === 'viewer' || roles.includes('Super Admin') || roles.includes('Pelihat');
+          if (!isProtectedAccount) {
             aksiHtml += '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteUser(' + u.id + ', \'' + escapeHtml(u.username) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>';
           }
           aksiHtml += '</div>';

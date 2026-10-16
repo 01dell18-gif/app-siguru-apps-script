@@ -1168,9 +1168,11 @@ function deleteDataUser(id) {
     const row = data.find(r => r.id == id);
     if (!row) return { success: false, message: 'Data tidak ditemukan!' };
     
-    // Proteksi: tidak boleh hapus SAdmin
-    if (String(row.username).toLowerCase() === 'sadmin') {
-      return { success: false, message: 'Akun SAdmin tidak dapat dihapus!' };
+    // Proteksi: tidak boleh hapus akun induk SAdmin atau akun resmi Pelihat (viewer)
+    const uname = String(row.username || '').toLowerCase().trim();
+    const role = String(row.hak_akses || '').toLowerCase().trim();
+    if (uname === 'sadmin' || uname === 'viewer' || role.includes('super admin') || role === 'pelihat') {
+      return { success: false, message: 'Akun Super Admin dan Pelihat dilindungi dan tidak dapat dihapus!' };
     }
     
     sheet.deleteRow(row._rowIndex);
