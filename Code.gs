@@ -116,12 +116,25 @@ function getAppBundle() {
   try {
     const settings = getSettings();
     const guru = getSheetData(SHEET_NAMES.DATA_GURU);
-    const murid = getSheetData(SHEET_NAMES.DATA_MURID);
+    const bimbingan = getSheetData(SHEET_NAMES.DATA_MURID_GURU_WALI);
+    const rawMurid = getSheetData(SHEET_NAMES.DATA_MURID);
+
+    // Hubungkan foto_murid dari data bimbingan / guru wali ke data induk siswa
+    const fotoMap = {};
+    bimbingan.forEach(b => {
+      const f = b.foto_murid || b.foto || '';
+      if (b.nisn && f) fotoMap[String(b.nisn).trim()] = f;
+      if (b.nama_murid && f) fotoMap[String(b.nama_murid).trim().toLowerCase()] = f;
+    });
+    const murid = rawMurid.map(m => {
+      m.foto_murid = m.foto_murid || fotoMap[String(m.nisn).trim()] || fotoMap[String(m.nama_murid).trim().toLowerCase()] || '';
+      return m;
+    });
+
     const kelasList = getDaftarKelas();
     const mapelList = getDaftarMapel();
     const taList = getDaftarTahunAjaran();
     const ekstraList = getDaftarEkstra();
-    const bimbingan = getSheetData(SHEET_NAMES.DATA_MURID_GURU_WALI);
     const guruNamaList = guru.map(g => ({ nama: g.nama_guru, nip: g.nip, pembina_ekstra: g.pembina_ekstra }));
 
     return {

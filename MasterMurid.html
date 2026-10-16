@@ -285,7 +285,20 @@
       }
       if (bundle.murid && Array.isArray(bundle.murid)) {
         document.getElementById('loadingOverlay').style.display = 'none';
-        rawMurid = bundle.murid;
+        const fotoMap = {};
+        if (bundle.bimbingan && Array.isArray(bundle.bimbingan)) {
+          bundle.bimbingan.forEach(function(b) {
+            const f = b.foto_murid || b.foto || '';
+            if (b.nisn && f) fotoMap[String(b.nisn).trim()] = f;
+            if (b.nama_murid && f) fotoMap[String(b.nama_murid).trim().toLowerCase()] = f;
+          });
+        }
+        rawMurid = bundle.murid.map(function(m) {
+          if (!m.foto_murid) {
+            m.foto_murid = fotoMap[String(m.nisn).trim()] || fotoMap[String(m.nama_murid).trim().toLowerCase()] || '';
+          }
+          return m;
+        });
         handleFilterChange();
       }
     }
@@ -352,11 +365,12 @@
         const jkBadge = m.jenis_kelamin === 'P' ? '<span class="badge bg-danger-subtle text-danger">P</span>' : '<span class="badge bg-primary-subtle text-primary">L</span>';
         
         let photoHtml = '';
-        if (m.foto_murid) {
-          photoHtml = '<img src="' + escapeHtml(m.foto_murid) + '" alt="' + escapeHtml(m.nama_murid) + '" class="rounded-circle border shadow-xs" style="width: 32px; height: 32px; object-fit: cover; cursor: pointer;" title="Klik untuk lihat foto" onclick="openLightbox(\'' + escapeHtml(m.foto_murid) + '\', \'' + escapeHtml(m.nama_murid) + '\')">';
+        const photoUrl = formatDrivePhotoUrl(m.foto_murid);
+        if (photoUrl) {
+          photoHtml = '<img src="' + escapeHtml(photoUrl) + '" alt="' + escapeHtml(m.nama_murid) + '" class="rounded-circle border shadow-xs" style="width: 34px; height: 34px; object-fit: cover; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" title="Klik untuk lihat foto ' + escapeHtml(m.nama_murid) + '" onmouseover="this.style.transform=\'scale(1.2)\'; this.style.boxShadow=\'0 4px 8px rgba(0,0,0,0.15)\';" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'none\';" data-photo="' + escapeHtml(photoUrl) + '" data-name="' + escapeHtml(m.nama_murid) + '" onclick="triggerMuridLightbox(this)">';
         } else {
           const init = (m.nama_murid || 'S').charAt(0).toUpperCase();
-          photoHtml = '<span class="avatar-initials bg-secondary-subtle text-secondary rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.75rem;">' + init + '</span>';
+          photoHtml = '<span class="avatar-initials bg-secondary-subtle text-secondary rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width: 34px; height: 34px; font-size: 0.75rem;">' + init + '</span>';
         }
 
         html += '<tr>' +
@@ -415,10 +429,37 @@
       renderTable();
     }
 
+    function formatDrivePhotoUrl(url) {
+      if (!url) return '';
+      const str = String(url).trim();
+      if (!str || str === '-' || str === 'null') return '';
+      if (str.startsWith('data:image')) return str;
+      const matchD = str.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (matchD && matchD[1]) {
+        return 'https://drive.google.com/thumbnail?id=' + matchD[1] + '&sz=w800';
+      }
+      const matchId = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (matchId && matchId[1]) {
+        return 'https://drive.google.com/thumbnail?id=' + matchId[1] + '&sz=w800';
+      }
+      return str;
+    }
+
+    function triggerMuridLightbox(el) {
+      if (!el) return;
+      const url = el.getAttribute('data-photo') || '';
+      const name = el.getAttribute('data-name') || '';
+      openLightbox(url, name);
+    }
+
     function openLightbox(url, name) {
-      document.getElementById('lightboxImg').src = url;
-      document.getElementById('lightboxCaption').textContent = name;
-      getModal('lightboxModal').show();
+      if (!url) return;
+      const img = document.getElementById('lightboxImg');
+      const cap = document.getElementById('lightboxCaption');
+      if (img) img.src = url;
+      if (cap) cap.textContent = name || 'Foto Siswa';
+      const modal = getModal('lightboxModal');
+      if (modal) modal.show();
     }
 
     // Toggle Checkbox Status Terhubung (Quick Edit)
