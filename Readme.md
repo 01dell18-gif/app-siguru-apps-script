@@ -325,6 +325,7 @@ Keamanan hak akses ditegakkan melalui dua lapis proteksi:
 #### 5. Aturan Hak Akses Pelihat (Viewer) pada Seluruh Menu Laporan Hasil
 
 Sesuai dengan peran pengawasan dan supervisi manajerial:
+
 - Pengguna dengan peran **Pelihat** (`viewer` / `Pengawas`) memiliki hak akses membuka seluruh 5 menu Laporan Hasil KBM (`Laporan Kehadiran`, `Laporan Jurnal Guru`, `Laporan Guru Wali`, `Laporan Wali Kelas`, dan `Laporan Ekstrakurikuler`).
 - **Pilihan Nama Guru Bebas (Filter Fleksibel)**: Pada bagian filter identitas pendidik (Guru Pengampu, Guru Wali, Wali Kelas, Pembina Ekstra), akun Pelihat disajikan elemen *dropdown* yang memuat pilihan **"Semua Guru"** serta daftar seluruh nama pendidik di sekolah, sehingga pengawas dapat meninjau rekapitulasi secara menyeluruh maupun memilih guru tertentu.
 - **Kolom Menu Aksi Terkunci Permanen (`🔒 Terkunci`)**: Hak akses Pelihat bersifat murni *Read-Only*. Pada tabel log dan rekapitulasi data, kolom menu Aksi secara otomatis berstatus **`🔒 Terkunci`**. Tombol edit dan hapus dinonaktifkan, serta dilengkapi perlindungan validasi ganda pada fungsi modal dan pemanggilan skrip backend agar data transaksi sekolah tetap terlindungi dari perubahan yang tidak sah.
