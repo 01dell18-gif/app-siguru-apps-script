@@ -162,49 +162,70 @@
         return String(item.nama || '').trim().toLowerCase() === String(pName).trim().toLowerCase();
       });
 
-      let assigned = '';
+      let assignedBranches = [];
       if (g && g.pembina_ekstra && g.pembina_ekstra !== '-') {
-        assigned = String(g.pembina_ekstra).trim();
+        assignedBranches = String(g.pembina_ekstra).split(',').map(function(s){ return s.trim(); }).filter(Boolean);
       }
 
       const lockBadge = document.getElementById('badgeEkstraLock');
 
       if (!isSuperAdmin()) {
-        if (assigned) {
-          assignedEkstraGuru = assigned;
-          let found = false;
-          for (let i = 0; i < selCabang.options.length; i++) {
-            const val = selCabang.options[i].value;
-            if (val === assigned || assigned.includes(val) || val.includes(assigned)) {
-              selCabang.selectedIndex = i;
-              found = true;
-              break;
-            }
-          }
-          if (!found && allEkstraList.length > 0) {
-            const opt = new Option(assigned, assigned, true, true);
-            selCabang.add(opt);
-            selCabang.value = assigned;
-          }
+        if (assignedBranches.length === 1) {
+          const singleBranch = assignedBranches[0];
+          assignedEkstraGuru = singleBranch;
+          selCabang.innerHTML = '<option value="' + escapeHtml(singleBranch) + '">' + escapeHtml(singleBranch) + '</option>';
+          selCabang.value = singleBranch;
           selCabang.disabled = true;
           selCabang.classList.add('bg-light', 'fw-semibold');
-          selCabang.title = 'Terkunci otomatis sesuai cabang ekstra pembina (' + assigned + ')';
-          if (lockBadge) lockBadge.style.display = 'block';
+          selCabang.title = 'Terkunci otomatis sesuai cabang ekstra pembina (' + singleBranch + ')';
+          if (lockBadge) {
+            lockBadge.style.display = 'block';
+            lockBadge.innerHTML = '<small class="badge bg-secondary-subtle text-secondary"><i class="bi bi-lock-fill me-1"></i>Terkunci otomatis: ' + escapeHtml(singleBranch) + '</small>';
+          }
+        } else if (assignedBranches.length > 1) {
+          // Guru membina lebih dari 1 cabang ekstra: tampilkan cabang yang dibinanya
+          const curVal = selCabang.value;
+          selCabang.innerHTML = '';
+          assignedBranches.forEach(function(b) {
+            selCabang.innerHTML += '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>';
+          });
+          if (assignedBranches.includes(curVal)) {
+            selCabang.value = curVal;
+          } else {
+            selCabang.value = assignedBranches[0];
+          }
+          assignedEkstraGuru = selCabang.value;
+          selCabang.disabled = false;
+          selCabang.classList.remove('bg-light', 'fw-semibold');
+          selCabang.title = 'Pilih salah satu cabang ekstra binaan Anda';
+          if (lockBadge) {
+            lockBadge.style.display = 'block';
+            lockBadge.innerHTML = '<small class="badge bg-info-subtle text-info"><i class="bi bi-check-circle me-1"></i>Cabang binaan Anda: ' + escapeHtml(assignedBranches.join(', ')) + '</small>';
+          }
         } else {
+          // Guru belum memiliki cabang ekstra tertentu
+          const curVal = selCabang.value;
+          selCabang.innerHTML = '';
+          (allEkstraList || []).forEach(function(b) {
+            selCabang.innerHTML += '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>';
+          });
+          if (curVal) selCabang.value = curVal;
           selCabang.disabled = false;
           selCabang.classList.remove('bg-light', 'fw-semibold');
           selCabang.title = '';
           if (lockBadge) lockBadge.style.display = 'none';
         }
       } else {
-        if (assigned) {
-          for (let i = 0; i < selCabang.options.length; i++) {
-            const val = selCabang.options[i].value;
-            if (val === assigned || assigned.includes(val) || val.includes(assigned)) {
-              selCabang.selectedIndex = i;
-              break;
-            }
-          }
+        // Super admin
+        const curVal = selCabang.value;
+        selCabang.innerHTML = '';
+        (allEkstraList || []).forEach(function(b) {
+          selCabang.innerHTML += '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>';
+        });
+        if (assignedBranches.length > 0 && !curVal) {
+          selCabang.value = assignedBranches[0];
+        } else if (curVal) {
+          selCabang.value = curVal;
         }
         selCabang.disabled = false;
         selCabang.classList.remove('bg-light', 'fw-semibold');
@@ -222,12 +243,13 @@
         if (bundle.guruNama && bundle.guruNama.length > 0) daftarGuru = bundle.guruNama;
         if (bundle.ekstra && bundle.ekstra.length > 0) {
           allEkstraList = bundle.ekstra;
-          populateCabangEkstra(bundle.ekstra);
         }
         if (bundle.muridEkstra) {
           allMuridEkstra = bundle.muridEkstra;
-          filterPesertaByEkstra();
         }
+        const pembinaEl = document.getElementById('ekstraPembina');
+        const pName = pembinaEl ? pembinaEl.value : (user && user.nama ? user.nama : '');
+        applyCabangByPembina(pName);
       }
 
       document.getElementById('loadingOverlay').style.display = 'flex';
@@ -240,7 +262,9 @@
       // Load Cabang Ekstra
       google.script.run.withSuccessHandler(function(ekstraList) {
         allEkstraList = ekstraList || [];
-        populateCabangEkstra(allEkstraList);
+        const pembinaEl = document.getElementById('ekstraPembina');
+        const pName = pembinaEl ? pembinaEl.value : (user && user.nama ? user.nama : '');
+        applyCabangByPembina(pName);
 
         // Load Murid Ekstra
         google.script.run.withSuccessHandler(function(dataEkstra) {
@@ -251,49 +275,56 @@
       }).getDaftarEkstra();
     }
 
-    function populateCabangEkstra(ekstraList) {
-      const sel = document.getElementById('ekstraCabang');
-      if (!sel) return;
-      const currentVal = sel.value;
-      sel.innerHTML = '';
-      (ekstraList || []).forEach(function(e) {
-        sel.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
-      });
-      if (currentVal) sel.value = currentVal;
-
-      const pembinaEl = document.getElementById('ekstraPembina');
-      const pName = pembinaEl ? pembinaEl.value : (user && user.nama ? user.nama : '');
-      applyCabangByPembina(pName);
-    }
-
     function filterPesertaByEkstra() {
-      const ekstraVal = (document.getElementById('ekstraCabang') && document.getElementById('ekstraCabang').value) || assignedEkstraGuru || '';
+      const selCabang = document.getElementById('ekstraCabang');
+      const ekstraVal = (selCabang && selCabang.value ? selCabang.value.trim() : '') || assignedEkstraGuru || '';
       const container = document.getElementById('containerPesertaEkstra');
+      if (!container) return;
 
       if (!ekstraVal) {
-        container.innerHTML = '<small class="text-muted">Pilih cabang ekstra di atas.</small>';
+        container.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Pilih cabang kegiatan ekstrakurikuler di atas.</small>';
         return;
       }
 
-      let filtered = allMuridEkstra.filter(function(m){
-        return String(m.nama_ekstra || '').includes(ekstraVal);
+      const pembinaEl = document.getElementById('ekstraPembina');
+      const currentPembina = pembinaEl ? pembinaEl.value.trim() : (user && user.nama ? user.nama.trim() : '');
+
+      // Filter murid berdasarkan cabang ekstra & hak akses pembina
+      let filtered = (allMuridEkstra || []).filter(function(m) {
+        // 1. Cek apakah murid terdaftar di cabang ekstra ini
+        const studentEkstras = String(m.nama_ekstra || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const matchEkstra = studentEkstras.includes(ekstraVal.toLowerCase()) || String(m.nama_ekstra || '').toLowerCase().includes(ekstraVal.toLowerCase());
+        if (!matchEkstra) return false;
+
+        // 2. Jika bukan Super Admin dan ada pembina yang sedang aktif:
+        // Periksa apakah guru ini terdaftar sebagai salah satu pembina murid tersebut
+        if (!isSuperAdmin() && currentPembina) {
+          const studentGurus = String(m.nama_guru || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+          if (studentGurus.length > 0) {
+            return studentGurus.includes(currentPembina.toLowerCase()) || String(m.nama_guru || '').toLowerCase().includes(currentPembina.toLowerCase());
+          }
+        }
+        return true;
       });
 
-      if (filtered.length === 0) {
-        // Fallback jika belum ada yang terdaftar spesifik pada nama_ekstra ini
-        filtered = allMuridEkstra;
+      // Fallback: Jika setelah difilter per guru tidak ada murid ditemukan, namun ada murid di cabang ini tanpa nama_guru spesifik, tampilkan seluruh murid di cabang ekstra ini
+      if (filtered.length === 0 && !isSuperAdmin()) {
+        filtered = (allMuridEkstra || []).filter(function(m) {
+          const studentEkstras = String(m.nama_ekstra || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+          return studentEkstras.includes(ekstraVal.toLowerCase()) || String(m.nama_ekstra || '').toLowerCase().includes(ekstraVal.toLowerCase());
+        });
       }
 
       if (filtered.length === 0) {
-        container.innerHTML = '<small class="text-muted">Belum ada siswa terdaftar di cabang ekstra ini. Tambahkan di menu Siswa Ekstrakurikuler.</small>';
+        container.innerHTML = '<div class="p-2 text-muted small w-100"><i class="bi bi-info-circle me-1"></i>Belum ada siswa terdaftar pada cabang <strong>"' + escapeHtml(ekstraVal) + '"</strong>. Tambahkan siswa di menu <a href="javascript:void(0)" onclick="navigateTo(\'master-ekstra\')" class="text-primary fw-semibold text-decoration-underline">Data Siswa Ekstrakurikuler</a>.</div>';
         return;
       }
 
       let html = '';
       filtered.forEach(function(s) {
-        html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white">' +
+        html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white shadow-xs">' +
           '<input class="form-check-input peserta-chk" type="checkbox" id="peserta_' + s.id + '" value="' + escapeHtml(s.nama_murid) + '" checked>' +
-          '<label class="form-check-label small" for="peserta_' + s.id + '"><span class="fw-semibold">' + escapeHtml(s.nama_murid) + '</span> <span class="badge bg-secondary-subtle text-secondary">' + escapeHtml(s.kelas || '-') + '</span></label>' +
+          '<label class="form-check-label small" for="peserta_' + s.id + '"><span class="fw-semibold">' + escapeHtml(s.nama_murid) + '</span> <span class="badge bg-secondary-subtle text-secondary ms-1">' + escapeHtml(s.kelas || '-') + '</span></label>' +
         '</div>';
       });
       container.innerHTML = html;

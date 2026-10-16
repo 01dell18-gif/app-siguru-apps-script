@@ -82,10 +82,11 @@ flowchart TD
    - **Penguncian Nama Guru Otomatis Sesuai Hak Akses**: Pada filter tabel dan form modal (tambah/edit/impor), nama guru wali otomatis terisi dan terkunci (*read-only* & *disabled*) sesuai akun guru yang sedang login. Guru wali hanya dapat melihat dan mengelola siswa binaan mereka sendiri.
    - **Hak Akses Istimewa Super Admin**: Khusus Super Admin yang dapat memilih nama guru wali dari daftar dropdown secara leluasa untuk keperluan pemetaan dan pengelolaan lintas guru.
 4. **Master Ekstrakurikuler** ([MasterEkstra.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/MasterEkstra.html)): Pemetaan anggota kegiatan ekstra ke cabang dan pembina terkait.
-   - **Input Guru Pembina Berdasarkan Hak Akses**: Pada modal tambah/edit dan impor siswa ekstra, nama guru pembina otomatis terisi sesuai akun guru yang login (terkunci *read-only* bagi selain Super Admin). Khusus Super Admin dapat memilih guru pembina manapun secara bebas.
-   - **Filter Guru Pembina Sesuai Hak Akses**: Pada bilah filter tabel, akun guru non-Super Admin otomatis terkunci pada nama guru yang sedang login. Super Admin dapat memilih semua guru pembina atau memfilter guru tertentu.
+   - **Dukungan Multi-Ekstra & Multi-Pembina**: Jika siswa mengikuti lebih dari 1 cabang kegiatan ekstrakurikuler (misalnya Pramuka dan Futsal), sistem secara otomatis menyediakan pemetaan guru pembimbing untuk masing-masing cabang ekstra yang dicentang.
+   - **Input Guru Pembina Berdasarkan Hak Akses**: Pada modal tambah/edit siswa ekstra, cabang binaan akun guru non-Super Admin otomatis terkunci pada nama guru yang login (`Binaan Anda`), sedangkan cabang ekstra lainnya terhubung ke pembina terdaftar. Khusus Super Admin dapat memilih guru pembina manapun untuk masing-masing cabang ekstra secara bebas melalui dropdown dinamis.
+   - **Filter Guru Pembina Sesuai Hak Akses**: Pada bilah filter tabel, akun guru non-Super Admin otomatis terkunci pada nama guru yang sedang login (siswa dengan multi-pembina tetap muncul bagi masing-masing pembina terkait). Super Admin dapat memilih semua guru pembina atau memfilter guru tertentu.
    - **Proteksi Tombol Aksi (Khusus Super Admin)**: Kolom Aksi (*Edit* & *Hapus*) dinonaktifkan dengan badge status `Terkunci` bagi pengguna selain Super Admin. Hanya hak akses Super Admin yang diizinkan melakukan pengubahan atau penghapusan data siswa ekstrakurikuler.
-5. **Excel Engine**: Setiap halaman master data menyediakan tombol **Unduh Template (.xlsx)**, **Import Excel (.xlsx)**, dan **Export Excel (.xlsx)**. Impor data pada Master Bimbingan dan Master Ekstra bagi guru non-Super Admin otomatis mengaitkan data ke nama guru yang bersangkutan.
+5. **Excel Engine**: Setiap halaman master data menyediakan tombol **Unduh Template (.xlsx)**, **Import Excel (.xlsx)**, dan **Export Excel (.xlsx)**. Impor data pada Master Bimbingan dan Master Ekstra mendukung multi-pembina koma-terpisah dan otomatis mengaitkan data ke nama guru yang bersangkutan.
 
 #### C. Alur Formulir Harian & Upload Berkas
 
@@ -101,7 +102,8 @@ flowchart TD
    - Memilih siswa asuh binaan dari daftar yang sesuai dengan guru wali penanggung jawab.
    - Mengisi topik permasalahan dan tindak lanjut, serta tombol langsung chat WhatsApp ke wali murid (`wa.me`).
 4. **Kegiatan Wali Kelas & Ekstrakurikuler** ([FormWali.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/FormWali.html) & [FormEkstra.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/FormEkstra.html)):
-   - **Formulir Kegiatan Ekstrakurikuler**: Cabang ekstrakurikuler otomatis terisi (*auto-select*) sesuai dengan cabang penugasan pembina ekstra akun guru tersebut (dari kolom `pembina_ekstra` sheet `Data Guru`), dan dikunci (*disabled*) dengan penanda badge `Terkunci otomatis sesuai pembina` bagi guru non-Super Admin.
+   - **Formulir Kegiatan Ekstrakurikuler**: Cabang ekstrakurikuler otomatis terisi (*auto-select*) sesuai dengan penugasan pembina ekstra akun guru tersebut (dari kolom `pembina_ekstra` sheet `Data Guru`). Jika guru membina 1 cabang, kolom langsung dikunci (*disabled* & terkunci otomatis); jika membina lebih dari 1 cabang, guru dapat memilih di antara cabang-cabang binaannya.
+   - **Pengambilan Data Siswa Peserta**: Daftar presensi siswa disaring secara akurat berdasarkan cabang ekstra yang dipilih dan hak akses pembina, tanpa resiko menampilkan data cabang lain jika belum ada siswa terdaftar.
    - Bagi Super Admin, memilih nama pembina dari dropdown otomatis menyesuaikan cabang ekstra sesuai penugasan guru yang dipilih namun tetap dapat dipilih secara bebas.
    - Pencatatan pembinaan kelas dan agenda latihan ekstrakurikuler beserta presensi kehadiran siswa terdaftar dan dokumentasi Drive.
 
