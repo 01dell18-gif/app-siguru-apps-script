@@ -321,14 +321,19 @@
     function setupGuruFilter(guruList) {
       const container = document.getElementById('divGuruFilter');
       if (!container) return;
-      if (isSuperAdmin()) {
+      if (isSuperAdmin() || isViewer()) {
         const sel = document.getElementById('filterGuru');
         const cur = sel ? sel.value : '';
         let html = '<select id="filterGuru" class="form-select form-select-sm" onchange="loadLaporan()"><option value="">Semua Guru</option>';
         if (guruList && Array.isArray(guruList)) {
+          const addedNames = new Set();
           guruList.forEach(function (g) {
-            const nama = g.nama || g.nama_guru || g;
-            html += '<option value="' + escapeHtml(nama) + '">' + escapeHtml(nama) + '</option>';
+            const nama = (typeof g === 'object' && g !== null) ? (g.nama || g.nama_guru || '') : String(g || '');
+            const trimmed = String(nama).trim();
+            if (trimmed && !addedNames.has(trimmed)) {
+              addedNames.add(trimmed);
+              html += '<option value="' + escapeHtml(trimmed) + '">' + escapeHtml(trimmed) + '</option>';
+            }
           });
         }
         html += '</select>';
@@ -354,7 +359,7 @@
         semester: document.getElementById('filterSemester') ? document.getElementById('filterSemester').value : '',
         kelas: document.getElementById('filterKelas') ? document.getElementById('filterKelas').value : '',
         mata_pelajaran: document.getElementById('filterMapel') ? document.getElementById('filterMapel').value : '',
-        nama_guru: guruEl ? guruEl.value : ''
+        nama_guru: guruEl ? guruEl.value : (!isSuperAdmin() && !isViewer() ? (user.nama || '') : '')
       };
 
       google.script.run
@@ -507,12 +512,20 @@
     let currentFilteredAbsen = [];
 
     function openEditModalByIndex(idx) {
+      if (isViewer()) {
+        showToast('warning', 'Akses Terkunci: Hak akses Pelihat hanya dapat melihat dan mencetak data.');
+        return;
+      }
       const record = currentFilteredAbsen[idx];
       if (!record) return;
       openEditModal(record);
     }
 
     function openEditModal(record) {
+      if (isViewer()) {
+        showToast('warning', 'Akses Terkunci: Hak akses Pelihat hanya dapat melihat dan mencetak data.');
+        return;
+      }
       if (!record) return;
       document.getElementById('editAbsenId').value = record.id;
       document.getElementById('editAbsenNama').value = record.nama_murid || '';
@@ -524,6 +537,10 @@
 
     function saveEditAbsen(e) {
       e.preventDefault();
+      if (isViewer()) {
+        showToast('warning', 'Akses Terkunci: Hak akses Pelihat tidak dapat mengubah data.');
+        return;
+      }
       const id = document.getElementById('editAbsenId').value;
       const payload = {
         id: id,
@@ -551,6 +568,10 @@
     }
 
     function deleteRecord(id) {
+      if (isViewer()) {
+        showToast('warning', 'Akses Terkunci: Hak akses Pelihat tidak diizinkan menghapus data.');
+        return;
+      }
       Swal.fire({
         title: 'Hapus Rekaman Presensi?',
         text: 'Data yang dihapus tidak dapat dipulihkan.',
