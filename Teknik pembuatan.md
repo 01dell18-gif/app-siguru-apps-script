@@ -1,5 +1,6 @@
 # ARSITEKTUR & TEKNIK PEMBUATAN WEB APLIKASI SIGURU
-**Sistem Informasi Guru Terpadu Berbasis Google Apps Script & Google Sheets Database**
+
+Sistem Informasi Guru Terpadu Berbasis Google Apps Script & Google Sheets Database.
 
 ---
 
@@ -45,13 +46,13 @@ graph TD
 
 ---
 
-## 🧩 3. Bedah Teknik: Mengapa Setiap Halaman Berupa 1 File HTML Utuh?
+## 🧩 3. Bedah Teknik - Mengapa Setiap Halaman Berupa 1 File HTML Utuh
 
 Saat membuka berkas seperti `FormJurnal.html`, `Dashboard.html`, `Profil.html`, atau `MasterMurid.html`, setiap berkas terlihat memiliki kerangka dokumen lengkap (`<!DOCTYPE html>`, `<html>`, `<head>`, `<body>`).
 
 Hal ini merupakan implementasi dari **Server-Side Template Inclusion (Scriptlet Inclusion)** bawaan Google Apps Script:
 
-### A. Tag Scriptlet Pemanggil (`<?!= include(...) ?>`)
+### A. Tag Scriptlet Pemanggil
 
 Di dalam setiap file HTML, komponen bersama (*shared components*) tidak ditulis ulang berkali-kali, melainkan dipanggil menggunakan tag scriptlet:
 
@@ -86,7 +87,7 @@ Google Apps Script memiliki 3 jenis scriptlet penulisan:
 | `<?= ... ?>` | **Printing Scriptlet (Escaped)** | Mengeksekusi kode dan mencetak hasilnya dengan sanitasi HTML (mencegah XSS). | `<?= user.nama ?>` |
 | `<? ... ?>` | **Code Scriptlet (Logic Only)** | Menjalankan logika kontrol (kondisional `if/else`, perulangan `for`) di server tanpa mencetak teks langsung. | `<? if (role === 'Admin') { ?>` |
 
-### C. Mesin Inklusi di Backend (`Code.gs`)
+### C. Mesin Inklusi di Backend Code.gs
 
 Fungsi `include()` di [Code.gs](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Code.gs) bertindak sebagai *compiler*:
 
@@ -109,7 +110,7 @@ function include(filename, data) {
 
 ---
 
-## 🚦 4. Mekanisme Routing: Multi-Page Berbasis URL Parameter (`doGet`)
+## 🚦 4. Mekanisme Routing - Multi-Page Berbasis URL Parameter
 
 Google Apps Script hanya memiliki **1 URL induk (Endpoint Tunggal)** untuk Web App yang dideploy. Untuk menyajikan banyak halaman (*Multi-Page Application*), digunakan teknik **Query Parameter Routing**:
 
@@ -154,7 +155,7 @@ function doGet(e) {
 }
 ```
 
-### Navigasi di Sisi Browser (Client-Side)
+### Navigasi di Sisi Browser
 
 Pada antarmuka pengguna, navigasi antar halaman dipicu menggunakan fungsi utilitas di [AppJS.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/AppJS.html):
 
@@ -174,11 +175,11 @@ function navigateTo(page, params) {
 
 ---
 
-## ⚡ 5. Komunikasi Klien-Server: Remote Procedure Call (`google.script.run`)
+## ⚡ 5. Komunikasi Klien-Server - Remote Procedure Call
 
 Berbeda dengan aplikasi web biasa yang memanggil API menggunakan `fetch('/api/data')` atau `axios.post()`, Google Apps Script menyediakan mekanisme bawaan bernama **`google.script.run`** (Remote Procedure Call):
 
-### Alur Kerja:
+### Alur Kerja
 
 ```mermaid
 sequenceDiagram
@@ -198,7 +199,7 @@ sequenceDiagram
     Browser->>Browser: Tutup Loading & Tampilkan Toast Sukses
 ```
 
-### Contoh Kode di Sisi Klien:
+### Contoh Kode di Sisi Klien
 
 ```javascript
 // Memanggil fungsi server langsung seperti memanggil fungsi lokal JavaScript
@@ -222,7 +223,7 @@ google.script.run
 
 ---
 
-## 🗄️ 6. Basis Data: Google Spreadsheet sebagai Relational/NoSQL Engine
+## 🗄️ 6. Basis Data - Google Spreadsheet sebagai Relational/NoSQL Engine
 
 Google Sheets difungsikan layaknya tabel database relasional:
 
@@ -236,29 +237,33 @@ Google Sheets difungsikan layaknya tabel database relasional:
 
 ---
 
-## 📁 7. Repositori Berkas: Google Drive sebagai Object Storage
+## 📁 7. Repositori Berkas - Google Drive sebagai Object Storage
 
 Untuk berkas digital (foto siswa, modul ajar, foto profil, bukti KBM), berkas tidak disimpan sebagai teks di database, melainkan diunggah ke Google Drive:
 
 1. **Pengunggahan via Base64**:
    - Browser membaca berkas melalui `FileReader.readAsDataURL(file)`.
    - Data dipotong menjadi Base64 murni dan dikirim ke fungsi `uploadFileToDrive()`.
+
 2. **Konversi Blob di Server**:
+
    ```javascript
    const decoded = Utilities.base64Decode(fileData);
    const blob = Utilities.newBlob(decoded, mimeType, fileName);
    const file = targetFolder.createFile(blob);
    ```
+
 3. **Pembuatan Tautan Thumbnail Cepat Bebas CORS**:
    - Google Drive menghasilkan URL thumbnail resolusi tinggi:
      `https://drive.google.com/thumbnail?id=[FILE_ID]&sz=w1000`
    - Format ini dapat dirender langsung pada tag `<img>` di browser klien tanpa kendala blokir CORS atau redirect login Google.
+
 4. **Siklus Bersih Otomatis (*Auto-Trash*)**:
    - Saat foto atau berkas lampiran diganti/dihapus, server melacak file ID lamanya dan memindahkannya ke tempat sampah (`file.setTrashed(true)`) agar kuota penyimpanan Google Drive tetap hemat.
 
 ---
 
-## 🛡️ 8. Sistem Keamanan & Autentikasi: Two-Tier RBAC & Zero-Flicker Guard
+## 🛡️ 8. Sistem Keamanan & Autentikasi - Two-Tier RBAC & Zero-Flicker Guard
 
 Aplikasi mengamankan akses data melalui dua tingkat pengamanan:
 
@@ -270,7 +275,7 @@ Aplikasi mengamankan akses data melalui dua tingkat pengamanan:
 
 ---
 
-## 📊 9. Ringkasan Komparasi: Arsitektur Ini vs Web Tradisional
+## 📊 9. Ringkasan Komparasi - Arsitektur Ini vs Web Tradisional
 
 | Aspek | Web Konvensional (PHP / Node.js) | Arsitektur SIGURU (Google Apps Script) |
 | :--- | :--- | :--- |
@@ -285,6 +290,6 @@ Aplikasi mengamankan akses data melalui dua tingkat pengamanan:
 
 ## 📝 10. Kesimpulan
 
-Teknik pembuatan web ini adalah pendekatan **Full-Stack Serverless Google Workspace Solution**. 
+Teknik pembuatan web ini adalah pendekatan **Full-Stack Serverless Google Workspace Solution**.
 
 Meskipun setiap file tampak berdiri sendiri sebagai dokumen HTML utuh, sistem ini mengandalkan **Scriptlet Server-Side Inclusion** untuk modularitas kode, **doGet Routing** untuk navigasi multi-halaman, serta **Google Sheets dan Drive** sebagai tulang punggung penyimpanan data yang andal, hemat biaya, dan mudah dioperasikan di lingkungan sekolah maupun instansi pendidikan.
