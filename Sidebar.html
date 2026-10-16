@@ -57,7 +57,7 @@
     </div>
 
     <!-- Form Group (Pencatatan & Form) -->
-    <div id="menuFormGroup">
+    <div id="menuFormGroup" style="display:none;">
       <div class="menu-category">Pencatatan & Form</div>
       <div class="accordion sidebar-accordion" id="accordionForm">
         <div class="accordion-item bg-transparent border-0">
@@ -70,19 +70,19 @@
           </button>
           <div id="collapseForm" class="accordion-collapse collapse" data-bs-parent="#accordionForm">
             <div class="accordion-body">
-              <a href="javascript:void(0)" onclick="navigateTo('form-absen')" class="nav-link-custom" data-page="form-absen" id="menuFormAbsen">
+              <a href="javascript:void(0)" onclick="navigateTo('form-absen')" class="nav-link-custom" data-page="form-absen" id="menuFormAbsen" style="display:none;">
                 <i class="bi bi-check2-circle"></i> <span>Presensi / Absensi</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('form-jurnal')" class="nav-link-custom" data-page="form-jurnal" id="menuFormJurnal">
+              <a href="javascript:void(0)" onclick="navigateTo('form-jurnal')" class="nav-link-custom" data-page="form-jurnal" id="menuFormJurnal" style="display:none;">
                 <i class="bi bi-journal-bookmark"></i> <span>Jurnal Mengajar</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('form-guruwali')" class="nav-link-custom" data-page="form-guruwali" id="menuFormGuruWali">
+              <a href="javascript:void(0)" onclick="navigateTo('form-guruwali')" class="nav-link-custom" data-page="form-guruwali" id="menuFormGuruWali" style="display:none;">
                 <i class="bi bi-chat-heart"></i> <span>Bimbingan Guru Wali</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('form-wali')" class="nav-link-custom" data-page="form-wali" id="menuFormWali">
+              <a href="javascript:void(0)" onclick="navigateTo('form-wali')" class="nav-link-custom" data-page="form-wali" id="menuFormWali" style="display:none;">
                 <i class="bi bi-calendar2-week"></i> <span>Kegiatan Wali Kelas</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('form-ekstra')" class="nav-link-custom" data-page="form-ekstra" id="menuFormEkstra">
+              <a href="javascript:void(0)" onclick="navigateTo('form-ekstra')" class="nav-link-custom" data-page="form-ekstra" id="menuFormEkstra" style="display:none;">
                 <i class="bi bi-activity"></i> <span>Kegiatan Ekstrakurikuler</span>
               </a>
             </div>
@@ -92,7 +92,7 @@
     </div>
 
     <!-- Laporan Group -->
-    <div id="menuLaporanGroup">
+    <div id="menuLaporanGroup" style="display:none;">
       <div class="menu-category">Rekap & Laporan</div>
       <div class="accordion sidebar-accordion" id="accordionLaporan">
         <div class="accordion-item bg-transparent border-0">
@@ -105,19 +105,19 @@
           </button>
           <div id="collapseLaporan" class="accordion-collapse collapse" data-bs-parent="#accordionLaporan">
             <div class="accordion-body">
-              <a href="javascript:void(0)" onclick="navigateTo('laporan-absen')" class="nav-link-custom" data-page="laporan-absen">
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-absen')" class="nav-link-custom" data-page="laporan-absen" id="menuLaporanAbsen" style="display:none;">
                 <i class="bi bi-file-earmark-check"></i> <span>Laporan Kehadiran</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('laporan-jurnal')" class="nav-link-custom" data-page="laporan-jurnal">
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-jurnal')" class="nav-link-custom" data-page="laporan-jurnal" id="menuLaporanJurnal" style="display:none;">
                 <i class="bi bi-journal-text"></i> <span>Laporan Jurnal Guru</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('laporan-wali')" class="nav-link-custom" data-page="laporan-wali">
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-wali')" class="nav-link-custom" data-page="laporan-wali" id="menuLaporanWali" style="display:none;">
                 <i class="bi bi-clipboard-data"></i> <span>Laporan Wali Kelas</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('laporan-guruwali')" class="nav-link-custom" data-page="laporan-guruwali">
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-guruwali')" class="nav-link-custom" data-page="laporan-guruwali" id="menuLaporanGuruWali" style="display:none;">
                 <i class="bi bi-heart-pulse"></i> <span>Laporan Guru Wali</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('laporan-ekstra')" class="nav-link-custom" data-page="laporan-ekstra">
+              <a href="javascript:void(0)" onclick="navigateTo('laporan-ekstra')" class="nav-link-custom" data-page="laporan-ekstra" id="menuLaporanEkstra" style="display:none;">
                 <i class="bi bi-award"></i> <span>Laporan Ekstrakurikuler</span>
               </a>
             </div>
@@ -140,10 +140,10 @@
           </button>
           <div id="collapsePengaturan" class="accordion-collapse collapse" data-bs-parent="#accordionPengaturan">
             <div class="accordion-body">
-              <a href="javascript:void(0)" onclick="navigateTo('pengaturan')" class="nav-link-custom" data-page="pengaturan">
+              <a href="javascript:void(0)" onclick="navigateTo('pengaturan')" class="nav-link-custom" data-page="pengaturan" id="menuPengaturanSistem">
                 <i class="bi bi-gear-wide-connected"></i> <span>Pengaturan Sistem</span>
               </a>
-              <a href="javascript:void(0)" onclick="navigateTo('user-management')" class="nav-link-custom" data-page="user-management">
+              <a href="javascript:void(0)" onclick="navigateTo('user-management')" class="nav-link-custom" data-page="user-management" id="menuUserManagement">
                 <i class="bi bi-shield-lock"></i> <span>Manajemen User</span>
               </a>
             </div>
@@ -194,24 +194,60 @@ function checkSidebarAccess(module, user) {
   const roleLower = String(role).toLowerCase().trim();
   const isSuper = roleLower.includes('super admin') || roleLower.includes('admin') || roleLower === 'sadmin';
   if (isSuper) return true;
-  if (roleLower.includes('pelihat') || roleLower.includes('pengawas')) return module.startsWith('laporan');
+  
+  const isPelihat = roleLower.includes('pelihat') || roleLower.includes('pengawas');
+  if (isPelihat) {
+    return module.startsWith('laporan');
+  }
 
   const roles = role.split(',').map(r => r.trim().toLowerCase());
   const hasRole = (rName) => roles.includes(rName.toLowerCase());
+  const hasPembina = roles.some(r => r.includes('pembina'));
 
   switch(module) {
-    case 'master_guru': return false;
-    case 'master_murid': return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra');
-    case 'master_bimbingan': return hasRole('guru wali');
-    case 'master_ekstra': return hasRole('pembina ekstra');
-    case 'form_absen': return hasRole('guru') || hasRole('wali kelas');
-    case 'form_jurnal': return hasRole('guru');
-    case 'form_guruwali': return hasRole('guru wali') || hasRole('guru');
-    case 'form_wali': return hasRole('wali kelas');
-    case 'form_ekstra': return hasRole('pembina ekstra') || hasRole('guru');
-    case 'laporan': return true;
-    case 'pengaturan': case 'user_management': return false;
-    default: return false;
+    // 1. Grup Master Data
+    case 'master_guru': 
+      return false;
+    case 'master_murid': 
+      return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra') || hasPembina;
+    case 'master_bimbingan': 
+      return hasRole('guru wali');
+    case 'master_ekstra': 
+      return hasRole('pembina ekstra') || hasPembina;
+
+    // 2. Grup Form Inputan
+    case 'form_absen': 
+      return hasRole('guru');
+    case 'form_jurnal': 
+      return hasRole('guru');
+    case 'form_guruwali': 
+      return hasRole('guru wali');
+    case 'form_wali': 
+      return hasRole('wali kelas') || hasRole('guru wali');
+    case 'form_ekstra': 
+      return hasRole('pembina ekstra') || hasPembina;
+
+    // 3. Grup Laporan Hasil
+    case 'laporan_absen': 
+      return hasRole('guru');
+    case 'laporan_jurnal': 
+      return hasRole('guru');
+    case 'laporan_wali': 
+      return hasRole('wali kelas') || hasRole('guru wali');
+    case 'laporan_guruwali': 
+      return hasRole('guru wali');
+    case 'laporan_ekstra': 
+      return hasRole('pembina ekstra') || hasPembina;
+    case 'laporan': 
+      return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra') || hasPembina;
+
+    // 4. Grup Pengaturan Sistem (Hanya Super Admin)
+    case 'pengaturan': 
+    case 'user_management': 
+      return false;
+
+    default: 
+      return false;
   }
 }
 
@@ -226,7 +262,9 @@ function updateSidebarUI() {
   if (nameEl) nameEl.textContent = (user && user.nama ? user.nama : 'Pengguna');
   if (roleEl) roleEl.textContent = (user && user.hak_akses ? user.hak_akses : 'Guru');
 
-  const isSuper = user && (user.hak_akses === 'Super Admin' || user.hak_akses === 'admin');
+  const role = user ? (user.hak_akses || 'Guru') : '';
+  const roleLower = String(role).toLowerCase().trim();
+  const isSuper = roleLower.includes('super admin') || roleLower.includes('admin') || roleLower === 'sadmin';
 
   // 1. Data Master
   let hasMaster = false;
@@ -256,11 +294,20 @@ function updateSidebarUI() {
   const formGroup = document.getElementById('menuFormGroup');
   if (formGroup) formGroup.style.display = hasForm ? 'block' : 'none';
 
-  // 3. Laporan
+  // 3. Laporan Hasil
+  let hasLaporan = false;
+  const la = document.getElementById('menuLaporanAbsen');
+  const lj = document.getElementById('menuLaporanJurnal');
+  const lw = document.getElementById('menuLaporanWali');
+  const lgw = document.getElementById('menuLaporanGuruWali');
+  const le = document.getElementById('menuLaporanEkstra');
+  if (la) { const show = checkSidebarAccess('laporan_absen', user); la.style.display = show ? 'flex' : 'none'; if (show) hasLaporan = true; }
+  if (lj) { const show = checkSidebarAccess('laporan_jurnal', user); lj.style.display = show ? 'flex' : 'none'; if (show) hasLaporan = true; }
+  if (lw) { const show = checkSidebarAccess('laporan_wali', user); lw.style.display = show ? 'flex' : 'none'; if (show) hasLaporan = true; }
+  if (lgw) { const show = checkSidebarAccess('laporan_guruwali', user); lgw.style.display = show ? 'flex' : 'none'; if (show) hasLaporan = true; }
+  if (le) { const show = checkSidebarAccess('laporan_ekstra', user); le.style.display = show ? 'flex' : 'none'; if (show) hasLaporan = true; }
   const lapGroup = document.getElementById('menuLaporanGroup');
-  if (lapGroup) {
-    lapGroup.style.display = checkSidebarAccess('laporan', user) ? 'block' : 'none';
-  }
+  if (lapGroup) lapGroup.style.display = hasLaporan ? 'block' : 'none';
 
   // 4. Pengaturan Sistem (Super Admin Only)
   const pengGroup = document.getElementById('menuPengaturanGroup');

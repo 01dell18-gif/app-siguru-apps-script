@@ -20,6 +20,7 @@ function requireLogin() {
     navigateTo('login', { auth: 'required' });
     return { id: 0, username: '', nama: '', hak_akses: '', nip: '' };
   }
+  checkCurrentPageAccess();
   return user;
 }
 
@@ -213,21 +214,100 @@ function hasAccess(module) {
   const role = String(user.hak_akses || 'Guru');
   const roles = role.split(',').map(r => r.trim().toLowerCase());
   const hasRole = (rName) => roles.includes(rName.toLowerCase());
+  const hasPembina = roles.some(r => r.includes('pembina'));
 
   switch(module) {
-    case 'master_guru': return false;
-    case 'master_murid': return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra');
-    case 'master_bimbingan': return hasRole('guru wali');
-    case 'master_ekstra': return hasRole('pembina ekstra');
-    case 'form_absen': return hasRole('guru') || hasRole('wali kelas');
-    case 'form_jurnal': return hasRole('guru');
-    case 'form_guruwali': return hasRole('guru wali') || hasRole('guru');
-    case 'form_wali': return hasRole('wali kelas');
-    case 'form_ekstra': return hasRole('pembina ekstra') || hasRole('guru');
-    case 'laporan': return true;
-    case 'pengaturan': case 'user_management': return false;
-    default: return false;
+    // 1. Grup Master Data
+    case 'master_guru': 
+      return false;
+    case 'master_murid': 
+      return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra') || hasPembina;
+    case 'master_bimbingan': 
+      return hasRole('guru wali');
+    case 'master_ekstra': 
+      return hasRole('pembina ekstra') || hasPembina;
+
+    // 2. Grup Form Inputan
+    case 'form_absen': 
+      return hasRole('guru');
+    case 'form_jurnal': 
+      return hasRole('guru');
+    case 'form_guruwali': 
+      return hasRole('guru wali');
+    case 'form_wali': 
+      return hasRole('wali kelas') || hasRole('guru wali');
+    case 'form_ekstra': 
+      return hasRole('pembina ekstra') || hasPembina;
+
+    // 3. Grup Laporan Hasil
+    case 'laporan_absen': 
+      return hasRole('guru');
+    case 'laporan_jurnal': 
+      return hasRole('guru');
+    case 'laporan_wali': 
+      return hasRole('wali kelas') || hasRole('guru wali');
+    case 'laporan_guruwali': 
+      return hasRole('guru wali');
+    case 'laporan_ekstra': 
+      return hasRole('pembina ekstra') || hasPembina;
+    case 'laporan': 
+      return hasRole('guru') || hasRole('wali kelas') || hasRole('guru wali') || hasRole('pembina ekstra') || hasPembina;
+
+    // 4. Grup Pengaturan Sistem (Hanya Super Admin)
+    case 'pengaturan': 
+    case 'user_management': 
+      return false;
+
+    default: 
+      return false;
   }
+}
+
+function getPageModule(page) {
+  if (!page) return null;
+  const p = String(page).toLowerCase().replace(/_/g, '-').trim();
+  switch(p) {
+    case 'master-guru': return 'master_guru';
+    case 'master-murid': return 'master_murid';
+    case 'master-bimbingan': return 'master_bimbingan';
+    case 'master-ekstra': return 'master_ekstra';
+
+    case 'form-absen': return 'form_absen';
+    case 'form-jurnal': return 'form_jurnal';
+    case 'form-guruwali': return 'form_guruwali';
+    case 'form-wali': return 'form_wali';
+    case 'form-ekstra': return 'form_ekstra';
+
+    case 'laporan-absen': return 'laporan_absen';
+    case 'laporan-jurnal': return 'laporan_jurnal';
+    case 'laporan-wali': return 'laporan_wali';
+    case 'laporan-guruwali': return 'laporan_guruwali';
+    case 'laporan-ekstra': return 'laporan_ekstra';
+
+    case 'pengaturan': return 'pengaturan';
+    case 'user-management': return 'user_management';
+    default: return null;
+  }
+}
+
+function checkCurrentPageAccess() {
+  const user = getCurrentUser();
+  if (!user || !user.username) return true;
+  if (isSuperAdmin()) return true;
+
+  const page = getCurrentPage();
+  const mod = getPageModule(page);
+  if (!mod) return true;
+
+  if (!hasAccess(mod)) {
+    try {
+      document.documentElement.style.display = 'none';
+    } catch(e) {}
+    alert('Akses Ditolak: Hak akses akun Anda (' + (user.hak_akses || 'Guru') + ') tidak diizinkan membuka menu ini.');
+    navigateTo('dashboard');
+    return false;
+  }
+  return true;
 }
 
 function canManageReport(type, record) {

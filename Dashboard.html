@@ -60,10 +60,19 @@
       // Quick actions
       let actions = '';
       if (hasAccess('form_absen')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-absen\')" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-check2-circle me-1"></i>Input Presensi</a>';
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-absen\')" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-check2-circle me-1"></i>Input Presensi</a> ';
       }
       if (hasAccess('form_jurnal')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-jurnal\')" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-journal-plus me-1"></i>Input Jurnal</a>';
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-jurnal\')" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-journal-plus me-1"></i>Input Jurnal</a> ';
+      }
+      if (hasAccess('form_wali')) {
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-wali\')" class="btn btn-outline-info btn-sm rounded-pill"><i class="bi bi-calendar2-week me-1"></i>Kegiatan Wali</a> ';
+      }
+      if (hasAccess('form_guruwali')) {
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-guruwali\')" class="btn btn-outline-purple btn-sm rounded-pill"><i class="bi bi-chat-heart me-1"></i>Bimbingan Siswa</a> ';
+      }
+      if (hasAccess('form_ekstra')) {
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-ekstra\')" class="btn btn-outline-dark btn-sm rounded-pill"><i class="bi bi-activity me-1"></i>Kegiatan Ekstra</a> ';
       }
       document.getElementById('quickActions').innerHTML = actions;
 
