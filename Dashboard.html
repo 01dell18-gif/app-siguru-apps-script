@@ -10,6 +10,35 @@
   <?!= include('Sidebar'); ?>
   <?!= include('Header'); ?>
   
+  <style>
+    .btn-quick-action {
+      border: 1.5px solid var(--primary, #2563eb) !important;
+      color: var(--primary, #2563eb) !important;
+      background-color: #ffffff !important;
+      font-weight: 600 !important;
+      font-size: 0.8rem !important;
+      padding: 0.35rem 0.9rem !important;
+      border-radius: 50rem !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.35rem !important;
+      transition: all 0.2s ease !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+      text-decoration: none !important;
+      white-space: nowrap !important;
+    }
+    .btn-quick-action:hover {
+      background-color: var(--primary, #2563eb) !important;
+      color: #ffffff !important;
+      border-color: var(--primary, #2563eb) !important;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25) !important;
+      transform: translateY(-1px);
+    }
+    .btn-quick-action i {
+      font-size: 0.92rem;
+    }
+  </style>
+
   <main class="content-wrapper">
     <!-- Loading -->
     <div id="loadingOverlay" class="loading-overlay">
@@ -22,7 +51,7 @@
         <h3 class="fw-bold text-dark mb-1" id="welcomeTitle">Selamat Datang! 👋</h3>
         <p class="text-muted mb-0 small" id="welcomeSubtitle"></p>
       </div>
-      <div class="d-flex gap-2 mt-3 mt-md-0" id="quickActions"></div>
+      <div class="d-flex flex-wrap gap-2 mt-3 mt-md-0" id="quickActions"></div>
     </div>
 
     <!-- Stat Cards -->
@@ -57,22 +86,22 @@
       document.getElementById('headerPageTitle').textContent = 'Dashboard';
       document.getElementById('welcomeTitle').textContent = 'Selamat Datang, ' + user.nama + '! 👋';
       
-      // Quick actions
+      // Quick actions - Tampilan tombol seragam dengan border line konsisten
       let actions = '';
       if (hasAccess('form_absen')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-absen\')" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-check2-circle me-1"></i>Input Presensi</a> ';
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-absen\')" class="btn btn-outline-primary btn-sm rounded-pill btn-quick-action"><i class="bi bi-check2-circle me-1"></i>Input Presensi</a> ';
       }
       if (hasAccess('form_jurnal')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-jurnal\')" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-journal-plus me-1"></i>Input Jurnal</a> ';
-      }
-      if (hasAccess('form_wali')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-wali\')" class="btn btn-outline-info btn-sm rounded-pill"><i class="bi bi-calendar2-week me-1"></i>Kegiatan Wali</a> ';
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-jurnal\')" class="btn btn-outline-primary btn-sm rounded-pill btn-quick-action"><i class="bi bi-journal-plus me-1"></i>Input Jurnal</a> ';
       }
       if (hasAccess('form_guruwali')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-guruwali\')" class="btn btn-outline-purple btn-sm rounded-pill"><i class="bi bi-chat-heart me-1"></i>Bimbingan Siswa</a> ';
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-guruwali\')" class="btn btn-outline-primary btn-sm rounded-pill btn-quick-action"><i class="bi bi-chat-heart me-1"></i>Bimbingan Siswa</a> ';
+      }
+      if (hasAccess('form_wali')) {
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-wali\')" class="btn btn-outline-primary btn-sm rounded-pill btn-quick-action"><i class="bi bi-calendar2-week me-1"></i>Kegiatan Wali</a> ';
       }
       if (hasAccess('form_ekstra')) {
-        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-ekstra\')" class="btn btn-outline-dark btn-sm rounded-pill"><i class="bi bi-activity me-1"></i>Kegiatan Ekstra</a> ';
+        actions += '<a href="javascript:void(0)" onclick="navigateTo(\'form-ekstra\')" class="btn btn-outline-primary btn-sm rounded-pill btn-quick-action"><i class="bi bi-activity me-1"></i>Kegiatan Ekstra</a> ';
       }
       document.getElementById('quickActions').innerHTML = actions;
 

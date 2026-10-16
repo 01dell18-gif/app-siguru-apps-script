@@ -264,6 +264,7 @@ Tabel berikut menunjukkan hak akses setiap peran pengguna terhadap seluruh modul
 
 > [!NOTE]
 > **Keterangan Simbol:**
+>
 > - ✅ : Memiliki izin penuh membuka menu, menginput, serta mengelola data sesuai kewenangannya.
 > - 🔒* : Memiliki izin akses dengan filter otomatis terisi sesuai gurunya (jika tidak mengampu kelas, filter dikosongkan & terkunci).
 > - 👁️ : Memiliki izin melihat dan mencetak (*Read-Only*) laporan, tanpa wewenang mengubah data.
@@ -274,6 +275,7 @@ Tabel berikut menunjukkan hak akses setiap peran pengguna terhadap seluruh modul
 ### C. Aturan Khusus Keamanan & Operasional Data
 
 #### 1. Aturan Penguncian & Filter Kelas pada Master Data Siswa (`MasterMurid.html`)
+
 - **Guru & Wali Kelas yang Mengampu Kelas**:
   - Filter Kelas otomatis terisi dan terkunci (*disabled*) sesuai dengan kelas binaan guru tersebut (`sebagai_wali_kelas` pada data master guru).
   - Guru hanya dapat melihat dan mengelola data siswa yang berada di dalam kelas binaannya saja.
@@ -285,6 +287,7 @@ Tabel berikut menunjukkan hak akses setiap peran pengguna terhadap seluruh modul
   - Memiliki akses tak terbatas untuk memilih semua kelas, mengedit profil seluruh siswa, menambah siswa baru, mengekspor/mengimpor berkas Excel, dan menghapus data siswa.
 
 #### 2. Otomatisasi Input Identitas Guru & Cabang Binaan
+
 - Pada semua menu Form Inputan (`form-absen`, `form-jurnal`, `form-guruwali`, `form-wali`, `form-ekstra`) dan Master Data, kolom nama guru otomatis terisi dan terkunci sesuai akun yang sedang login.
 - Pada modul **Siswa Ekstrakurikuler** dan **Kegiatan Ekstrakurikuler**:
   - Cabang ekstrakurikuler otomatis terisi / terkunci sesuai cabang yang dibina oleh guru yang login.
@@ -292,7 +295,9 @@ Tabel berikut menunjukkan hak akses setiap peran pengguna terhadap seluruh modul
   - Hanya **Super Admin** yang dapat memilih nama guru dan cabang ekstra secara bebas dari seluruh daftar master.
 
 #### 3. Dukungan Akun Multi-Role (Kombinasi Hak Akses)
+
 Sistem SIGURU mendukung akun guru dengan banyak peran sekaligus dalam satu akun (disimpan dengan pemisah koma pada database, misalnya: `Guru, Guru Wali, Wali Kelas` atau `Guru, Pembina Ekstra`).
+
 - **Prinsip Otorisasi Kumulatif (*Union*)**:
   Sistem menggabungkan seluruh hak akses dari setiap peran yang terdaftar pada akun pengguna dan **tetap menyembunyikan serta memblokir menu yang tidak diizinkan oleh peran-peran tersebut**.
   - **Contoh Akun dengan Peran `Guru, Guru Wali, Wali Kelas`**:
@@ -307,7 +312,9 @@ Sistem SIGURU mendukung akun guru dengan banyak peran sekaligus dalam satu akun 
       - Pengaturan Sistem: `Pengaturan Sistem` dan `Manajemen User`.
 
 #### 4. Pengamanan Berlapis (*Two-Tier RBAC Enforcement*)
+
 Keamanan hak akses ditegakkan melalui dua lapis proteksi:
+
 1. **Lapisan Antarmuka (UI Navigation Guard)**:
    Modul sidebar (`Sidebar.html`), accordion menu, dan kartu ringkasan cepat pada Dashboard (`Dashboard.html`) secara dinamis disaring dan disembunyikan dari antarmuka pengguna saat pertama kali dimuat.
 2. **Lapisan Penegakan Rute (Route Guard)**:
