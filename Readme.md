@@ -128,21 +128,22 @@ flowchart TD
 2. **Jurnal Mengajar KBM** ([FormJurnal.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/FormJurnal.html)):
    - Menghitung nomor *Pertemuan Ke-* secara otomatis berdasarkan riwayat sebelumnya.
    - Pilihan Model/Metode Pembelajaran dan Ketuntasan Materi yang dapat dipilih maupun diketik manual.
-   - Mengunggah berkas/foto bukti KBM langsung ke folder Google Drive Jurnal.
+   - Mengunggah berkas/foto bukti KBM langsung ke folder Google Drive Jurnal (mendukung upload lebih dari 1 file sekaligus).
 3. **Bimbingan Guru Wali** ([FormGuruWali.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/FormGuruWali.html)):
    - Memilih siswa asuh binaan dari daftar yang sesuai dengan guru wali penanggung jawab.
-   - Mengisi topik permasalahan dan tindak lanjut, serta tombol langsung chat WhatsApp ke wali murid (`wa.me`).
+   - Mengisi topik permasalahan dan tindak lanjut, tombol langsung chat WhatsApp ke wali murid (`wa.me`), serta upload multi-berkas bukti ke Drive.
 4. **Kegiatan Wali Kelas & Ekstrakurikuler** ([FormWali.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/FormWali.html) & [FormEkstra.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/FormEkstra.html)):
+   - **Formulir Kegiatan Wali Kelas**: Kelas / Rombel Binaan **otomatis terisi** berdasarkan nama guru yang sedang login (mengambil data dari kolom `sebagai_wali_kelas` di sheet `Data Guru`). Jika guru tersebut **bukan wali kelas** (kosong/tanda `-`/tidak terdaftar), sistem otomatis mengisi keterangan `"Bukan wali kelas"`, mengunci field formulir, dan memvalidasi pencegahan pengiriman form agar tidak terjadi entri data tidak sah. Super Admin tetap memiliki keleluasaan memilih kelas binaan secara manual.
    - **Formulir Kegiatan Ekstrakurikuler**: Cabang ekstrakurikuler otomatis terisi (*auto-select*) sesuai dengan penugasan pembina ekstra akun guru tersebut (dari kolom `pembina_ekstra` sheet `Data Guru`). Jika guru membina tepat 1 cabang, kolom langsung dikunci (*disabled* & terkunci otomatis); jika membina lebih dari 1 cabang, dropdown terbuka dan dapat dipilih sesuai agenda kegiatan yang dilaksanakan hari tersebut (disertai badge informasi jumlah cabang binaan).
    - **Pengambilan Data Siswa Peserta**: Daftar presensi siswa disaring secara akurat berdasarkan cabang ekstra yang dipilih dan hak akses pembina, tanpa resiko menampilkan data cabang lain jika belum ada siswa terdaftar.
-   - Bagi Super Admin, memilih nama pembina dari dropdown otomatis menyesuaikan cabang ekstra sesuai penugasan guru yang dipilih namun tetap dapat dipilih secara bebas.
-   - Pencatatan pembinaan kelas dan agenda latihan ekstrakurikuler beserta presensi kehadiran siswa terdaftar dan dokumentasi Drive.
+   - **Multi-File Upload Google Drive**: Seluruh formulir input kegiatan (Jurnal, Guru Wali, Wali Kelas, Ekstra) mendukung upload lebih dari 1 file dokumen/foto sekaligus dengan antarmuka badge chips interaktif yang dapat dihapus per berkas sebelum disimpan.
 
 #### D. Alur Laporan, Manajemen Data, & Pembersihan Berkas Drive
 
 1. Seluruh transaksi terekam pada lembar laporan masing-masing: [LaporanAbsen.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/LaporanAbsen.html), [LaporanJurnal.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/LaporanJurnal.html), [LaporanGuruWali.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/LaporanGuruWali.html), [LaporanWali.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/LaporanWali.html), dan [LaporanEkstra.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/LaporanEkstra.html).
-2. **Aksi Edit & Hapus**: Pemilik data atau Super Admin dapat mengedit catatan atau menghapusnya.
-3. **Otomasi Bersih Drive**: Saat berkas bukti diganti dengan berkas baru atau baris data dihapus, sistem di [Code.gs](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Code.gs) otomatis menghapus berkas lama di Google Drive agar kuota penyimpanan tidak membengkak.
+2. **Tampilan Multi-Bukti Lengkap**: Pada tabel laporan dan pratinjau cetak PDF, seluruh berkas bukti yang diunggah ditampilkan secara menyeluruh (`Bukti 1`, `Bukti 2`, dst.) dalam bentuk badge link interaktif yang dapat langsung dibuka.
+3. **Aksi Edit & Multi-File Replacement**: Pemilik data atau Super Admin dapat mengedit catatan atau menambah/menghapus file bukti melalui modal edit yang dilengkapi pratinjau badge chips.
+4. **Otomasi Bersih Drive**: Saat berkas bukti diganti/dihapus atau baris data dihapus, sistem di [Code.gs](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/Code.gs) (`syncDriveFileReplacement`) membandingkan ID berkas secara akurat dan otomatis menghapus berkas lama yang sudah tidak digunakan di Google Drive agar kuota penyimpanan tidak membengkak.
 
 #### E. Alur Pratinjau & Cetak PDF Resmi ([PrintLaporan.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/PrintLaporan.html))
 

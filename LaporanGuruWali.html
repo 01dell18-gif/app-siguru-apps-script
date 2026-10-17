@@ -153,14 +153,14 @@
             <div class="mb-3">
               <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
               <div class="input-group">
-                <input type="text" id="editGWBukti" class="form-control" placeholder="https://drive.google.com/...">
-                <label class="btn btn-outline-secondary" for="fileEditGW" title="Unggah Berkas Pengganti ke Drive"><i
+                <input type="text" id="editGWBukti" class="form-control" placeholder="https://drive.google.com/..." oninput="renderBuktiChipsPreview('editGWBukti', 'previewEditGWBukti')">
+                <label class="btn btn-outline-secondary" for="fileEditGW" title="Unggah Berkas ke Drive (Bisa Banyak)"><i
                     class="bi bi-upload"></i></label>
-                <input type="file" id="fileEditGW" class="d-none"
-                  onchange="uploadReplacementFile(this, 'editGWBukti', 'folder_bimbingan')">
+                <input type="file" id="fileEditGW" class="d-none" accept="image/*,.pdf,.doc,.docx" multiple
+                  onchange="uploadReplacementFile(this, 'editGWBukti', 'folder_bimbingan', 'previewEditGWBukti')">
               </div>
-              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
-                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+              <div id="previewEditGWBukti" class="d-flex flex-wrap gap-2 mt-2"></div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Anda dapat memilih lebih dari 1 berkas. Jika file dihapus, berkas lama di folder Google Drive otomatis terhapus saat disimpan.</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -321,12 +321,7 @@
       filtered.forEach(function (r, idx) {
         const canManage = canManageReport('guruwali', r);
 
-        let buktiHtml = '-';
-        if (r.file_bukti) {
-          buktiHtml = '<a href="' + escapeHtml(r.file_bukti) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
-            '<i class="bi bi-link-45deg"></i> Bukti' +
-            '</a>';
-        }
+        const buktiHtml = renderBuktiButtons(r.file_bukti);
 
         let aksiHtml = '';
         if (canManage) {
@@ -379,6 +374,7 @@
       document.getElementById('editGWTindakLanjut').value = record.tindak_lanjut || '';
       document.getElementById('editGWKeterangan').value = record.keterangan || '';
       document.getElementById('editGWBukti').value = record.file_bukti || '';
+      renderBuktiChipsPreview('editGWBukti', 'previewEditGWBukti');
 
       renderEditGWStudentCheckboxes(record);
 

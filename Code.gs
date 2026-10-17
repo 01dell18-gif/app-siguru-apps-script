@@ -1697,12 +1697,15 @@ function deleteDriveFiles(urlOrUrls) {
 
 function syncDriveFileReplacement(oldUrl, newUrl) {
   if (!oldUrl) return;
-  const oldId = extractDriveFileId(oldUrl);
-  const newId = extractDriveFileId(newUrl);
-  // Jika file diganti dengan file baru atau dikosongkan, hapus file lama di Google Drive
-  if (oldId && oldId !== newId) {
-    deleteDriveFiles(oldUrl);
-  }
+  const oldFiles = String(oldUrl).split(/[,;\n\r]+/).map(extractDriveFileId).filter(Boolean);
+  const newFiles = String(newUrl || '').split(/[,;\n\r]+/).map(extractDriveFileId).filter(Boolean);
+
+  // Jika berkas lama tidak ada lagi di daftar berkas baru, hapus dari Google Drive
+  oldFiles.forEach(function(oldId) {
+    if (oldId && !newFiles.includes(oldId)) {
+      deleteDriveFiles(oldId);
+    }
+  });
 }
 
 // === PRINT LAPORAN DATA ===

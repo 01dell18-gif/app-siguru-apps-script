@@ -206,14 +206,14 @@
             <div class="mb-3">
               <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
               <div class="input-group">
-                <input type="text" id="editJurnalBukti" class="form-control" placeholder="https://drive.google.com/...">
+                <input type="text" id="editJurnalBukti" class="form-control" placeholder="https://drive.google.com/..." oninput="renderBuktiChipsPreview('editJurnalBukti', 'previewEditJurnalBukti')">
                 <label class="btn btn-outline-secondary" for="fileEditJurnal"
-                  title="Unggah Berkas Pengganti ke Drive"><i class="bi bi-upload"></i></label>
-                <input type="file" id="fileEditJurnal" class="d-none"
-                  onchange="uploadReplacementFile(this, 'editJurnalBukti', 'folder_jurnal')">
+                  title="Unggah Berkas ke Drive (Bisa Banyak)"><i class="bi bi-upload"></i></label>
+                <input type="file" id="fileEditJurnal" class="d-none" accept="image/*,.pdf,.doc,.docx" multiple
+                  onchange="uploadReplacementFile(this, 'editJurnalBukti', 'folder_jurnal', 'previewEditJurnalBukti')">
               </div>
-              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
-                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+              <div id="previewEditJurnalBukti" class="d-flex flex-wrap gap-2 mt-2"></div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Anda dapat memilih lebih dari 1 berkas. Jika file dihapus, berkas lama di folder Google Drive otomatis terhapus saat disimpan.</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -406,12 +406,7 @@
       allLaporanJurnal.forEach(function (r, idx) {
         const canManage = canManageReport('jurnal', r);
 
-        let buktiHtml = '-';
-        if (r.link_bukti_jurnal) {
-          buktiHtml = '<a href="' + escapeHtml(r.link_bukti_jurnal) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
-            '<i class="bi bi-link-45deg"></i> Bukti' +
-            '</a>';
-        }
+        const buktiHtml = renderBuktiButtons(r.link_bukti_jurnal);
 
         let tuntasBadge = '';
         const kt = String(r.ketuntasan_materi || '').toLowerCase().trim();
@@ -478,6 +473,7 @@
       document.getElementById('editJurnalTuntas').value = record.ketuntasan_materi || 'tuntas';
       document.getElementById('editJurnalKetTuntas').value = record.keterangan_tuntas || '';
       document.getElementById('editJurnalBukti').value = record.link_bukti_jurnal || '';
+      renderBuktiChipsPreview('editJurnalBukti', 'previewEditJurnalBukti');
       getModal('modalEditJurnal').show();
     }
 

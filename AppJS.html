@@ -632,38 +632,158 @@ function extractDriveFolderId(url) {
   return m ? m[1] : null;
 }
 
-function uploadReplacementFile(input, targetInputId, folderKey) {
-  if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
-  showLoading('Mengunggah berkas baru ke Google Drive...');
+// === MULTI-FILE & MULTI-EVIDENCE LINK UTILITIES ===
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const base64Data = e.target.result.split(',')[1];
-    let folderUrl = '';
-    const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
-    if (bundle && bundle.settings && bundle.settings[folderKey]) {
-      folderUrl = bundle.settings[folderKey];
+function parseBuktiLinks(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  const str = String(raw).trim();
+  if (!str || str === '-' || str === 'null' || str === 'undefined' || str === '[]') return [];
+  if (str.startsWith('[') && str.endsWith(']')) {
+    try {
+      const arr = JSON.parse(str);
+      if (Array.isArray(arr)) return arr.filter(Boolean);
+    } catch(e) {}
+  }
+  return str.split(/[\n;,]+/).map(function(s){ return s.trim(); }).filter(function(s){
+    return s && s !== '-' && s !== 'null' && s !== 'undefined' && s.length > 5;
+  });
+}
+
+function renderBuktiButtons(rawLinks, customClass) {
+  const links = parseBuktiLinks(rawLinks);
+  if (!links || links.length === 0) return '<span class="text-muted small">-</span>';
+
+  const cClass = customClass || 'btn-outline-info';
+  if (links.length === 1) {
+    return '<a href="' + escapeHtml(links[0]) + '" target="_blank" class="btn ' + cClass + ' btn-sm btn-bukti" title="Buka berkas bukti di Google Drive">' +
+      '<i class="bi bi-link-45deg me-1"></i>Bukti' +
+      '</a>';
+  }
+
+  let html = '<div class="d-flex flex-wrap gap-1 justify-content-center">';
+  links.forEach(function(link, i) {
+    html += '<a href="' + escapeHtml(link) + '" target="_blank" class="btn ' + cClass + ' btn-sm btn-bukti" title="Buka berkas bukti ke-' + (i + 1) + '">' +
+      '<i class="bi bi-file-earmark-arrow-down me-1"></i>Bukti ' + (i + 1) +
+      '</a>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderBuktiChipsPreview(targetInputId, containerId) {
+  const targetInput = document.getElementById(targetInputId);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const links = targetInput ? parseBuktiLinks(targetInput.value) : [];
+  if (links.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  links.forEach(function(link, idx) {
+    const num = idx + 1;
+    html += '<span class="badge bg-light text-dark border p-2 d-inline-flex align-items-center gap-2 shadow-xs" style="font-size:0.8rem; font-weight:500;">' +
+      '<i class="bi bi-file-earmark-check text-primary"></i>' +
+      '<a href="' + escapeHtml(link) + '" target="_blank" class="text-decoration-none text-primary fw-semibold" title="Buka file ini">' +
+        'Bukti ' + num + ' <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.7rem;"></i>' +
+      '</a>' +
+      '<button type="button" class="btn-close ms-1" style="font-size:0.58rem;" onclick="removeBuktiChip(\'' + targetInputId + '\', \'' + containerId + '\', ' + idx + ')" title="Hapus berkas ini"></button>' +
+    '</span>';
+  });
+  container.innerHTML = html;
+}
+
+function removeBuktiChip(targetInputId, containerId, removeIdx) {
+  const targetInput = document.getElementById(targetInputId);
+  if (!targetInput) return;
+  const links = parseBuktiLinks(targetInput.value);
+  if (removeIdx >= 0 && removeIdx < links.length) {
+    links.splice(removeIdx, 1);
+    targetInput.value = links.join(' ; ');
+    renderBuktiChipsPreview(targetInputId, containerId);
+    showToast('info', 'Berkas bukti dihapus dari pilihan.');
+  }
+}
+
+function uploadMultipleFilesClient(fileInput, targetInputId, folderIdOrKey, previewContainerId) {
+  if (!fileInput.files || fileInput.files.length === 0) return;
+  const files = Array.from(fileInput.files);
+  const total = files.length;
+
+  let folderId = '';
+  if (typeof folderIdOrKey === 'string') {
+    if (folderIdOrKey.startsWith('http') || folderIdOrKey.includes('/folders/')) {
+      folderId = extractDriveFolderId(folderIdOrKey);
+    } else if (folderIdOrKey.startsWith('folder_')) {
+      const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
+      if (bundle && bundle.settings && bundle.settings[folderIdOrKey]) {
+        folderId = extractDriveFolderId(bundle.settings[folderIdOrKey]);
+      }
+    } else {
+      folderId = folderIdOrKey;
     }
-    const folderId = extractDriveFolderId(folderUrl);
+  }
 
-    google.script.run
-      .withSuccessHandler(function(res) {
-        Swal.close();
-        if (res && res.success) {
-          const el = document.getElementById(targetInputId);
-          if (el) el.value = res.url;
-          showToast('success', 'Berkas baru berhasil diunggah! Simpan perubahan untuk menerapkan pergantian file.');
-        } else {
-          showToast('error', res.message || 'Gagal mengunggah berkas');
-        }
-      })
-      .withFailureHandler(function(err) {
-        Swal.close();
-        showToast('error', 'Error upload: ' + err.message);
-      })
-      .uploadFileToDrive(base64Data, file.name, folderId || 'root');
-  };
-  reader.readAsDataURL(file);
+  if (!folderId) {
+    showToast('warning', 'Folder Google Drive belum dikonfigurasi di Pengaturan');
+    return;
+  }
+
+  const targetInput = document.getElementById(targetInputId);
+  const existingUrls = targetInput ? parseBuktiLinks(targetInput.value) : [];
+
+  let currentIndex = 0;
+  const newUrls = [];
+
+  function uploadNext() {
+    if (currentIndex >= total) {
+      Swal.close();
+      const combined = existingUrls.concat(newUrls);
+      const uniqueCombined = [...new Set(combined)];
+      if (targetInput) {
+        targetInput.value = uniqueCombined.join(' ; ');
+      }
+      if (previewContainerId) {
+        renderBuktiChipsPreview(targetInputId, previewContainerId);
+      }
+      showToast('success', total + ' berkas berhasil diunggah ke Google Drive!');
+      fileInput.value = '';
+      return;
+    }
+
+    const file = files[currentIndex];
+    showLoading('Mengunggah berkas ' + (currentIndex + 1) + ' dari ' + total + ' (' + escapeHtml(file.name) + ')...');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64Data = e.target.result.split(',')[1];
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            newUrls.push(res.url);
+          } else {
+            console.warn('Gagal unggah berkas:', file.name, res ? res.message : '');
+          }
+          currentIndex++;
+          uploadNext();
+        })
+        .withFailureHandler(function(err) {
+          console.error('Error unggah berkas:', file.name, err);
+          currentIndex++;
+          uploadNext();
+        })
+        .uploadFileToDrive(base64Data, file.name, folderId);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  uploadNext();
+}
+
+function uploadReplacementFile(input, targetInputId, folderKey, previewContainerId) {
+  uploadMultipleFilesClient(input, targetInputId, folderKey, previewContainerId);
 }
 </script>

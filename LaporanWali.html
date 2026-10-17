@@ -115,14 +115,14 @@
             <div class="mb-3">
               <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
               <div class="input-group">
-                <input type="text" id="editWaliBukti" class="form-control" placeholder="https://drive.google.com/...">
-                <label class="btn btn-outline-secondary" for="fileEditWali" title="Unggah Berkas Pengganti ke Drive"><i
+                <input type="text" id="editWaliBukti" class="form-control" placeholder="https://drive.google.com/..." oninput="renderBuktiChipsPreview('editWaliBukti', 'previewEditWaliBukti')">
+                <label class="btn btn-outline-secondary" for="fileEditWali" title="Unggah Berkas ke Drive (Bisa Banyak)"><i
                     class="bi bi-upload"></i></label>
-                <input type="file" id="fileEditWali" class="d-none"
-                  onchange="uploadReplacementFile(this, 'editWaliBukti', 'folder_wali')">
+                <input type="file" id="fileEditWali" class="d-none" accept="image/*,.pdf,.doc,.docx" multiple
+                  onchange="uploadReplacementFile(this, 'editWaliBukti', 'folder_wali', 'previewEditWaliBukti')">
               </div>
-              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
-                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+              <div id="previewEditWaliBukti" class="d-flex flex-wrap gap-2 mt-2"></div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Anda dapat memilih lebih dari 1 berkas. Jika file dihapus, berkas lama di folder Google Drive otomatis terhapus saat disimpan.</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -280,12 +280,7 @@
       allLaporanWali.forEach(function (r, idx) {
         const canManage = canManageReport('wali', r);
 
-        let buktiHtml = '-';
-        if (r.link_bukti_wali) {
-          buktiHtml = '<a href="' + escapeHtml(r.link_bukti_wali) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
-            '<i class="bi bi-link-45deg"></i> Bukti' +
-            '</a>';
-        }
+        const buktiHtml = renderBuktiButtons(r.link_bukti_wali);
 
         let aksiHtml = '';
         if (canManage) {
@@ -332,6 +327,7 @@
       document.getElementById('editWaliKelas').value = record.kelas || '';
       document.getElementById('editWaliDeskripsi').value = record.deskripsi_kegiatan || '';
       document.getElementById('editWaliBukti').value = record.link_bukti_wali || '';
+      renderBuktiChipsPreview('editWaliBukti', 'previewEditWaliBukti');
       getModal('modalEditWali').show();
     }
 

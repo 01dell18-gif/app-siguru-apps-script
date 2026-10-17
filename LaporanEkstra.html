@@ -124,14 +124,14 @@
             <div class="mb-3">
               <label class="form-label small fw-semibold">Link Bukti Google Drive / Unggah Berkas Baru</label>
               <div class="input-group">
-                <input type="text" id="editEkstraBukti" class="form-control" placeholder="https://drive.google.com/...">
+                <input type="text" id="editEkstraBukti" class="form-control" placeholder="https://drive.google.com/..." oninput="renderBuktiChipsPreview('editEkstraBukti', 'previewEditEkstraBukti')">
                 <label class="btn btn-outline-secondary" for="fileEditEkstra"
-                  title="Unggah Berkas Pengganti ke Drive"><i class="bi bi-upload"></i></label>
-                <input type="file" id="fileEditEkstra" class="d-none"
-                  onchange="uploadReplacementFile(this, 'editEkstraBukti', 'folder_ekstra')">
+                  title="Unggah Berkas ke Drive (Bisa Banyak)"><i class="bi bi-upload"></i></label>
+                <input type="file" id="fileEditEkstra" class="d-none" accept="image/*,.pdf,.doc,.docx" multiple
+                  onchange="uploadReplacementFile(this, 'editEkstraBukti', 'folder_ekstra', 'previewEditEkstraBukti')">
               </div>
-              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Jika file diganti atau baris
-                dihapus, berkas lama di folder Google Drive otomatis terhapus.</small>
+              <div id="previewEditEkstraBukti" class="d-flex flex-wrap gap-2 mt-2"></div>
+              <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Anda dapat memilih lebih dari 1 berkas. Jika file dihapus, berkas lama di folder Google Drive otomatis terhapus saat disimpan.</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -295,12 +295,7 @@
       allLaporanEkstra.forEach(function (r, idx) {
         const canManage = canManageReport('ekstra', r);
 
-        let buktiHtml = '-';
-        if (r.link_bukti_ekstra) {
-          buktiHtml = '<a href="' + escapeHtml(r.link_bukti_ekstra) + '" target="_blank" class="btn btn-outline-info btn-sm btn-bukti">' +
-            '<i class="bi bi-link-45deg"></i> Bukti' +
-            '</a>';
-        }
+        const buktiHtml = renderBuktiButtons(r.link_bukti_ekstra);
 
         let aksiHtml = '';
         if (canManage) {
@@ -385,6 +380,9 @@
       document.getElementById('editEkstraPeserta').value = record.nama_murid || '';
       document.getElementById('editEkstraKeterangan').value = record.keterangan || '';
       document.getElementById('editEkstraBukti').value = record.link_bukti_ekstra || '';
+      if (typeof renderBuktiChipsPreview === 'function') {
+        renderBuktiChipsPreview('editEkstraBukti', 'previewEditEkstraBukti');
+      }
       getModal('modalEditEkstra').show();
     }
 
