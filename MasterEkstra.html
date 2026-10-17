@@ -187,21 +187,20 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-semibold small d-block mb-1">Cabang Ekstrakurikuler <span class="text-danger">*</span></label>
-              <div id="containerEkstraCheckboxes" class="p-3 border rounded bg-light d-flex flex-wrap gap-3">
-                <!-- Checkboxes populated dynamically -->
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-semibold small mb-0 text-dark">
+                  <i class="bi bi-mortarboard-fill text-primary me-1"></i>Cabang Ekstrakurikuler & Pembina <span class="text-danger">*</span>
+                </label>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-xs" onclick="addNewBranchRow()" title="Tambah cabang ekstra untuk siswa ini">
+                  <i class="bi bi-plus-circle me-1"></i>Tambah Cabang
+                </button>
               </div>
-              <small class="text-muted d-block mt-1">Dapat memilih lebih dari satu cabang kegiatan ekstrakurikuler.</small>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold small d-block mb-1">Guru Pembimbing Sesuai Ekstrakurikuler <span class="text-danger">*</span></label>
-              <div id="containerGuruPerEkstra" class="p-3 border rounded bg-white">
-                <div class="text-muted small py-2 text-center">
-                  <i class="bi bi-info-circle me-1"></i>Pilih cabang kegiatan ekstrakurikuler di atas untuk memetakan guru pembimbing.
-                </div>
+              <div id="containerBranchRows" class="d-flex flex-column gap-2">
+                <!-- Dynamic branch rows rendered here -->
               </div>
-              <small class="text-muted d-block mt-1">Jika ekstra yang dipilih lebih dari 1, guru pembimbing dapat disesuaikan untuk masing-masing cabang ekstrakurikuler.</small>
+              <small class="text-muted d-block mt-1" style="font-size: 0.74rem;">
+                <i class="bi bi-info-circle me-1"></i>Pilih cabang ekstra yang diikuti. Guru pembina akan tampil otomatis atau dapat dipilih jika terdapat lebih dari satu pembina terdaftar.
+              </small>
             </div>
           </div>
           <div class="modal-footer">
@@ -343,107 +342,297 @@
       return [str];
     }
 
-    function handleEkstraCheckboxChange() {
-      renderGuruPerEkstraSection();
-    }
-
     function getPembinasForEkstra(ekstraName) {
       if (!ekstraName) return [];
-      const tr = String(ekstraName).trim().toLowerCase();
-      const list = [];
+      const cleanTarget = String(ekstraName).trim().toLowerCase();
+      const result = [];
       (allGuruList || []).forEach(function(g) {
         const gn = (g.nama_guru || g.nama || '').trim();
         const pe = g.pembina_ekstra || '';
         if (gn && pe && pe !== '-') {
-          const parts = String(pe).split(/[,;]/).map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
-          if (parts.includes(tr) || parts.some(function(p){ return p === tr; })) {
-            if (!list.includes(gn)) list.push(gn);
+          const branches = String(pe).split(/[,;]/).map(function(s){ return s.trim().toLowerCase(); });
+          if (branches.includes(cleanTarget)) {
+            if (!result.includes(gn)) result.push(gn);
           }
         }
       });
-      return list;
+      if (result.length === 0 && guruEkstraMap[ekstraName]) {
+        result.push(guruEkstraMap[ekstraName]);
+      }
+      return result;
     }
 
-    function renderGuruPerEkstraSection(savedMap) {
-      const container = document.getElementById('containerGuruPerEkstra');
+    let branchRowCounter = 0;
+
+    function addNewBranchRow(selectedBranch, selectedPembina) {
+      const container = document.getElementById('containerBranchRows');
       if (!container) return;
 
-      const checkedEkstras = [];
-      document.querySelectorAll('.ekstra-chk:checked').forEach(function(c) {
-        checkedEkstras.push(c.value.trim());
+      branchRowCounter++;
+      const rowId = 'br_' + branchRowCounter;
+      const initialBranch = selectedBranch ? String(selectedBranch).trim() : '';
+
+      const card = document.createElement('div');
+      card.className = 'card p-3 border rounded bg-white shadow-xs branch-row-card';
+      card.id = 'branchRow_' + rowId;
+
+      card.innerHTML = 
+        '<div class="row g-2 align-items-center">' +
+          '<!-- Col 1: Cabang Ekstrakurikuler -->' +
+          '<div class="col-12 col-md-6">' +
+            '<div class="d-flex align-items-center justify-content-between mb-1">' +
+              '<label class="form-label small fw-semibold text-secondary mb-0">Cabang Ekstrakurikuler</label>' +
+              '<span class="badge bg-primary-subtle text-primary border" style="font-size: 0.68rem;"><i class="bi bi-keyboard me-1"></i>Bisa Diketik</span>' +
+            '</div>' +
+            '<div class="position-relative wrapper-ekstra-search" id="wrapperEkstraSearch_' + rowId + '">' +
+              '<div class="input-group">' +
+                '<span class="input-group-text bg-white border-end-0 text-muted px-2"><i class="bi bi-search"></i></span>' +
+                '<input type="text" class="form-control border-start-0 border-end-0 px-2 input-search-ekstra" id="searchEkstra_' + rowId + '" placeholder="-- Ketik atau Pilih Cabang --" autocomplete="off" value="' + escapeHtml(initialBranch) + '">' +
+                '<button class="btn btn-outline-secondary dropdown-toggle px-2 btn-toggle-ekstra-dropdown" type="button" id="btnToggleEkstraDropdown_' + rowId + '" title="Buka pilihan cabang"></button>' +
+              '</div>' +
+              '<input type="hidden" class="val-ekstra-branch" id="valEkstra_' + rowId + '" value="' + escapeHtml(initialBranch) + '">' +
+              '<div class="dropdown-menu w-100 shadow border mt-1 p-0 searchable-menu list-ekstra-dropdown" id="listEkstraDropdown_' + rowId + '" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; z-index: 1060; left: 0; right: 0;">' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<!-- Col 2: Guru Pembina -->' +
+          '<div class="col-10 col-md-5">' +
+            '<label class="form-label small fw-semibold text-secondary mb-1">Guru Pembina</label>' +
+            '<div class="pembina-field-wrapper" id="pembinaWrapper_' + rowId + '">' +
+            '</div>' +
+          '</div>' +
+
+          '<!-- Col 3: Delete Button -->' +
+          '<div class="col-2 col-md-1 text-end pt-md-3">' +
+            '<button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeBranchRow(\'' + rowId + '\')" title="Hapus Cabang Ini">' +
+              '<i class="bi bi-trash"></i>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+
+      container.appendChild(card);
+
+      attachBranchRowEvents(rowId);
+      updatePembinaForBranchRow(rowId, initialBranch, selectedPembina);
+    }
+
+    function removeBranchRow(rowId) {
+      const el = document.getElementById('branchRow_' + rowId);
+      if (el) el.remove();
+
+      const container = document.getElementById('containerBranchRows');
+      if (container && container.querySelectorAll('.branch-row-card').length === 0) {
+        addNewBranchRow();
+      }
+    }
+
+    function attachBranchRowEvents(rowId) {
+      const input = document.getElementById('searchEkstra_' + rowId);
+      const btnToggle = document.getElementById('btnToggleEkstraDropdown_' + rowId);
+      const listEl = document.getElementById('listEkstraDropdown_' + rowId);
+      if (!input || !listEl) return;
+
+      input.addEventListener('focus', function() {
+        filterEkstraDropdownForRow(rowId, this.value);
+        openEkstraDropdownForRow(rowId);
+      });
+      input.addEventListener('input', function() {
+        const val = this.value;
+        const hid = document.getElementById('valEkstra_' + rowId);
+        if (hid) hid.value = val;
+        filterEkstraDropdownForRow(rowId, val);
+        openEkstraDropdownForRow(rowId);
+        updatePembinaForBranchRow(rowId, val);
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const firstItem = listEl.querySelector('.searchable-item');
+          if (firstItem) firstItem.click();
+        }
       });
 
-      if (checkedEkstras.length === 0) {
-        container.innerHTML = '<div class="text-muted small py-2 text-center"><i class="bi bi-info-circle me-1"></i>Pilih minimal satu cabang ekstrakurikuler di atas untuk memetakan guru pembimbing.</div>';
-        return;
-      }
-
-      const currentValues = savedMap || {};
-      if (!savedMap) {
-        container.querySelectorAll('.sel-guru-ekstra').forEach(function(el) {
-          const ek = el.getAttribute('data-ekstra');
-          if (ek && el.value) currentValues[ek] = el.value;
+      if (btnToggle) {
+        btnToggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleEkstraDropdownForRow(rowId);
         });
       }
 
-      let html = '<div class="d-flex flex-column gap-2">';
-      checkedEkstras.forEach(function(ek) {
-        const pembinas = getPembinasForEkstra(ek);
-        let defaultTeacher = currentValues[ek] || '';
+      document.addEventListener('click', function(e) {
+        const wrap = document.getElementById('wrapperEkstraSearch_' + rowId);
+        if (wrap && !wrap.contains(e.target)) {
+          closeEkstraDropdownForRow(rowId);
+        }
+      });
+    }
 
-        if (!defaultTeacher) {
-          if (!isSuperAdmin() && user && user.nama && pembinas.includes(user.nama)) {
-            defaultTeacher = user.nama;
-          } else if (pembinas.length > 0) {
-            defaultTeacher = pembinas[0];
-          } else {
-            defaultTeacher = guruEkstraMap[ek] || (user && user.nama ? user.nama : '');
+    function openEkstraDropdownForRow(rowId) {
+      const listEl = document.getElementById('listEkstraDropdown_' + rowId);
+      if (listEl) listEl.style.display = 'block';
+    }
+
+    function closeEkstraDropdownForRow(rowId) {
+      const listEl = document.getElementById('listEkstraDropdown_' + rowId);
+      if (listEl) listEl.style.display = 'none';
+    }
+
+    function toggleEkstraDropdownForRow(rowId) {
+      const listEl = document.getElementById('listEkstraDropdown_' + rowId);
+      if (!listEl) return;
+      if (listEl.style.display === 'block') {
+        closeEkstraDropdownForRow(rowId);
+      } else {
+        const input = document.getElementById('searchEkstra_' + rowId);
+        filterEkstraDropdownForRow(rowId, input ? input.value : '');
+        openEkstraDropdownForRow(rowId);
+      }
+    }
+
+    function filterEkstraDropdownForRow(rowId, query) {
+      const listEl = document.getElementById('listEkstraDropdown_' + rowId);
+      if (!listEl) return;
+      const q = String(query || '').trim().toLowerCase();
+
+      const options = [];
+      (listEkstraGlobal || []).forEach(function(e) {
+        if (e && String(e).trim()) {
+          options.push(String(e).trim());
+        }
+      });
+
+      const filtered = options.filter(function(e) {
+        if (!q) return true;
+        return e.toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="p-2 text-center text-muted small"><i class="bi bi-info-circle me-1"></i>Tidak ada cabang cocok dengan "' + escapeHtml(q) + '"</div>';
+        return;
+      }
+
+      let html = '';
+      const currentVal = document.getElementById('valEkstra_' + rowId) ? document.getElementById('valEkstra_' + rowId).value : '';
+      filtered.forEach(function(eName) {
+        const isSelected = (eName === currentVal);
+        const pembinas = getPembinasForEkstra(eName);
+        let badgePembina = '';
+        if (pembinas.length > 1) {
+          badgePembina = '<span class="badge bg-info-subtle text-info border ms-1" style="font-size:0.65rem;">' + pembinas.length + ' Pembina</span>';
+        } else if (pembinas.length === 1) {
+          badgePembina = '<span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size:0.65rem;">' + escapeHtml(pembinas[0]) + '</span>';
+        }
+
+        html += '<a href="javascript:void(0)" class="dropdown-item py-2 px-3 border-bottom d-flex align-items-center justify-content-between searchable-item' + (isSelected ? ' active bg-primary text-white' : '') + '" onclick="selectEkstraForBranchRow(\'' + rowId + '\', \'' + escapeHtml(eName) + '\')">' +
+          '<div class="d-flex align-items-center overflow-hidden me-2">' +
+            '<i class="bi bi-star-fill text-warning me-2"></i>' +
+            '<span class="text-truncate">' + escapeHtml(eName) + '</span>' +
+            badgePembina +
+          '</div>' +
+          (isSelected ? '<i class="bi bi-check2"></i>' : '') +
+        '</a>';
+      });
+      listEl.innerHTML = html;
+    }
+
+    function selectEkstraForBranchRow(rowId, eName) {
+      const hid = document.getElementById('valEkstra_' + rowId);
+      const input = document.getElementById('searchEkstra_' + rowId);
+      if (hid) hid.value = eName;
+      if (input) input.value = eName;
+      closeEkstraDropdownForRow(rowId);
+
+      updatePembinaForBranchRow(rowId, eName);
+    }
+
+    function updatePembinaForBranchRow(rowId, branchName, preselectedPembina) {
+      const wrapper = document.getElementById('pembinaWrapper_' + rowId);
+      if (!wrapper) return;
+
+      const cleanBranch = branchName ? String(branchName).trim() : '';
+
+      if (!cleanBranch) {
+        wrapper.innerHTML = 
+          '<div class="input-group">' +
+            '<span class="input-group-text bg-light text-muted px-2"><i class="bi bi-dash-circle"></i></span>' +
+            '<input type="text" class="form-control bg-light text-muted fst-italic px-2" value="⊝ Pilih cabang ekstra dulu" readonly disabled>' +
+          '</div>';
+        return;
+      }
+
+      const pembinas = getPembinasForEkstra(cleanBranch);
+      let defaultTeacher = preselectedPembina || '';
+
+      if (!defaultTeacher) {
+        if (!isSuperAdmin() && user && user.nama && pembinas.includes(user.nama)) {
+          defaultTeacher = user.nama;
+        } else if (pembinas.length > 0) {
+          defaultTeacher = pembinas[0];
+        } else {
+          defaultTeacher = guruEkstraMap[cleanBranch] || (user && user.nama ? user.nama : '');
+        }
+      }
+
+      // Skenario: Lebih dari 1 Guru Pembina (Pengguna dapat memilih salah satu guru pembinanya)
+      if (pembinas.length > 1) {
+        let html = 
+          '<div class="input-group">' +
+            '<span class="input-group-text bg-light text-primary px-2" title="' + pembinas.length + ' pembina terdaftar"><i class="bi bi-people-fill"></i></span>' +
+            '<select class="form-select form-select-sm sel-row-pembina border-primary" id="selPembina_' + rowId + '" required title="Pilih salah satu guru pembina untuk ' + escapeHtml(cleanBranch) + '">' +
+              '<option value="">-- Pilih Salah Satu Guru Pembina (' + pembinas.length + ' Tersedia) --</option>';
+
+        pembinas.forEach(function(pName) {
+          const selAttr = (pName === defaultTeacher) ? ' selected' : '';
+          html += '<option value="' + escapeHtml(pName) + '"' + selAttr + '>' + escapeHtml(pName) + ' (Pembina ' + escapeHtml(cleanBranch) + ')</option>';
+        });
+
+        if (isSuperAdmin()) {
+          const otherGurus = allGuruList.filter(function(g){
+            const gn = g.nama_guru || g.nama || '';
+            return gn && !pembinas.includes(gn);
+          });
+          if (otherGurus.length > 0) {
+            html += '<optgroup label="Guru Lainnya">';
+            otherGurus.forEach(function(g) {
+              const gn = g.nama_guru || g.nama || '';
+              const selAttr = (gn === defaultTeacher) ? ' selected' : '';
+              html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
+            });
+            html += '</optgroup>';
           }
         }
 
-        // Jika terdapat lebih dari 1 Guru Pembina untuk cabang ini:
-        // Dapat dipilih salah satu Guru Pembinanya!
-        if (pembinas.length > 1) {
-          html += '<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-2 border rounded bg-light gap-2">' +
-            '<div class="d-flex align-items-center gap-2">' +
-              '<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>' + escapeHtml(ek) + '</span>' +
-              '<span class="badge bg-info-subtle text-info border small"><i class="bi bi-people-fill me-1"></i>' + pembinas.length + ' Pembina Tersedia</span>' +
-            '</div>' +
-            '<div class="flex-grow-1" style="max-width: 320px;">' +
-              '<select class="form-select form-select-sm sel-guru-ekstra" data-ekstra="' + escapeHtml(ek) + '" required title="Pilih salah satu guru pembina untuk ' + escapeHtml(ek) + '">' +
-                '<option value="">-- Pilih Salah Satu Guru Pembina --</option>';
-          pembinas.forEach(function(pName) {
-            const selAttr = (pName === defaultTeacher) ? ' selected' : '';
-            html += '<option value="' + escapeHtml(pName) + '"' + selAttr + '>' + escapeHtml(pName) + '</option>';
+        html += '</select></div>' +
+          '<small class="text-primary d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-check-circle me-1"></i>Tersedia ' + pembinas.length + ' pembina. Pilih salah satu.</small>';
+        wrapper.innerHTML = html;
+      } else if (isSuperAdmin()) {
+        // Super Admin dengan 1 atau 0 pembina: dropdown fleksibel
+        let html = 
+          '<div class="input-group">' +
+            '<span class="input-group-text bg-light text-muted px-2"><i class="bi bi-person"></i></span>' +
+            '<select class="form-select form-select-sm sel-row-pembina" id="selPembina_' + rowId + '" required>' +
+              '<option value="">-- Pilih Pembina ' + escapeHtml(cleanBranch) + ' --</option>';
+
+        if (pembinas.length === 1) {
+          html += '<optgroup label="Pembina Terdaftar">' +
+            '<option value="' + escapeHtml(pembinas[0]) + '" selected>' + escapeHtml(pembinas[0]) + ' (Pembina Terdaftar)</option>' +
+          '</optgroup>';
+          const otherGurus = allGuruList.filter(function(g){
+            const gn = g.nama_guru || g.nama || '';
+            return gn && gn !== pembinas[0];
           });
-          if (isSuperAdmin()) {
-            const otherGurus = allGuruList.filter(function(g){
+          if (otherGurus.length > 0) {
+            html += '<optgroup label="Guru Lainnya">';
+            otherGurus.forEach(function(g) {
               const gn = g.nama_guru || g.nama || '';
-              return gn && !pembinas.includes(gn);
+              const selAttr = (gn === defaultTeacher && defaultTeacher !== pembinas[0]) ? ' selected' : '';
+              html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
             });
-            if (otherGurus.length > 0) {
-              html += '<optgroup label="Guru Lainnya">';
-              otherGurus.forEach(function(g) {
-                const gn = g.nama_guru || g.nama || '';
-                const selAttr = (gn === defaultTeacher) ? ' selected' : '';
-                html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
-              });
-              html += '</optgroup>';
-            }
+            html += '</optgroup>';
           }
-          html += '</select>' +
-            '</div>' +
-          '</div>';
-        } else if (isSuperAdmin()) {
-          // Super Admin: Dropdown fleksibel
-          html += '<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-2 border rounded bg-light gap-2">' +
-            '<div class="d-flex align-items-center gap-2">' +
-              '<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>' + escapeHtml(ek) + '</span>' +
-              '<span class="small fw-semibold text-secondary">Guru Pembina:</span>' +
-            '</div>' +
-            '<div class="flex-grow-1" style="max-width: 320px;">' +
-              '<select class="form-select form-select-sm sel-guru-ekstra" data-ekstra="' + escapeHtml(ek) + '" required>' +
-                '<option value="">-- Pilih Pembina ' + escapeHtml(ek) + ' --</option>';
+        } else {
           allGuruList.forEach(function(g) {
             const gn = g.nama_guru || g.nama || '';
             if (gn) {
@@ -451,28 +640,23 @@
               html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
             }
           });
-          html += '</select>' +
-            '</div>' +
-          '</div>';
-        } else {
-          // Non-superadmin dengan 1 pembina tunggal atau belum ada pembina terdaftar
-          const singlePembina = (pembinas.length === 1) ? pembinas[0] : (defaultTeacher || user.nama || '-');
-          const isMyExtra = (singlePembina === user.nama);
-          html += '<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-2 border rounded bg-light gap-2">' +
-            '<div class="d-flex align-items-center gap-2">' +
-              '<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>' + escapeHtml(ek) + '</span>' +
-              (isMyExtra 
-                ? '<span class="badge bg-success-subtle text-success small"><i class="bi bi-check-circle me-1"></i>Binaan Anda</span>' 
-                : '<span class="badge bg-secondary-subtle text-secondary small"><i class="bi bi-person-badge me-1"></i>Pembina Terdaftar</span>') +
-            '</div>' +
-            '<div class="flex-grow-1" style="max-width: 320px;">' +
-              '<input type="text" class="form-control form-control-sm bg-light fw-semibold text-dark sel-guru-ekstra" data-ekstra="' + escapeHtml(ek) + '" value="' + escapeHtml(singlePembina) + '" readonly title="Terkunci: Pembina tunggal untuk cabang ' + escapeHtml(ek) + '">' +
-            '</div>' +
-          '</div>';
         }
-      });
-      html += '</div>';
-      container.innerHTML = html;
+
+        html += '</select></div>';
+        wrapper.innerHTML = html;
+      } else {
+        // Non-superadmin dengan pembina tunggal atau belum ada pembina
+        const singlePembina = (pembinas.length === 1) ? pembinas[0] : (defaultTeacher || user.nama || '-');
+        const isMyExtra = (singlePembina === user.nama);
+        wrapper.innerHTML = 
+          '<div class="input-group">' +
+            '<span class="input-group-text bg-light text-primary px-2"><i class="bi bi-person-badge"></i></span>' +
+            '<input type="text" class="form-control form-control-sm bg-light fw-semibold text-dark sel-row-pembina px-2" id="selPembina_' + rowId + '" value="' + escapeHtml(singlePembina) + '" readonly title="Pembina terdaftar untuk ' + escapeHtml(cleanBranch) + '">' +
+          '</div>' +
+          (isMyExtra 
+            ? '<small class="text-success d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-check-circle me-1"></i>Binaan Anda</small>' 
+            : '<small class="text-muted d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-shield-check me-1"></i>Pembina Terdaftar</small>');
+      }
     }
 
     function loadInitialData() {
@@ -515,17 +699,9 @@
           const selFilter = document.getElementById('filterEkstra');
           const curEks = selFilter ? selFilter.value : '';
           if (selFilter) selFilter.innerHTML = '<option value="">Semua Cabang</option>';
-          const chkBoxDiv = document.getElementById('containerEkstraCheckboxes');
-          if (chkBoxDiv) chkBoxDiv.innerHTML = '';
 
-          listEkstraGlobal.forEach(function(e, i) {
+          listEkstraGlobal.forEach(function(e) {
             if (selFilter) selFilter.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
-            if (chkBoxDiv) {
-              chkBoxDiv.innerHTML += '<div class="form-check">' +
-                '<input class="form-check-input ekstra-chk" type="checkbox" id="chkEkstra_' + i + '" value="' + escapeHtml(e) + '" onchange="handleEkstraCheckboxChange()">' +
-                '<label class="form-check-label small" for="chkEkstra_' + i + '">' + escapeHtml(e) + '</label>' +
-              '</div>';
-            }
           });
           if (selFilter && curEks) selFilter.value = curEks;
         })
@@ -582,16 +758,8 @@
         const selFilter = document.getElementById('filterEkstra');
         const curEks = selFilter ? selFilter.value : '';
         if (selFilter) selFilter.innerHTML = '<option value="">Semua Cabang</option>';
-        const chkBoxDiv = document.getElementById('containerEkstraCheckboxes');
-        if (chkBoxDiv) chkBoxDiv.innerHTML = '';
-        listEkstraGlobal.forEach(function(e, i) {
+        listEkstraGlobal.forEach(function(e) {
           if (selFilter) selFilter.innerHTML += '<option value="' + escapeHtml(e) + '">' + escapeHtml(e) + '</option>';
-          if (chkBoxDiv) {
-            chkBoxDiv.innerHTML += '<div class="form-check">' +
-              '<input class="form-check-input ekstra-chk" type="checkbox" id="chkEkstra_' + i + '" value="' + escapeHtml(e) + '" onchange="handleEkstraCheckboxChange()">' +
-              '<label class="form-check-label small" for="chkEkstra_' + i + '">' + escapeHtml(e) + '</label>' +
-            '</div>';
-          }
         });
         if (selFilter && curEks) selFilter.value = curEks;
       }
@@ -978,20 +1146,28 @@
       document.getElementById('ekstraJk').value = 'L';
       document.getElementById('ekstraKelas').value = '';
 
-      document.querySelectorAll('.ekstra-chk').forEach(function(c){ c.checked = false; });
+      const container = document.getElementById('containerBranchRows');
+      if (container) container.innerHTML = '';
 
-      // Jika pembina ekstra non-superadmin memiliki penugasan ekstra tertentu, auto-centang
+      // Jika pembina ekstra non-superadmin memiliki penugasan ekstra tertentu, auto-isi baris cabang binaan
       if (!isSuperAdmin() && user && user.nama) {
         const found = allGuruList.find(function(g){ return (g.nama_guru || g.nama || '') === user.nama; });
         if (found && found.pembina_ekstra && found.pembina_ekstra !== '-') {
-          const userEkstras = String(found.pembina_ekstra).split(',').map(function(s){ return s.trim(); });
-          document.querySelectorAll('.ekstra-chk').forEach(function(c){
-            if (userEkstras.includes(c.value) || found.pembina_ekstra.includes(c.value)) c.checked = true;
-          });
+          const userEkstras = String(found.pembina_ekstra).split(/[,;]/).map(function(s){ return s.trim(); }).filter(Boolean);
+          if (userEkstras.length > 0) {
+            userEkstras.forEach(function(ek) {
+              addNewBranchRow(ek, user.nama);
+            });
+          } else {
+            addNewBranchRow();
+          }
+        } else {
+          addNewBranchRow();
         }
+      } else {
+        addNewBranchRow();
       }
 
-      renderGuruPerEkstraSection();
       modalEkstraInstance.show();
     }
 
@@ -1024,45 +1200,83 @@
       const ekstraArr = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
       const guruArr = parsePembinaList(e.nama_guru || '');
 
-      document.querySelectorAll('.ekstra-chk').forEach(function(c){
-        c.checked = ekstraArr.includes(c.value);
-      });
+      const container = document.getElementById('containerBranchRows');
+      if (container) container.innerHTML = '';
 
-      const savedMap = {};
-      ekstraArr.forEach(function(ek, i) {
-        const pembinas = getPembinasForEkstra(ek);
-        const matchedInRecord = guruArr.find(function(g){ return pembinas.includes(g); });
-        if (matchedInRecord) {
-          savedMap[ek] = matchedInRecord;
-        } else if (guruArr[i]) {
-          savedMap[ek] = guruArr[i];
-        } else if (pembinas.length > 0) {
-          savedMap[ek] = pembinas[0];
-        }
-      });
+      if (ekstraArr.length > 0) {
+        ekstraArr.forEach(function(ek, i) {
+          const pembinas = getPembinasForEkstra(ek);
+          let assignedTeacher = '';
+          const matchedInRecord = guruArr.find(function(g){ return pembinas.includes(g); });
+          if (matchedInRecord) {
+            assignedTeacher = matchedInRecord;
+          } else if (guruArr[i]) {
+            assignedTeacher = guruArr[i];
+          } else if (pembinas.length > 0) {
+            assignedTeacher = pembinas[0];
+          }
+          addNewBranchRow(ek, assignedTeacher);
+        });
+      } else {
+        addNewBranchRow();
+      }
 
-      renderGuruPerEkstraSection(savedMap);
       modalEkstraInstance.show();
     }
 
     function saveEkstra(evt) {
       evt.preventDefault();
       const id = document.getElementById('ekstraId').value;
-      const checkedEkstra = [];
-      document.querySelectorAll('.ekstra-chk:checked').forEach(function(c){ checkedEkstra.push(c.value); });
 
-      if (checkedEkstra.length === 0) {
-        showToast('warning', 'Pilih minimal satu cabang ekstrakurikuler');
+      const branchCards = document.querySelectorAll('#containerBranchRows .branch-row-card');
+      const selectedEkstras = [];
+      const selectedGurus = [];
+      let hasError = false;
+
+      branchCards.forEach(function(card) {
+        if (hasError) return;
+        const hidEkstra = card.querySelector('.val-ekstra-branch');
+        const inputEkstra = card.querySelector('.input-search-ekstra');
+        const ekstraName = (hidEkstra && hidEkstra.value ? hidEkstra.value : (inputEkstra ? inputEkstra.value : '')).trim();
+
+        if (!ekstraName) {
+          // Lewati jika baris kosong dan ada baris lain
+          return;
+        }
+
+        const isDuplicate = selectedEkstras.some(function(s){ return s.toLowerCase() === ekstraName.toLowerCase(); });
+        if (isDuplicate) {
+          showToast('warning', 'Cabang "' + ekstraName + '" ditambahkan lebih dari satu kali. Mohon hapus cabang duplikat.');
+          hasError = true;
+          return;
+        }
+
+        const selPembina = card.querySelector('.sel-row-pembina');
+        let pembinaName = selPembina ? selPembina.value.trim() : '';
+
+        // Jika berbentuk select dropdown (misal >1 pembina) dan belum dipilih
+        if (selPembina && selPembina.tagName.toLowerCase() === 'select' && !pembinaName) {
+          showToast('warning', 'Silakan pilih salah satu Guru Pembina untuk cabang ' + ekstraName);
+          if (selPembina.focus) selPembina.focus();
+          hasError = true;
+          return;
+        }
+
+        selectedEkstras.push(ekstraName);
+        if (pembinaName && pembinaName !== '-') {
+          selectedGurus.push(pembinaName);
+        }
+      });
+
+      if (hasError) return;
+
+      if (selectedEkstras.length === 0) {
+        showToast('warning', 'Pilih atau ketik minimal satu cabang ekstrakurikuler');
         return;
       }
 
-      const selectedGurus = [];
-      document.querySelectorAll('.sel-guru-ekstra').forEach(function(el) {
-        const val = el.value.trim();
-        if (val && val !== '-') selectedGurus.push(val);
-      });
       const uniqueGurus = [...new Set(selectedGurus)];
-      const finalGuruVal = uniqueGurus.length > 0 ? uniqueGurus.join(' ; ') : (user && user.nama ? user.nama : '');
+      const finalGuruVal = uniqueGurus.length > 0 ? uniqueGurus.join(' ; ') : (user && user.nama ? user.nama : '-');
 
       const formData = {
         id: id,
@@ -1070,7 +1284,7 @@
         nama_murid: document.getElementById('ekstraNama').value.trim(),
         jenis_kelamin: document.getElementById('ekstraJk').value,
         kelas: document.getElementById('ekstraKelas').value,
-        nama_ekstra: checkedEkstra.join(', '),
+        nama_ekstra: selectedEkstras.join(', '),
         nama_guru: finalGuruVal
       };
 

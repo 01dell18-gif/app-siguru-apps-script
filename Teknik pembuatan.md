@@ -4,6 +4,13 @@ Sistem Informasi Guru Terpadu Berbasis Google Apps Script & Google Sheets Databa
 
 ---
 
+### 📚 Navigasi Dokumentasi Repositori
+- 📖 **[Readme Utama (README.md)](Readme.md)**: Ikhtisar sistem, alur modul, dan hak akses.
+- 🚀 **[Panduan Deployment (DEPLOYMENT_GUIDE.md)](DEPLOYMENT_GUIDE.md)**: Panduan instalasi Google Apps Script & setup spreadsheet.
+- 🏛️ **[Arsitektur & Teknik Pembuatan (Teknik pembuatan.md)](Teknik%20pembuatan.md)**: Arsitektur SPA, Google Sheets database, dan SheetJS.
+
+---
+
 ## 📌 1. Nama & Klasifikasi Teknik Arsitektur
 
 Secara baku dalam rekayasa perangkat lunak web, teknik dan arsitektur yang digunakan dalam pembuatan aplikasi ini diklasifikasikan sebagai:

@@ -10,6 +10,18 @@
 
 ---
 
+### 📚 Pusat Dokumentasi & Navigasi Berkas Langsung
+
+Dokumentasi repositori ini disusun dalam berkas markdown terpisah untuk memudahkan pemeliharaan dan pemahaman arsitektur:
+
+| Dokumen | Deskripsi & Isi Utama | Tautan Akses Langsung |
+| :--- | :--- | :--- |
+| **README Utuh** | Ikhtisar sistem, alur kerja per modul, RBAC, dan panduan penggunaan harian. | [Buka Readme.md](Readme.md) |
+| **Panduan Deployment** | Panduan setup Google Apps Script, otorisasi Google Drive, dan rilis Web App. | [Buka DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
+| **Arsitektur & Teknik Pembuatan** | Bedah arsitektur SPA serverless, struktur kode HTML/CSS/JS, SheetJS XLSX engine, dan RBAC. | [Buka Teknik pembuatan.md](Teknik%20pembuatan.md) |
+
+---
+
 ## 📖 1. Tentang Aplikasi
 
 **SIGURU** (*Sistem Informasi Guru Terpadu*) adalah platform manajemen administrasi pendidik, jurnal mengajar, presensi siswa, pembinaan kesiswaan, bimbingan guru wali, serta kegiatan ekstrakurikuler yang dibangun menggunakan arsitektur **serverless Google Apps Script** dengan **Google Sheets sebagai basis data relasional** dan **Google Drive sebagai repositori berkas digital**.
@@ -87,8 +99,9 @@ flowchart TD
    - **Hak Akses Istimewa Super Admin**: Khusus Super Admin yang dapat memilih nama guru wali dari daftar dropdown secara leluasa untuk keperluan pemetaan dan pengelolaan lintas guru.
 4. **Master Ekstrakurikuler** ([MasterEkstra.html](file:///g:/Download%20File/Coba/Siguru%20Apps%20Script/MasterEkstra.html)): Pemetaan anggota kegiatan ekstra ke cabang dan pembina terkait.
    - **Pencarian Cepat & Filter Siswa Belum Digunakan**: Pemilihan siswa dari Data Induk dilengkapi kolom input pencarian nama/NISN yang dapat diketik langsung dan **hanya menyajikan data siswa yang belum digunakan** di ekstrakurikuler.
-   - **Dukungan Multi-Ekstra & Multi-Pembina**: Jika siswa mengikuti lebih dari 1 cabang kegiatan ekstrakurikuler (misalnya Pramuka dan Futsal), sistem secara otomatis menyediakan pemetaan guru pembimbing untuk masing-masing cabang ekstra yang dicentang.
-   - **Input Guru Pembina Berdasarkan Hak Akses & Seleksi Multi-Pembina**: Pada modal tambah/edit siswa ekstra, sistem otomatis memetakan guru pembina untuk setiap cabang yang dicentang. Jika suatu cabang ekstra memiliki lebih dari 1 guru pembina terdaftar di sistem, sistem menyediakan dropdown seleksi guru pembina sehingga pengguna dapat memilih salah satu guru pembinanya. Khusus Super Admin juga dapat memilih guru pembina manapun secara bebas.
+   - **Formulir Tambah/Edit Repeater Cabang & Pembina Ekstra**: Menggunakan antarmuka kartu baris dinamis (*repeater card*) dengan tombol **[+ Tambah Cabang]**. Setiap cabang ekstra memiliki kolom input pencarian yang dapat diketik langsung (*typeable search*) berikon kaca pembesar 🔍 dan tombol chevron dropdown.
+   - **Seleksi Guru Pembina Dinamis & Multi-Pembina**: Ketika cabang ekstrakurikuler dipilih, kolom Guru Pembina langsung mendeteksi pembina terdaftar. Jika suatu cabang memiliki **lebih dari 1 Guru Pembina**, sistem merender dropdown seleksi pembina ber-badge khusus sehingga pengguna dapat memilih salah satu guru pembinanya. Jika hanya 1 pembina terdaftar, nama pembina otomatis terisi terkunci.
+   - **Validasi Multi-Cabang & Proteksi Duplikasi**: Mencegah duplikasi cabang yang sama dalam satu siswa, memvalidasi pembina wajib dipilih jika tersedia opsi pembina, serta mendukung tombol hapus baris `[ 🗑 ]` dengan fallback baris otomatis jika seluruh cabang terhapus.
    - **Filter Guru Pembina Sesuai Hak Akses**: Pada bilah filter tabel, akun guru non-Super Admin otomatis terkunci pada nama guru yang sedang login (siswa dengan multi-pembina tetap muncul bagi masing-masing pembina terkait). Super Admin dapat memilih semua guru pembina atau memfilter guru tertentu.
    - **Otorisasi Aksi Edit & Hapus**: Kolom Aksi (*Edit* & *Hapus*) dapat diakses oleh Super Admin dan guru pembina dari cabang ekstra siswa yang bersangkutan. Pengguna selain Super Admin atau guru pembina siswa terkait akan melihat badge status `Terkunci`.
 5. **Excel Engine**: Setiap halaman master data menyediakan tombol **Unduh Template (.xlsx)**, **Import Excel (.xlsx)**, dan **Export Excel (.xlsx)**. Impor data pada Master Bimbingan dan Master Ekstra mendukung multi-pembina koma-terpisah dan otomatis mengaitkan data ke nama guru yang bersangkutan.

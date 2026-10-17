@@ -5,6 +5,13 @@
 
 ---
 
+### 📚 Navigasi Dokumentasi Repositori
+- 📖 **[Readme Utama (README.md)](Readme.md)**: Ikhtisar sistem, alur modul, dan hak akses.
+- 🚀 **[Panduan Deployment (DEPLOYMENT_GUIDE.md)](DEPLOYMENT_GUIDE.md)**: Panduan instalasi Google Apps Script & setup spreadsheet.
+- 🏛️ **[Arsitektur & Teknik Pembuatan (Teknik pembuatan.md)](Teknik%20pembuatan.md)**: Arsitektur SPA, Google Sheets database, dan SheetJS.
+
+---
+
 ## 📌 1. INFORMASI DATABASE & GOOGLE DRIVE RESMI
 
 Sistem ini telah dikonfigurasi terhubung secara langsung dengan tautan Google Spreadsheet dan Google Drive resmi Anda:
@@ -162,6 +169,12 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
 
 14. **Pencarian Kelas yang Dapat Diketik (*Typeable Class Search*)**:
     - Input **Sebagai Wali Kelas** pada Master Data Guru dan input **Kelas / Rombel** pada Master Data Siswa kini dilengkapi fitur pencarian yang dapat diketik langsung (*searchable select*), mempermudah dan mempercepat pemilihan kelas di antara puluhan rombel terdaftar.
+
+15. **Repeater Cabang Ekstrakurikuler & Seleksi Guru Pembina Dinamis (`MasterEkstra.html`)**:
+    - Pada modal tambah dan edit siswa ekstrakurikuler, penambahan cabang menggunakan format **kartu baris dinamis (*repeater card*)** dengan tombol **[+ Tambah Cabang]**.
+    - Setiap baris memiliki kolom input pencarian cabang yang dapat diketik langsung (*typeable search*), tombol chevron dropdown pilihan cabang terdaftar, serta badge penanda `[Bisa Diketik]`.
+    - Kolom **Guru Pembina** otomatis menampilkan status terkunci `⊝ Pilih cabang ekstra dulu` saat cabang belum ditentukan. Begitu cabang dipilih, jika cabang memiliki **lebih dari 1 guru pembina terdaftar**, sistem menyajikan dropdown seleksi guru pembina sehingga pengguna dapat memilih salah satu guru pembinanya.
+    - Dilengkapi tombol hapus baris `[ 🗑 ]` (dengan pemulihan baris otomatis jika seluruh kartu terhapus) serta validasi pencegahan duplikasi cabang ekstra pada satu siswa yang sama.
 
 ---
 
