@@ -4,7 +4,14 @@ Sistem Informasi Guru Terpadu Berbasis Google Apps Script & Google Sheets Databa
 
 ---
 
-### 📚 Navigasi Dokumentasi Repositori
+[![README](https://img.shields.io/badge/TAB-📖%20README-grey?style=for-the-badge)](Readme.md)
+[![DEPLOYMENT GUIDE](https://img.shields.io/badge/TAB-🚀%20DEPLOYMENT%20GUIDE-grey?style=for-the-badge)](DEPLOYMENT_GUIDE.md)
+[![TEKNIK PEMBUATAN](https://img.shields.io/badge/TAB-🏛️%20TEKNIK%20PEMBUATAN-orange?style=for-the-badge)](Teknik%20pembuatan.md)
+
+---
+
+## 📚 Navigasi Dokumentasi Repositori
+
 - 📖 **[Readme Utama (README.md)](Readme.md)**: Ikhtisar sistem, alur modul, dan hak akses.
 - 🚀 **[Panduan Deployment (DEPLOYMENT_GUIDE.md)](DEPLOYMENT_GUIDE.md)**: Panduan instalasi Google Apps Script & setup spreadsheet.
 - 🏛️ **[Arsitektur & Teknik Pembuatan (Teknik pembuatan.md)](Teknik%20pembuatan.md)**: Arsitektur SPA, Google Sheets database, dan SheetJS.

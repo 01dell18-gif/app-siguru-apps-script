@@ -10,7 +10,13 @@
 
 ---
 
-### 📚 Pusat Dokumentasi & Navigasi Berkas Langsung
+[![README](https://img.shields.io/badge/TAB-📖%20README-orange?style=for-the-badge)](Readme.md)
+[![DEPLOYMENT GUIDE](https://img.shields.io/badge/TAB-🚀%20DEPLOYMENT%20GUIDE-grey?style=for-the-badge)](DEPLOYMENT_GUIDE.md)
+[![TEKNIK PEMBUATAN](https://img.shields.io/badge/TAB-🏛️%20TEKNIK%20PEMBUATAN-grey?style=for-the-badge)](Teknik%20pembuatan.md)
+
+---
+
+## 📚 Pusat Dokumentasi & Navigasi Berkas Langsung
 
 Dokumentasi repositori ini disusun dalam berkas markdown terpisah untuk memudahkan pemeliharaan dan pemahaman arsitektur:
 
