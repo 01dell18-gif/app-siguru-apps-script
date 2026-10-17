@@ -126,7 +126,7 @@
 
   <!-- Modal Tambah / Edit Siswa Ekstra -->
   <div class="modal fade" id="modalEkstra" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title fw-bold" id="modalEkstraTitle">Tambah Anggota Ekstrakurikuler</h5>
@@ -214,7 +214,7 @@
 
   <!-- Modal Import Siswa Ekstra -->
   <div class="modal fade" id="modalImportEkstra" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Import Data Siswa Ekstra</h5>
@@ -520,18 +520,22 @@
         const pembinas = getPembinasForEkstra(eName);
         let badgePembina = '';
         if (pembinas.length > 1) {
-          badgePembina = '<span class="badge bg-info-subtle text-info border ms-1" style="font-size:0.65rem;">' + pembinas.length + ' Pembina</span>';
+          badgePembina = '<span class="badge bg-info-subtle text-info border" style="font-size:0.68rem;"><i class="bi bi-people-fill me-1"></i>' + pembinas.length + ' Pembina</span>';
         } else if (pembinas.length === 1) {
-          badgePembina = '<span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size:0.65rem;">' + escapeHtml(pembinas[0]) + '</span>';
+          badgePembina = '<span class="badge bg-secondary-subtle text-secondary" style="font-size:0.68rem;"><i class="bi bi-person me-1"></i>' + escapeHtml(pembinas[0]) + '</span>';
+        } else {
+          badgePembina = '<span class="badge bg-light text-muted border fst-italic" style="font-size:0.68rem;">Belum ada pembina</span>';
         }
 
         html += '<a href="javascript:void(0)" class="dropdown-item py-2 px-3 border-bottom d-flex align-items-center justify-content-between searchable-item' + (isSelected ? ' active bg-primary text-white' : '') + '" onclick="selectEkstraForBranchRow(\'' + rowId + '\', \'' + escapeHtml(eName) + '\')">' +
-          '<div class="d-flex align-items-center overflow-hidden me-2">' +
-            '<i class="bi bi-star-fill text-warning me-2"></i>' +
-            '<span class="text-truncate">' + escapeHtml(eName) + '</span>' +
-            badgePembina +
+          '<div class="d-flex align-items-center me-2 flex-grow-1 overflow-hidden">' +
+            '<i class="bi bi-star-fill text-warning me-2 flex-shrink-0"></i>' +
+            '<span class="fw-semibold text-truncate">' + escapeHtml(eName) + '</span>' +
           '</div>' +
-          (isSelected ? '<i class="bi bi-check2"></i>' : '') +
+          '<div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">' +
+            badgePembina +
+            (isSelected ? '<i class="bi bi-check2"></i>' : '') +
+          '</div>' +
         '</a>';
       });
       listEl.innerHTML = html;
@@ -563,20 +567,27 @@
       }
 
       const pembinas = getPembinasForEkstra(cleanBranch);
-      let defaultTeacher = preselectedPembina || '';
 
-      if (!defaultTeacher) {
-        if (!isSuperAdmin() && user && user.nama && pembinas.includes(user.nama)) {
-          defaultTeacher = user.nama;
-        } else if (pembinas.length > 0) {
-          defaultTeacher = pembinas[0];
-        } else {
-          defaultTeacher = guruEkstraMap[cleanBranch] || (user && user.nama ? user.nama : '');
-        }
+      // KASUS 1: Jika tidak ada guru pembinanya terdaftar untuk cabang ini
+      if (pembinas.length === 0) {
+        wrapper.innerHTML = 
+          '<div class="input-group">' +
+            '<span class="input-group-text bg-light text-secondary px-2"><i class="bi bi-exclamation-circle"></i></span>' +
+            '<input type="text" class="form-control form-control-sm bg-light text-secondary fst-italic sel-row-pembina px-2" id="selPembina_' + rowId + '" value="Tidak ada pembina" readonly title="Tidak ada guru pembina terdaftar untuk cabang ' + escapeHtml(cleanBranch) + '">' +
+          '</div>' +
+          '<small class="text-secondary d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-info-circle me-1"></i>Tidak ada pembina</small>';
+        return;
       }
 
-      // Skenario: Lebih dari 1 Guru Pembina (Pengguna dapat memilih salah satu guru pembinanya)
+      // KASUS 2: Jika ada lebih dari 1 Guru Pembina terdaftar (Pengguna dapat memilih salah satu guru pembinanya)
       if (pembinas.length > 1) {
+        let defaultTeacher = preselectedPembina || '';
+        if (!defaultTeacher) {
+          if (!isSuperAdmin() && user && user.nama && pembinas.includes(user.nama)) {
+            defaultTeacher = user.nama;
+          }
+        }
+
         let html = 
           '<div class="input-group">' +
             '<span class="input-group-text bg-light text-primary px-2" title="' + pembinas.length + ' pembina terdaftar"><i class="bi bi-people-fill"></i></span>' +
@@ -588,75 +599,23 @@
           html += '<option value="' + escapeHtml(pName) + '"' + selAttr + '>' + escapeHtml(pName) + ' (Pembina ' + escapeHtml(cleanBranch) + ')</option>';
         });
 
-        if (isSuperAdmin()) {
-          const otherGurus = allGuruList.filter(function(g){
-            const gn = g.nama_guru || g.nama || '';
-            return gn && !pembinas.includes(gn);
-          });
-          if (otherGurus.length > 0) {
-            html += '<optgroup label="Guru Lainnya">';
-            otherGurus.forEach(function(g) {
-              const gn = g.nama_guru || g.nama || '';
-              const selAttr = (gn === defaultTeacher) ? ' selected' : '';
-              html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
-            });
-            html += '</optgroup>';
-          }
-        }
-
         html += '</select></div>' +
-          '<small class="text-primary d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-check-circle me-1"></i>Tersedia ' + pembinas.length + ' pembina. Pilih salah satu.</small>';
+          '<small class="text-primary d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-check-circle me-1"></i>Tersedia ' + pembinas.length + ' pembina. Silakan pilih salah satu.</small>';
         wrapper.innerHTML = html;
-      } else if (isSuperAdmin()) {
-        // Super Admin dengan 1 atau 0 pembina: dropdown fleksibel
-        let html = 
-          '<div class="input-group">' +
-            '<span class="input-group-text bg-light text-muted px-2"><i class="bi bi-person"></i></span>' +
-            '<select class="form-select form-select-sm sel-row-pembina" id="selPembina_' + rowId + '" required>' +
-              '<option value="">-- Pilih Pembina ' + escapeHtml(cleanBranch) + ' --</option>';
-
-        if (pembinas.length === 1) {
-          html += '<optgroup label="Pembina Terdaftar">' +
-            '<option value="' + escapeHtml(pembinas[0]) + '" selected>' + escapeHtml(pembinas[0]) + ' (Pembina Terdaftar)</option>' +
-          '</optgroup>';
-          const otherGurus = allGuruList.filter(function(g){
-            const gn = g.nama_guru || g.nama || '';
-            return gn && gn !== pembinas[0];
-          });
-          if (otherGurus.length > 0) {
-            html += '<optgroup label="Guru Lainnya">';
-            otherGurus.forEach(function(g) {
-              const gn = g.nama_guru || g.nama || '';
-              const selAttr = (gn === defaultTeacher && defaultTeacher !== pembinas[0]) ? ' selected' : '';
-              html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
-            });
-            html += '</optgroup>';
-          }
-        } else {
-          allGuruList.forEach(function(g) {
-            const gn = g.nama_guru || g.nama || '';
-            if (gn) {
-              const selAttr = (gn === defaultTeacher) ? ' selected' : '';
-              html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
-            }
-          });
-        }
-
-        html += '</select></div>';
-        wrapper.innerHTML = html;
-      } else {
-        // Non-superadmin dengan pembina tunggal atau belum ada pembina
-        const singlePembina = (pembinas.length === 1) ? pembinas[0] : (defaultTeacher || user.nama || '-');
-        const isMyExtra = (singlePembina === user.nama);
-        wrapper.innerHTML = 
-          '<div class="input-group">' +
-            '<span class="input-group-text bg-light text-primary px-2"><i class="bi bi-person-badge"></i></span>' +
-            '<input type="text" class="form-control form-control-sm bg-light fw-semibold text-dark sel-row-pembina px-2" id="selPembina_' + rowId + '" value="' + escapeHtml(singlePembina) + '" readonly title="Pembina terdaftar untuk ' + escapeHtml(cleanBranch) + '">' +
-          '</div>' +
-          (isMyExtra 
-            ? '<small class="text-success d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-check-circle me-1"></i>Binaan Anda</small>' 
-            : '<small class="text-muted d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-shield-check me-1"></i>Pembina Terdaftar</small>');
+        return;
       }
+
+      // KASUS 3: Jika tepat 1 Guru Pembina terdaftar
+      const singlePembina = pembinas[0];
+      const isMyExtra = (user && user.nama && singlePembina === user.nama);
+      wrapper.innerHTML = 
+        '<div class="input-group">' +
+          '<span class="input-group-text bg-light text-primary px-2"><i class="bi bi-person-badge"></i></span>' +
+          '<input type="text" class="form-control form-control-sm bg-light fw-semibold text-dark sel-row-pembina px-2" id="selPembina_' + rowId + '" value="' + escapeHtml(singlePembina) + '" readonly title="Pembina terdaftar untuk ' + escapeHtml(cleanBranch) + '">' +
+        '</div>' +
+        (isMyExtra 
+          ? '<small class="text-success d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-check-circle me-1"></i>Binaan Anda</small>' 
+          : '<small class="text-muted d-block mt-1" style="font-size:0.7rem;"><i class="bi bi-shield-check me-1"></i>Pembina Terdaftar</small>');
     }
 
     function loadInitialData() {
@@ -854,13 +813,17 @@
         if (!badgesHtml) badgesHtml = '<span class="text-muted">-</span>';
 
         // Guru Pembina Badges
-        const pembinaStr = e.nama_guru || (guruEkstraMap[e.nama_ekstra] || '-');
+        const pembinaStr = e.nama_guru || (guruEkstraMap[e.nama_ekstra] || 'Tidak ada pembina');
         const pembinaArr = parsePembinaList(pembinaStr);
         let pembinaBadges = '';
         pembinaArr.forEach(function(p){
-          pembinaBadges += '<span class="badge bg-primary-subtle text-primary fw-semibold me-1 mb-1"><i class="bi bi-person-badge me-1"></i>' + escapeHtml(p) + '</span>';
+          if (p === 'Tidak ada pembina' || p === '-' || !p) {
+            pembinaBadges += '<span class="badge bg-secondary-subtle text-secondary me-1 mb-1 fst-italic">Tidak ada pembina</span>';
+          } else {
+            pembinaBadges += '<span class="badge bg-primary-subtle text-primary fw-semibold me-1 mb-1"><i class="bi bi-person-badge me-1"></i>' + escapeHtml(p) + '</span>';
+          }
         });
-        if (!pembinaBadges) pembinaBadges = '<span class="text-muted">-</span>';
+        if (!pembinaBadges) pembinaBadges = '<span class="badge bg-secondary-subtle text-secondary fst-italic">Tidak ada pembina</span>';
 
         // Check if current user is pembina of this student
         const studentEkstras = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
@@ -1265,6 +1228,8 @@
         selectedEkstras.push(ekstraName);
         if (pembinaName && pembinaName !== '-') {
           selectedGurus.push(pembinaName);
+        } else {
+          selectedGurus.push('Tidak ada pembina');
         }
       });
 
@@ -1276,7 +1241,7 @@
       }
 
       const uniqueGurus = [...new Set(selectedGurus)];
-      const finalGuruVal = uniqueGurus.length > 0 ? uniqueGurus.join(' ; ') : (user && user.nama ? user.nama : '-');
+      const finalGuruVal = uniqueGurus.length > 0 ? uniqueGurus.join(' ; ') : 'Tidak ada pembina';
 
       const formData = {
         id: id,

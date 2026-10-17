@@ -178,9 +178,12 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
     - Input **Sebagai Wali Kelas** pada Master Data Guru dan input **Kelas / Rombel** pada Master Data Siswa kini dilengkapi fitur pencarian yang dapat diketik langsung (*searchable select*), mempermudah dan mempercepat pemilihan kelas di antara puluhan rombel terdaftar.
 
 15. **Repeater Cabang Ekstrakurikuler & Seleksi Guru Pembina Dinamis (`MasterEkstra.html`)**:
-    - Pada modal tambah dan edit siswa ekstrakurikuler, penambahan cabang menggunakan format **kartu baris dinamis (*repeater card*)** dengan tombol **[+ Tambah Cabang]**.
+    - Pada modal tambah dan edit siswa ekstrakurikuler, penambahan cabang menggunakan format **kartu baris dinamis (*repeater card*)** dengan tombol **[+ Tambah Cabang]**. Seluruh modal formulir (Master Ekstra, Master Guru, Master Murid, Master Bimbingan) kini didesain ekstra lega (`modal-lg` 820px) dengan `modal-dialog-centered` agar seluruh teks dan tombol tidak terpotong.
     - Setiap baris memiliki kolom input pencarian cabang yang dapat diketik langsung (*typeable search*), tombol chevron dropdown pilihan cabang terdaftar, serta badge penanda `[Bisa Diketik]`.
-    - Kolom **Guru Pembina** otomatis menampilkan status terkunci `⊝ Pilih cabang ekstra dulu` saat cabang belum ditentukan. Begitu cabang dipilih, jika cabang memiliki **lebih dari 1 guru pembina terdaftar**, sistem menyajikan dropdown seleksi guru pembina sehingga pengguna dapat memilih salah satu guru pembinanya.
+    - Kolom **Guru Pembina** otomatis menampilkan status terkunci `⊝ Pilih cabang ekstra dulu` saat cabang belum ditentukan. Begitu cabang dipilih:
+      - Jika cabang memiliki **lebih dari 1 guru pembina terdaftar**, sistem menyajikan dropdown seleksi guru pembina sehingga pengguna dapat memilih salah satu guru pembinanya.
+      - Jika cabang memiliki **tepat 1 guru pembina terdaftar**, kolom otomatis terisi nama pembina tersebut.
+      - Jika cabang **belum memiliki guru pembina terdaftar**, kolom Guru Pembina secara otomatis mengisikan keterangan **"Tidak ada pembina"**.
     - Dilengkapi tombol hapus baris `[ 🗑 ]` (dengan pemulihan baris otomatis jika seluruh kartu terhapus) serta validasi pencegahan duplikasi cabang ekstra pada satu siswa yang sama.
 
 ---
