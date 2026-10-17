@@ -13,6 +13,8 @@
 [![README](https://img.shields.io/badge/TAB-📖%20README-orange?style=for-the-badge)](Readme.md)
 [![DEPLOYMENT GUIDE](https://img.shields.io/badge/TAB-🚀%20DEPLOYMENT%20GUIDE-grey?style=for-the-badge)](DEPLOYMENT_GUIDE.md)
 [![TEKNIK PEMBUATAN](https://img.shields.io/badge/TAB-🏛️%20TEKNIK%20PEMBUATAN-grey?style=for-the-badge)](Teknik%20pembuatan.md)
+[![SECURITY](https://img.shields.io/badge/TAB-🛡️%20SECURITY-grey?style=for-the-badge)](SECURITY.md)
+[![LICENSE](https://img.shields.io/badge/TAB-⚖️%20LICENSE%20MIT-grey?style=for-the-badge)](LICENSE)
 
 ---
 
@@ -25,6 +27,8 @@ Dokumentasi repositori ini disusun dalam berkas markdown terpisah untuk memudahk
 | **README Utuh** | Ikhtisar sistem, alur kerja per modul, RBAC, dan panduan penggunaan harian. | [Buka Readme.md](Readme.md) |
 | **Panduan Deployment** | Panduan setup Google Apps Script, otorisasi Google Drive, dan rilis Web App. | [Buka DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
 | **Arsitektur & Teknik Pembuatan** | Bedah arsitektur SPA serverless, struktur kode HTML/CSS/JS, SheetJS XLSX engine, dan RBAC. | [Buka Teknik pembuatan.md](Teknik%20pembuatan.md) |
+| **Kebijakan Keamanan (Security)** | Kebijakan perlindungan akun, RBAC security, enkripsi data, dan pelaporan celah. | [Buka SECURITY.md](SECURITY.md) |
+| **Lisensi Perangkat Lunak** | Lisensi resmi MIT untuk repositori SIGURU. | [Buka LICENSE](LICENSE) |
 
 ---
 
@@ -354,6 +358,20 @@ Sesuai dengan peran pengawasan dan supervisi manajerial:
 - Pengguna dengan peran **Pelihat** (`viewer` / `Pengawas`) memiliki hak akses membuka seluruh 5 menu Laporan Hasil KBM (`Laporan Kehadiran`, `Laporan Jurnal Guru`, `Laporan Guru Wali`, `Laporan Wali Kelas`, dan `Laporan Ekstrakurikuler`).
 - **Pilihan Nama Guru Bebas (Filter Fleksibel)**: Pada bagian filter identitas pendidik (Guru Pengampu, Guru Wali, Wali Kelas, Pembina Ekstra), akun Pelihat disajikan elemen *dropdown* yang memuat pilihan **"Semua Guru"** serta daftar seluruh nama pendidik di sekolah, sehingga pengawas dapat meninjau rekapitulasi secara menyeluruh maupun memilih guru tertentu.
 - **Kolom Menu Aksi Terkunci Permanen (`🔒 Terkunci`)**: Hak akses Pelihat bersifat murni *Read-Only*. Pada tabel log dan rekapitulasi data, kolom menu Aksi secara otomatis berstatus **`🔒 Terkunci`**. Tombol edit dan hapus dinonaktifkan, serta dilengkapi perlindungan validasi ganda pada fungsi modal dan pemanggilan skrip backend agar data transaksi sekolah tetap terlindungi dari perubahan yang tidak sah.
+
+#### 6. Tarik Data Otomatis & Validasi Guru Belum Digunakan pada Manajemen User (`UserManagement.html`)
+
+Pada menu **Manajemen User & Hak Akses (RBAC)**, pembuatan akun pendidik baru maupun pembaruan akun dilengkapi fitur pencarian pintar:
+
+- **Pencarian Cepat Dapat Diketik (*Typeable Search Dropdown*)**: Administrator dapat mengetik nama atau NIP guru pada kolom pencarian untuk menyaring daftar secara instan tanpa perlu menggulir menu panjang.
+- **Validasi Guru Belum Digunakan (*Unused Teacher Detection*)**: Sistem memeriksa relasi antara `Data Guru` dan `Data User`. Dropdown secara otomatis **hanya menampilkan guru yang belum memiliki akun pengguna aktif**, ditandai dengan badge informatif jumlah guru yang tersedia.
+- **Dukungan Mode Edit yang Cerdas**: Saat mengedit akun pengguna yang sudah ada, guru yang tertaut pada akun tersebut tetap dipertahankan dan dapat disinkronkan kembali jika terdapat pembaruan penugasan (Wali Kelas, Guru Wali, Pembina Ekstra).
+- **Auto-Fill Kredensial & Hak Akses**: Memilih guru akan mengisi otomatis Nama Lengkap, NIP, rekomendasi username, password default (`guru123`), serta mencentang seluruh hak akses (*multi-role*) sesuai pembagian tugas di Master Data Guru.
+
+#### 7. Desain Popup Modal Responsif & Anti-Truncation
+
+- **Pelebaran Dialog Modal (*Expanded Modal Width*)**: Seluruh popup modal tambah/edit data (`modal-lg`) ditingkatkan lebarnya menjadi 920px (desktop) hingga 1020px (layar lebar) dengan padding proporsional.
+- **Optimalisasi Grid Input Cabang Ekstra & Pembina**: Kolom pemilihan pembina pada `MasterEkstra.html` disesuaikan menjadi `col-md-6` dengan label opsi yang ringkas dan padat, menjamin teks nama pembina dan badge status terbaca utuh tanpa terpotong (*text truncation*).
 
 ---
 

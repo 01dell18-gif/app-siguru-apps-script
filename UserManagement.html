@@ -62,7 +62,7 @@
 
   <!-- Modal Tambah User -->
   <div class="modal fade" id="modalAddUser" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Tambah Akun Pengguna</h5>
@@ -70,12 +70,28 @@
         </div>
         <form id="formAddUser" onsubmit="saveAddUser(event)">
           <div class="modal-body">
-            <!-- Tarik Otomatis dari Master Guru -->
-            <div class="mb-3">
-              <label class="form-label small fw-semibold text-primary"><i class="bi bi-magic me-1"></i>Tarik Data Otomatis dari Master Guru</label>
-              <select class="form-select" id="selectGuruAutofill" onchange="handleGuruAutofill(this)">
-                <option value="">-- Pilih Guru atau Ketik Manual di Bawah --</option>
-              </select>
+            <!-- Tarik Otomatis dari Master Guru (Dapat Diketik & Pengecekan Belum Digunakan) -->
+            <div class="mb-3" id="divSelectGuruAdd">
+              <label class="form-label fw-semibold small text-primary d-flex align-items-center justify-content-between mb-1">
+                <span><i class="bi bi-magic me-1"></i>Tarik Data Otomatis dari Master Guru <span class="badge bg-success-subtle text-success ms-1 fw-normal" id="badgeGuruBelumDigunakanAdd" style="font-size:0.68rem;"><i class="bi bi-shield-check me-1"></i>Belum Digunakan</span></span>
+                <span class="badge bg-primary-subtle text-primary fw-normal" style="font-size: 0.72rem;"><i class="bi bi-keyboard me-1"></i>Dapat Diketik</span>
+              </label>
+              <div class="position-relative" id="wrapperGuruAutofillAdd">
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-primary"><i class="bi bi-person-search"></i></span>
+                  <input type="text" class="form-control" id="searchGuruAutofillAdd" placeholder="Ketik nama atau NIP guru untuk mencari..." autocomplete="off">
+                  <button class="btn btn-outline-secondary" type="button" id="btnClearGuruAutofillAdd" style="display:none;" onclick="clearSelectedGuruAutofill('add')" title="Bersihkan pilihan">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                  <button class="btn btn-outline-primary" type="button" id="btnToggleGuruDropdownAdd" onclick="toggleGuruDropdown('add')" title="Buka / Tutup Daftar Guru">
+                    <i class="bi bi-chevron-down" id="iconToggleGuruDropdownAdd"></i>
+                  </button>
+                </div>
+                <input type="hidden" id="selectGuruAutofillAdd" value="">
+                <div class="dropdown-menu w-100 shadow border mt-1 p-0 searchable-menu" id="listGuruDropdownAdd" style="display: none; max-height: 220px; overflow-y: auto; position: absolute; z-index: 1060; left: 0; right: 0;">
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">* Ketik nama/NIP untuk memilih guru dari data master yang belum memiliki akun login.</small>
             </div>
 
             <div class="row g-3 mb-3">
@@ -143,7 +159,7 @@
 
   <!-- Modal Edit User -->
   <div class="modal fade" id="modalEditUser" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Edit Akun Pengguna</h5>
@@ -152,6 +168,31 @@
         <form id="formEditUser" onsubmit="saveEditUser(event)">
           <div class="modal-body">
             <input type="hidden" id="editUserId">
+
+            <!-- Tarik / Sinkronkan Otomatis dari Master Guru (Mode Edit) -->
+            <div class="mb-3" id="divSelectGuruEdit">
+              <label class="form-label fw-semibold small text-primary d-flex align-items-center justify-content-between mb-1">
+                <span><i class="bi bi-arrow-repeat me-1"></i>Tarik Data Otomatis dari Master Guru <span class="badge bg-success-subtle text-success ms-1 fw-normal" id="badgeGuruBelumDigunakanEdit" style="font-size:0.68rem;"><i class="bi bi-shield-check me-1"></i>Belum Digunakan</span></span>
+                <span class="badge bg-primary-subtle text-primary fw-normal" style="font-size: 0.72rem;"><i class="bi bi-keyboard me-1"></i>Dapat Diketik</span>
+              </label>
+              <div class="position-relative" id="wrapperGuruAutofillEdit">
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-primary"><i class="bi bi-person-search"></i></span>
+                  <input type="text" class="form-control" id="searchGuruAutofillEdit" placeholder="Ketik nama atau NIP guru untuk menyinkronkan data..." autocomplete="off">
+                  <button class="btn btn-outline-secondary" type="button" id="btnClearGuruAutofillEdit" style="display:none;" onclick="clearSelectedGuruAutofill('edit')" title="Bersihkan pilihan">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                  <button class="btn btn-outline-primary" type="button" id="btnToggleGuruDropdownEdit" onclick="toggleGuruDropdown('edit')" title="Buka / Tutup Daftar Guru">
+                    <i class="bi bi-chevron-down" id="iconToggleGuruDropdownEdit"></i>
+                  </button>
+                </div>
+                <input type="hidden" id="selectGuruAutofillEdit" value="">
+                <div class="dropdown-menu w-100 shadow border mt-1 p-0 searchable-menu" id="listGuruDropdownEdit" style="display: none; max-height: 220px; overflow-y: auto; position: absolute; z-index: 1060; left: 0; right: 0;">
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">* Pilih data guru master untuk memperbarui nama, NIP, serta otomatis menyinkronkan peran penugasan.</small>
+            </div>
+
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
@@ -216,7 +257,7 @@
 
   <!-- Modal Import User -->
   <div class="modal fade" id="modalImportUser" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Import Data User</h5>
@@ -265,21 +306,52 @@
       modalAddInstance = new bootstrap.Modal(document.getElementById('modalAddUser'));
       modalEditInstance = new bootstrap.Modal(document.getElementById('modalEditUser'));
       modalImportInstance = new bootstrap.Modal(document.getElementById('modalImportUser'));
+
+      // Event listeners untuk dropdown Tarik Data Guru (Add & Edit)
+      setupGuruAutofillEvents('add');
+      setupGuruAutofillEvents('edit');
+
+      // Tutup dropdown saat klik di luar wrapper
+      document.addEventListener('click', function(e) {
+        const wrapAdd = document.getElementById('wrapperGuruAutofillAdd');
+        if (wrapAdd && !wrapAdd.contains(e.target)) {
+          closeGuruDropdown('add');
+        }
+        const wrapEdit = document.getElementById('wrapperGuruAutofillEdit');
+        if (wrapEdit && !wrapEdit.contains(e.target)) {
+          closeGuruDropdown('edit');
+        }
+      });
+
       loadInitialData();
     });
+
+    function setupGuruAutofillEvents(mode) {
+      const input = document.getElementById(mode === 'add' ? 'searchGuruAutofillAdd' : 'searchGuruAutofillEdit');
+      if (!input) return;
+
+      input.addEventListener('focus', function() {
+        openGuruDropdown(mode);
+      });
+      input.addEventListener('input', function() {
+        filterGuruDropdown(mode, this.value);
+        openGuruDropdown(mode);
+      });
+    }
 
     function loadInitialData() {
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       // Load master guru for autofill
-      google.script.run.withSuccessHandler(function(guruList) {
-        allGuruData = guruList || [];
-        const sel = document.getElementById('selectGuruAutofill');
-        sel.innerHTML = '<option value="">-- Pilih Guru atau Ketik Manual di Bawah --</option>';
-        allGuruData.forEach(function(g) {
-          sel.innerHTML += '<option value="' + g.id + '">' + escapeHtml(g.nama_guru) + '</option>';
-        });
-      }).getDataGuru();
+      google.script.run
+        .withSuccessHandler(function(guruList) {
+          allGuruData = guruList || [];
+          updateGuruDropdownBadges();
+        })
+        .withFailureHandler(function(err) {
+          console.error('Gagal memuat master guru:', err);
+        })
+        .getDataGuru();
 
       loadUserData();
     }
@@ -290,12 +362,221 @@
           document.getElementById('loadingOverlay').style.display = 'none';
           rawUsers = data || [];
           renderTable();
+          updateGuruDropdownBadges();
         })
         .withFailureHandler(function(err) {
           document.getElementById('loadingOverlay').style.display = 'none';
           showToast('error', 'Gagal memuat pengguna: ' + err.message);
         })
         .getDataUser();
+    }
+
+    // Pengecekan data guru yang sudah digunakan di Data User
+    function isGuruUsed(guru, currentUserId) {
+      if (!guru || !rawUsers || rawUsers.length === 0) return false;
+      const gNip = String(guru.nip || '').trim().toLowerCase();
+      const gNama = String(guru.nama_guru || '').trim().toLowerCase();
+
+      return rawUsers.some(function(u) {
+        if (currentUserId && String(u.id) === String(currentUserId)) {
+          return false; // Abaikan user yang sedang diedit
+        }
+        const uNip = String(u.nip || '').trim().toLowerCase();
+        const uNama = String(u.nama || '').trim().toLowerCase();
+
+        // Cocokkan NIP jika valid dan bukan '-'
+        if (gNip && gNip !== '-' && uNip && uNip !== '-' && gNip === uNip) {
+          return true;
+        }
+        // Cocokkan Nama Lengkap
+        if (gNama && uNama && gNama === uNama) {
+          return true;
+        }
+        return false;
+      });
+    }
+
+    function getEligibleGuruList(currentUserId) {
+      if (!allGuruData || allGuruData.length === 0) return [];
+      return allGuruData.filter(function(g) {
+        return !isGuruUsed(g, currentUserId);
+      });
+    }
+
+    function updateGuruDropdownBadges() {
+      const eligibleAdd = getEligibleGuruList(null);
+      const badgeAdd = document.getElementById('badgeGuruBelumDigunakanAdd');
+      if (badgeAdd) {
+        badgeAdd.innerHTML = '<i class="bi bi-shield-check me-1"></i>' + eligibleAdd.length + ' Belum Digunakan';
+      }
+
+      const curEditId = document.getElementById('editUserId') ? document.getElementById('editUserId').value : null;
+      const eligibleEdit = getEligibleGuruList(curEditId);
+      const badgeEdit = document.getElementById('badgeGuruBelumDigunakanEdit');
+      if (badgeEdit) {
+        badgeEdit.innerHTML = '<i class="bi bi-shield-check me-1"></i>' + eligibleEdit.length + ' Belum Digunakan';
+      }
+    }
+
+    function toggleGuruDropdown(mode) {
+      const listEl = document.getElementById(mode === 'add' ? 'listGuruDropdownAdd' : 'listGuruDropdownEdit');
+      if (!listEl) return;
+      if (listEl.style.display === 'block') {
+        closeGuruDropdown(mode);
+      } else {
+        openGuruDropdown(mode);
+      }
+    }
+
+    function openGuruDropdown(mode) {
+      const listEl = document.getElementById(mode === 'add' ? 'listGuruDropdownAdd' : 'listGuruDropdownEdit');
+      const icon = document.getElementById(mode === 'add' ? 'iconToggleGuruDropdownAdd' : 'iconToggleGuruDropdownEdit');
+      const input = document.getElementById(mode === 'add' ? 'searchGuruAutofillAdd' : 'searchGuruAutofillEdit');
+      const currentUserId = (mode === 'edit' && document.getElementById('editUserId')) ? document.getElementById('editUserId').value : null;
+
+      filterGuruDropdown(mode, input ? input.value : '', currentUserId);
+
+      if (listEl) listEl.style.display = 'block';
+      if (icon) {
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+      }
+    }
+
+    function closeGuruDropdown(mode) {
+      const listEl = document.getElementById(mode === 'add' ? 'listGuruDropdownAdd' : 'listGuruDropdownEdit');
+      const icon = document.getElementById(mode === 'add' ? 'iconToggleGuruDropdownAdd' : 'iconToggleGuruDropdownEdit');
+      if (listEl) listEl.style.display = 'none';
+      if (icon) {
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+      }
+    }
+
+    function filterGuruDropdown(mode, query, currentUserId) {
+      const curId = currentUserId !== undefined ? currentUserId : ((mode === 'edit' && document.getElementById('editUserId')) ? document.getElementById('editUserId').value : null);
+      const eligible = getEligibleGuruList(curId);
+
+      const q = String(query || '').trim().toLowerCase();
+      let filtered = eligible;
+      if (q) {
+        filtered = eligible.filter(function(g) {
+          const name = String(g.nama_guru || '').toLowerCase();
+          const nip = String(g.nip || '').toLowerCase();
+          const ekstra = String(g.pembina_ekstra || '').toLowerCase();
+          const wali = String(g.sebagai_wali_kelas || '').toLowerCase();
+          return name.includes(q) || nip.includes(q) || ekstra.includes(q) || wali.includes(q);
+        });
+      }
+
+      renderGuruDropdown(mode, filtered, q, curId);
+    }
+
+    function renderGuruDropdown(mode, items, query, currentUserId) {
+      const listEl = document.getElementById(mode === 'add' ? 'listGuruDropdownAdd' : 'listGuruDropdownEdit');
+      if (!listEl) return;
+
+      if (!items || items.length === 0) {
+        listEl.innerHTML = '<div class="p-3 text-center text-muted small">' +
+          '<i class="bi bi-info-circle fs-5 d-block mb-1 text-primary"></i>' +
+          (query 
+            ? 'Tidak ada guru yang cocok dengan "<strong>' + escapeHtml(query) + '</strong>" atau guru sudah memiliki akun login.'
+            : 'Semua guru pada Master Data Guru sudah memiliki akun pengguna aktif.') +
+          '</div>';
+        return;
+      }
+
+      let html = '<div class="py-1">';
+      items.forEach(function(g) {
+        const nipStr = (g.nip && g.nip !== '-') ? g.nip : 'NIP: -';
+        const roles = [];
+        if (g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-') roles.push('Wali Kelas: ' + g.sebagai_wali_kelas);
+        if (g.sebagai_guru_wali === 'Ya') roles.push('Guru Wali');
+        if (g.pembina_ekstra && g.pembina_ekstra !== '-') roles.push('Pembina: ' + g.pembina_ekstra);
+
+        let rolesBadge = '';
+        if (roles.length > 0) {
+          rolesBadge = '<div class="text-secondary mt-1" style="font-size:0.72rem;"><i class="bi bi-person-badge me-1"></i>' + escapeHtml(roles.join(' • ')) + '</div>';
+        }
+
+        html += '<button type="button" class="dropdown-item py-2 px-3 border-bottom text-wrap d-flex align-items-start justify-content-between" onclick="selectGuruItem(\'' + mode + '\', ' + g.id + ')">' +
+          '<div>' +
+            '<div class="fw-semibold text-dark"><i class="bi bi-person-check me-2 text-primary"></i>' + escapeHtml(g.nama_guru) + '</div>' +
+            '<div class="text-muted small" style="font-size:0.75rem;"><i class="bi bi-card-text me-1"></i>' + escapeHtml(nipStr) + '</div>' +
+            rolesBadge +
+          '</div>' +
+          '<span class="badge bg-success-subtle text-success mt-1 flex-shrink-0" style="font-size:0.68rem;"><i class="bi bi-check-circle me-1"></i>Belum Dipakai</span>' +
+        '</button>';
+      });
+      html += '</div>';
+      listEl.innerHTML = html;
+    }
+
+    function selectGuruItem(mode, guruId) {
+      const g = allGuruData.find(function(x){ return Number(x.id) === Number(guruId); });
+      if (!g) return;
+
+      const input = document.getElementById(mode === 'add' ? 'searchGuruAutofillAdd' : 'searchGuruAutofillEdit');
+      const hid = document.getElementById(mode === 'add' ? 'selectGuruAutofillAdd' : 'selectGuruAutofillEdit');
+      const btnClear = document.getElementById(mode === 'add' ? 'btnClearGuruAutofillAdd' : 'btnClearGuruAutofillEdit');
+
+      if (input) input.value = g.nama_guru + (g.nip && g.nip !== '-' ? ' (' + g.nip + ')' : '');
+      if (hid) hid.value = g.id;
+      if (btnClear) btnClear.style.display = 'block';
+
+      if (mode === 'add') {
+        document.getElementById('addNama').value = g.nama_guru || '';
+        document.getElementById('addNip').value = (g.nip && g.nip !== '-') ? g.nip : '';
+
+        // Generate username yang bersih dari nama guru
+        const first = (g.nama_guru || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+        document.getElementById('addUsername').value = first ? 'guru.' + first : 'guru' + Math.floor(100 + Math.random() * 900);
+        document.getElementById('addPassword').value = 'guru123';
+
+        // Set roles otomatis berdasarkan data master guru
+        document.getElementById('addRoleGuru').checked = true;
+        document.getElementById('addRoleGW').checked = (g.sebagai_guru_wali === 'Ya');
+        document.getElementById('addRoleWali').checked = Boolean(g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-');
+        document.getElementById('addRoleEkstra').checked = Boolean(g.pembina_ekstra && g.pembina_ekstra !== '-');
+      } else {
+        document.getElementById('editNama').value = g.nama_guru || '';
+        document.getElementById('editNip').value = (g.nip && g.nip !== '-') ? g.nip : '';
+
+        // Set roles otomatis berdasarkan data master guru
+        document.getElementById('editRoleGuru').checked = true;
+        document.getElementById('editRoleGW').checked = (g.sebagai_guru_wali === 'Ya');
+        document.getElementById('editRoleWali').checked = Boolean(g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-');
+        document.getElementById('editRoleEkstra').checked = Boolean(g.pembina_ekstra && g.pembina_ekstra !== '-');
+      }
+
+      closeGuruDropdown(mode);
+    }
+
+    function clearSelectedGuruAutofill(mode) {
+      const input = document.getElementById(mode === 'add' ? 'searchGuruAutofillAdd' : 'searchGuruAutofillEdit');
+      const hid = document.getElementById(mode === 'add' ? 'selectGuruAutofillAdd' : 'selectGuruAutofillEdit');
+      const btnClear = document.getElementById(mode === 'add' ? 'btnClearGuruAutofillAdd' : 'btnClearGuruAutofillEdit');
+
+      if (input) input.value = '';
+      if (hid) hid.value = '';
+      if (btnClear) btnClear.style.display = 'none';
+
+      if (mode === 'add') {
+        document.getElementById('addNama').value = '';
+        document.getElementById('addNip').value = '';
+        document.getElementById('addUsername').value = '';
+        document.getElementById('addPassword').value = 'guru123';
+        document.getElementById('addRoleSAdmin').checked = false;
+        document.getElementById('addRoleGuru').checked = true;
+        document.getElementById('addRoleWali').checked = false;
+        document.getElementById('addRoleGW').checked = false;
+        document.getElementById('addRoleEkstra').checked = false;
+        document.getElementById('addRolePelihat').checked = false;
+        filterGuruDropdown('add', '');
+      } else {
+        const curEditId = document.getElementById('editUserId') ? document.getElementById('editUserId').value : null;
+        filterGuruDropdown('edit', '', curEditId);
+      }
     }
 
     function renderTable() {
@@ -376,41 +657,9 @@
       }
     }
 
-    function handleGuruAutofill(sel) {
-      const id = sel.value;
-      if (!id) return;
-      const g = allGuruData.find(function(x){ return x.id == id; });
-      if (g) {
-        document.getElementById('addNama').value = g.nama_guru || '';
-        document.getElementById('addNip').value = g.nip || '';
-        
-        // Buat username dari nama depan
-        const first = (g.nama_guru || '').toLowerCase().replace(/[^a-z]/g, '').slice(0, 8);
-        document.getElementById('addUsername').value = first || 'guru';
-        document.getElementById('addPassword').value = 'guru123';
-
-        // Set roles based on penugasan
-        document.getElementById('addRoleGuru').checked = true;
-        document.getElementById('addRoleGW').checked = (g.sebagai_guru_wali === 'Ya');
-        document.getElementById('addRoleWali').checked = (g.sebagai_wali_kelas && g.sebagai_wali_kelas !== '-');
-        document.getElementById('addRoleEkstra').checked = (g.pembina_ekstra && g.pembina_ekstra !== '-');
-      }
-    }
-
     function showAddModal() {
-      document.getElementById('selectGuruAutofill').value = '';
-      document.getElementById('addNama').value = '';
-      document.getElementById('addNip').value = '';
-      document.getElementById('addUsername').value = '';
-      document.getElementById('addPassword').value = 'guru123';
-
-      document.getElementById('addRoleSAdmin').checked = false;
-      document.getElementById('addRoleGuru').checked = true;
-      document.getElementById('addRoleWali').checked = false;
-      document.getElementById('addRoleGW').checked = false;
-      document.getElementById('addRoleEkstra').checked = false;
-      document.getElementById('addRolePelihat').checked = false;
-
+      clearSelectedGuruAutofill('add');
+      updateGuruDropdownBadges();
       modalAddInstance.show();
     }
 
@@ -472,6 +721,32 @@
       } else {
         document.getElementById('editRoleSAdmin').disabled = false;
       }
+
+      // Cocokkan dengan master data guru jika ada
+      const matchedGuru = (allGuruData || []).find(function(g) {
+        const gNip = String(g.nip || '').trim().toLowerCase();
+        const gNama = String(g.nama_guru || '').trim().toLowerCase();
+        const rNip = String(record.nip || '').trim().toLowerCase();
+        const rNama = String(record.nama || '').trim().toLowerCase();
+        return (gNip && gNip !== '-' && rNip && rNip !== '-' && gNip === rNip) || (gNama && rNama && gNama === rNama);
+      });
+
+      const input = document.getElementById('searchGuruAutofillEdit');
+      const hid = document.getElementById('selectGuruAutofillEdit');
+      const btnClear = document.getElementById('btnClearGuruAutofillEdit');
+
+      if (matchedGuru) {
+        if (input) input.value = matchedGuru.nama_guru + (matchedGuru.nip && matchedGuru.nip !== '-' ? ' (' + matchedGuru.nip + ')' : '');
+        if (hid) hid.value = matchedGuru.id;
+        if (btnClear) btnClear.style.display = 'block';
+      } else {
+        if (input) input.value = '';
+        if (hid) hid.value = '';
+        if (btnClear) btnClear.style.display = 'none';
+      }
+
+      updateGuruDropdownBadges();
+      filterGuruDropdown('edit', '', record.id);
 
       modalEditInstance.show();
     }

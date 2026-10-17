@@ -379,7 +379,7 @@
       card.innerHTML = 
         '<div class="row g-2 align-items-center">' +
           '<!-- Col 1: Cabang Ekstrakurikuler -->' +
-          '<div class="col-12 col-md-6">' +
+          '<div class="col-12 col-md-5">' +
             '<div class="d-flex align-items-center justify-content-between mb-1">' +
               '<label class="form-label small fw-semibold text-secondary mb-0">Cabang Ekstrakurikuler</label>' +
               '<span class="badge bg-primary-subtle text-primary border" style="font-size: 0.68rem;"><i class="bi bi-keyboard me-1"></i>Bisa Diketik</span>' +
@@ -397,7 +397,7 @@
           '</div>' +
 
           '<!-- Col 2: Guru Pembina -->' +
-          '<div class="col-10 col-md-5">' +
+          '<div class="col-10 col-md-6">' +
             '<label class="form-label small fw-semibold text-secondary mb-1">Guru Pembina</label>' +
             '<div class="pembina-field-wrapper" id="pembinaWrapper_' + rowId + '">' +
             '</div>' +
@@ -592,7 +592,7 @@
           '<div class="input-group">' +
             '<span class="input-group-text bg-light text-primary px-2" title="' + pembinas.length + ' pembina terdaftar"><i class="bi bi-people-fill"></i></span>' +
             '<select class="form-select form-select-sm sel-row-pembina border-primary" id="selPembina_' + rowId + '" required title="Pilih salah satu guru pembina untuk ' + escapeHtml(cleanBranch) + '">' +
-              '<option value="">-- Pilih Salah Satu Guru Pembina (' + pembinas.length + ' Tersedia) --</option>';
+              '<option value="">-- Pilih Pembina (' + pembinas.length + ' Tersedia) --</option>';
 
         pembinas.forEach(function(pName) {
           const selAttr = (pName === defaultTeacher) ? ' selected' : '';

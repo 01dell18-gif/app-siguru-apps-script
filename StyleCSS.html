@@ -474,5 +474,23 @@ body.sidebar-collapsed .main-header, body.sidebar-collapsed .content-wrapper { m
   background: rgba(255,255,255,0.7); z-index: 9999;
   display: none; align-items: center; justify-content: center;
 }
-.loading-overlay .spinner-border { width: 3rem; height: 3rem; color: var(--primary); }
+/* Modal Width & Responsiveness Enhancement */
+.modal-dialog.modal-lg {
+  max-width: 920px;
+  width: 95%;
+}
+@media (min-width: 1200px) {
+  .modal-dialog.modal-lg {
+    max-width: 960px;
+  }
+}
+@media (min-width: 1400px) {
+  .modal-dialog.modal-lg {
+    max-width: 1020px;
+  }
+}
+.modal-content {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
 </style>
