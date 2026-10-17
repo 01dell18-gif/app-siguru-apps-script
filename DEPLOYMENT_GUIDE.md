@@ -151,13 +151,17 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
     - Sinkronisasi avatar profil seketika di bagian atas **Header** dan pojok bawah **Sidebar** tanpa perlu memuat ulang peramban secara manual.
     - Otomatis membersihkan berkas lama di Google Drive saat foto diganti atau dihapus (*drive auto-trash*).
 
-12. **Pencarian Cepat Siswa dari Data Induk (Typeable Student Search)**:
-    - Pemilihan siswa dari Data Induk pada Master Bimbingan (Guru Wali) dan Master Siswa Ekstrakurikuler kini dapat diketik langsung (pencarian nama siswa atau NISN) menggunakan *searchable datalist*, mempercepat pemilihan siswa di antara ratusan data tanpa perlu menggulir menu dropdown yang panjang.
+12. **Pencarian Cepat Siswa dari Data Induk & Filter Belum Digunakan**:
+    - Pemilihan siswa dari Data Induk pada Master Bimbingan (Guru Wali) dan Master Siswa Ekstrakurikuler dapat diketik langsung (pencarian nama siswa atau NISN) menggunakan *searchable datalist*.
+    - Sistem otomatis melakukan pengecekan data induk dan **hanya menyajikan data siswa yang belum pernah didaftarkan (belum digunakan)** guna mencegah duplikasi.
 
 13. **Multi-Pembina Ekstrakurikuler pada Master Guru & Formulir Terintegrasi**:
-    - **Master Data Guru**: Mendukung penugasan lebih dari 1 cabang kegiatan ekstrakurikuler untuk satu guru melalui antarmuka checkbox multi-pilihan (*Pilih Semua* & *Kosongkan*) dan tampilan badge mandiri per cabang pada tabel.
+    - **Master Data Guru**: Mendukung penugasan lebih dari 1 cabang kegiatan ekstrakurikuler untuk satu guru melalui antarmuka checkbox multi-pilihan (*Pilih Semua* & *Kosongkan*), pencarian cabang ekstra yang dapat diketik langsung, serta tombol **Tambah Ekstra** untuk menambah cabang baru ke sistem secara instan.
     - **Formulir Kegiatan Ekstrakurikuler**: Dropdown cabang terbuka dan dapat dipilih jika guru membina lebih dari 1 kegiatan ekstra, lengkap dengan badge keterangan jumlah cabang binaan.
     - **Data Siswa Ekstrakurikuler**: Menyediakan dropdown pemilihan guru pembina per cabang jika suatu cabang ekstra memiliki lebih dari 1 guru pembina terdaftar di sistem.
+
+14. **Pencarian Kelas yang Dapat Diketik (*Typeable Class Search*)**:
+    - Input **Sebagai Wali Kelas** pada Master Data Guru dan input **Kelas / Rombel** pada Master Data Siswa kini dilengkapi fitur pencarian yang dapat diketik langsung (*searchable select*), mempermudah dan mempercepat pemilihan kelas di antara puluhan rombel terdaftar.
 
 ---
 

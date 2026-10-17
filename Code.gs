@@ -402,7 +402,7 @@ function saveSettings(formData) {
     });
 
     const data = sheet.getDataRange().getValues();
-    const rowValues = headers.map(h => formData[h] !== undefined ? formData[h] : '');
+    const rowValues = headers.map(h => formData[h] !== undefined ? formData[h] : (existing[h] !== undefined ? existing[h] : ''));
     rowValues[0] = 1; // id selalu 1
     
     if (data.length <= 1) {
@@ -1522,6 +1522,25 @@ function getDaftarEkstra() {
   }
   
   return [...new Set(ekstraList)].sort();
+}
+
+function addEkstrakurikuler(namaEkstra) {
+  try {
+    if (!namaEkstra || !String(namaEkstra).trim()) {
+      return { success: false, message: 'Nama cabang ekstrakurikuler tidak boleh kosong.' };
+    }
+    const cleanNama = String(namaEkstra).trim();
+    let ekstraList = getDaftarEkstra();
+    const exists = ekstraList.some(e => e.toLowerCase() === cleanNama.toLowerCase());
+    if (!exists) {
+      ekstraList.push(cleanNama);
+      ekstraList.sort();
+      saveSettings({ list_ekstrakurikuler: JSON.stringify(ekstraList) });
+    }
+    return { success: true, list: ekstraList, message: 'Cabang ' + cleanNama + ' berhasil ditambahkan!' };
+  } catch(e) {
+    return { success: false, message: 'Gagal menambah ekstrakurikuler: ' + e.message };
+  }
 }
 
 function getDaftarTahunAjaran() {

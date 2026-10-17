@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Data Guru - SIGURU</title>
   <?!= include('StyleCSS'); ?>
+  <style>
+    .searchable-kelas-menu {
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    .searchable-item {
+      transition: background-color 0.15s ease-in-out;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .searchable-item:hover, .searchable-item:focus {
+      background-color: #f1f5f9;
+    }
+    .searchable-item:active {
+      background-color: #e2e8f0;
+    }
+  </style>
 </head>
 <body>
   <?!= include('Sidebar'); ?>
@@ -110,10 +128,21 @@
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Sebagai Wali Kelas</label>
-              <select class="form-select" id="sebagaiWaliKelas">
-                <option value="-">- Tidak Ada -</option>
-              </select>
+              <label class="form-label small fw-semibold d-flex justify-content-between align-items-center mb-1">
+                <span>Sebagai Wali Kelas</span>
+                <span class="badge bg-light text-primary border" style="font-size: 0.72rem;"><i class="bi bi-keyboard me-1"></i>Dapat Diketik</span>
+              </label>
+              <div class="position-relative" id="wrapperWaliKelasSearch">
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 border-end-0" id="searchWaliKelas" placeholder="Ketik untuk mencari kelas..." autocomplete="off">
+                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="btnToggleWaliKelasDropdown" title="Buka pilihan kelas"></button>
+                </div>
+                <input type="hidden" id="sebagaiWaliKelas" value="-">
+                <div class="dropdown-menu w-100 shadow border mt-1 p-0 searchable-kelas-menu" id="listWaliKelasDropdown" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; z-index: 1060; left: 0; right: 0;">
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1">Pilih atau ketik kelas yang diampu guru ini sebagai wali kelas (pilih '- Tidak Ada -' jika bukan wali kelas).</small>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-semibold d-flex justify-content-between align-items-center mb-1">
@@ -123,6 +152,13 @@
                   <small class="text-muted cursor-pointer" onclick="clearAllPembinaEkstra()"><i class="bi bi-x-circle me-1"></i>Kosongkan</small>
                 </span>
               </label>
+              <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control border-start-0" id="searchPembinaEkstra" placeholder="Ketik untuk mencari cabang ekstra..." oninput="filterPembinaEkstraCheckboxes(this.value)" autocomplete="off">
+                <button class="btn btn-outline-primary" type="button" onclick="promptAddNewEkstra()" title="Tambah Cabang Ekstrakurikuler Baru">
+                  <i class="bi bi-plus-circle me-1"></i>Tambah Ekstra
+                </button>
+              </div>
               <div id="containerPembinaEkstra" class="p-3 border rounded bg-light d-flex flex-wrap gap-2" style="max-height: 160px; overflow-y: auto;">
                 <small class="text-muted">Memuat daftar cabang ekstrakurikuler...</small>
               </div>
@@ -177,23 +213,158 @@
     
     let allGuru = [];
     let masterEkstraList = [];
+    let masterKelasList = [];
+    let currentSelectedEkstra = new Set();
 
-    function renderPembinaEkstraCheckboxes(selectedValues) {
-      const container = document.getElementById('containerPembinaEkstra');
-      if (!container) return;
-      if (!masterEkstraList || masterEkstraList.length === 0) {
-        container.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Belum ada cabang ekstrakurikuler yang terdaftar di Pengaturan Sistem.</small>';
+    // === SEARCHABLE WALI KELAS LOGIC ===
+    function initSearchableWaliKelas() {
+      const input = document.getElementById('searchWaliKelas');
+      const btnToggle = document.getElementById('btnToggleWaliKelasDropdown');
+      const listEl = document.getElementById('listWaliKelasDropdown');
+      if (!input || !listEl) return;
+
+      input.addEventListener('focus', function() {
+        filterWaliKelasDropdown(this.value);
+        openWaliKelasDropdown();
+      });
+      input.addEventListener('input', function() {
+        filterWaliKelasDropdown(this.value);
+        openWaliKelasDropdown();
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const firstItem = listEl.querySelector('.searchable-item');
+          if (firstItem) firstItem.click();
+        }
+      });
+
+      if (btnToggle) {
+        btnToggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleWaliKelasDropdown();
+        });
+      }
+
+      document.addEventListener('click', function(e) {
+        const wrap = document.getElementById('wrapperWaliKelasSearch');
+        if (wrap && !wrap.contains(e.target)) {
+          closeWaliKelasDropdown();
+        }
+      });
+    }
+
+    function openWaliKelasDropdown() {
+      const listEl = document.getElementById('listWaliKelasDropdown');
+      if (listEl) listEl.style.display = 'block';
+    }
+
+    function closeWaliKelasDropdown() {
+      const listEl = document.getElementById('listWaliKelasDropdown');
+      if (listEl) listEl.style.display = 'none';
+    }
+
+    function toggleWaliKelasDropdown() {
+      const listEl = document.getElementById('listWaliKelasDropdown');
+      if (!listEl) return;
+      if (listEl.style.display === 'block') {
+        closeWaliKelasDropdown();
+      } else {
+        filterWaliKelasDropdown('');
+        openWaliKelasDropdown();
+      }
+    }
+
+    function filterWaliKelasDropdown(query) {
+      const listEl = document.getElementById('listWaliKelasDropdown');
+      if (!listEl) return;
+      const q = String(query || '').trim().toLowerCase();
+
+      const options = [{ val: '-', label: '- Tidak Ada -', isNone: true }];
+      (masterKelasList || []).forEach(function(k) {
+        if (k && String(k).trim()) {
+          options.push({ val: String(k).trim(), label: String(k).trim(), isNone: false });
+        }
+      });
+
+      const filtered = options.filter(function(opt) {
+        if (!q) return true;
+        return opt.label.toLowerCase().includes(q) || opt.val.toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="p-2 text-center text-muted small"><i class="bi bi-info-circle me-1"></i>Tidak ada kelas cocok dengan "' + escapeHtml(q) + '"</div>';
         return;
       }
 
-      const selArr = (selectedValues || []).map(function(s){ return String(s).trim().toLowerCase(); }).filter(Boolean);
       let html = '';
-      masterEkstraList.forEach(function(e, idx) {
+      const currentVal = document.getElementById('sebagaiWaliKelas') ? document.getElementById('sebagaiWaliKelas').value : '-';
+      filtered.forEach(function(opt) {
+        const isSelected = (opt.val === currentVal);
+        html += '<a href="javascript:void(0)" class="dropdown-item py-2 px-3 border-bottom d-flex align-items-center justify-content-between searchable-item' + (isSelected ? ' active bg-primary text-white' : '') + '" onclick="selectWaliKelasItem(\'' + escapeHtml(opt.val) + '\', \'' + escapeHtml(opt.label) + '\')">' +
+          '<span>' + (opt.isNone ? '<i class="bi bi-dash-circle me-2 text-muted"></i>' : '<i class="bi bi-door-closed me-2 text-primary"></i>') + escapeHtml(opt.label) + '</span>' +
+          (isSelected ? '<i class="bi bi-check2"></i>' : '') +
+        '</a>';
+      });
+      listEl.innerHTML = html;
+    }
+
+    function selectWaliKelasItem(val, label) {
+      const hid = document.getElementById('sebagaiWaliKelas');
+      const input = document.getElementById('searchWaliKelas');
+      if (hid) hid.value = val;
+      if (input) input.value = label;
+      closeWaliKelasDropdown();
+    }
+
+    function setWaliKelasValue(val) {
+      const cleanVal = (val && val !== '-') ? String(val).trim() : '-';
+      const hid = document.getElementById('sebagaiWaliKelas');
+      const input = document.getElementById('searchWaliKelas');
+      if (hid) hid.value = cleanVal;
+      if (input) input.value = (cleanVal === '-' ? '- Tidak Ada -' : cleanVal);
+    }
+
+    // === PEMBINA EKSTRAKURIKULER CHECKBOX & SEARCH LOGIC ===
+    function renderPembinaEkstraCheckboxes(selectedValues, query) {
+      const container = document.getElementById('containerPembinaEkstra');
+      if (!container) return;
+
+      if (selectedValues !== undefined && selectedValues !== null) {
+        currentSelectedEkstra = new Set((selectedValues || []).map(function(s){ return String(s).trim().toLowerCase(); }).filter(Boolean));
+      }
+
+      if (!masterEkstraList || masterEkstraList.length === 0) {
+        container.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Belum ada cabang ekstrakurikuler. Klik tombol <strong>+ Tambah Ekstra</strong> di atas untuk membuat cabang baru.</small>';
+        return;
+      }
+
+      const q = String(query || '').trim().toLowerCase();
+      const filtered = masterEkstraList.filter(function(e) {
+        if (!q) return true;
+        return String(e).toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="w-100 py-2 text-center text-muted small">' +
+          '<i class="bi bi-search me-1"></i>Tidak ada cabang cocok dengan "<strong>' + escapeHtml(q) + '</strong>".' +
+          '<div class="mt-2">' +
+            '<button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1" onclick="promptAddNewEkstra(\'' + escapeHtml(q) + '\')">' +
+              '<i class="bi bi-plus-circle me-1"></i>Tambah "' + escapeHtml(q) + '" sebagai Cabang Baru' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(function(e, idx) {
         const val = String(e).trim();
         if (!val) return;
-        const isChecked = selArr.includes(val.toLowerCase());
+        const isChecked = currentSelectedEkstra.has(val.toLowerCase());
         html += '<div class="form-check form-check-inline m-0 border px-2 py-1 rounded bg-white shadow-xs">' +
-          '<input class="form-check-input guru-pembina-ekstra-chk" type="checkbox" id="gpe_' + idx + '" value="' + escapeHtml(val) + '"' + (isChecked ? ' checked' : '') + '>' +
+          '<input class="form-check-input guru-pembina-ekstra-chk" type="checkbox" id="gpe_' + idx + '" value="' + escapeHtml(val) + '"' + (isChecked ? ' checked' : '') + ' onchange="toggleEkstraCheckbox(this)">' +
           '<label class="form-check-label small cursor-pointer" for="gpe_' + idx + '">' +
             '<i class="bi bi-star-fill text-warning me-1"></i>' + escapeHtml(val) +
           '</label>' +
@@ -202,20 +373,99 @@
       container.innerHTML = html;
     }
 
+    function toggleEkstraCheckbox(chk) {
+      const val = String(chk.value || '').trim().toLowerCase();
+      if (!val) return;
+      if (chk.checked) {
+        currentSelectedEkstra.add(val);
+      } else {
+        currentSelectedEkstra.delete(val);
+      }
+    }
+
+    function filterPembinaEkstraCheckboxes(query) {
+      renderPembinaEkstraCheckboxes(null, query);
+    }
+
     function selectAllPembinaEkstra() {
-      document.querySelectorAll('.guru-pembina-ekstra-chk').forEach(function(c){ c.checked = true; });
+      masterEkstraList.forEach(function(e) {
+        const val = String(e).trim().toLowerCase();
+        if (val) currentSelectedEkstra.add(val);
+      });
+      const q = document.getElementById('searchPembinaEkstra') ? document.getElementById('searchPembinaEkstra').value : '';
+      renderPembinaEkstraCheckboxes(null, q);
     }
 
     function clearAllPembinaEkstra() {
-      document.querySelectorAll('.guru-pembina-ekstra-chk').forEach(function(c){ c.checked = false; });
+      currentSelectedEkstra.clear();
+      const q = document.getElementById('searchPembinaEkstra') ? document.getElementById('searchPembinaEkstra').value : '';
+      renderPembinaEkstraCheckboxes(null, q);
     }
 
     function getSelectedPembinaEkstra() {
-      const checked = [];
-      document.querySelectorAll('.guru-pembina-ekstra-chk:checked').forEach(function(c){
-        if (c.value && c.value.trim()) checked.push(c.value.trim());
+      const selected = [];
+      masterEkstraList.forEach(function(e) {
+        const val = String(e).trim();
+        if (val && currentSelectedEkstra.has(val.toLowerCase())) {
+          selected.push(val);
+        }
       });
-      return checked.length > 0 ? checked.join(', ') : '-';
+      return selected.length > 0 ? selected.join(', ') : '-';
+    }
+
+    function promptAddNewEkstra(initialValue) {
+      Swal.fire({
+        title: 'Tambah Cabang Ekstrakurikuler',
+        input: 'text',
+        inputValue: initialValue || '',
+        inputLabel: 'Nama Cabang Ekstrakurikuler Baru',
+        inputPlaceholder: 'Contoh: Robotik, Badminton, Teater...',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-plus-circle me-1"></i>Tambah & Pilih',
+        cancelButtonText: 'Batal',
+        inputValidator: function(value) {
+          if (!value || !value.trim()) {
+            return 'Nama cabang ekstrakurikuler tidak boleh kosong!';
+          }
+        }
+      }).then(function(result) {
+        if (result.isConfirmed && result.value) {
+          saveNewEkstraBranch(result.value.trim());
+        }
+      });
+    }
+
+    function saveNewEkstraBranch(newBranch) {
+      const clean = String(newBranch).trim();
+      if (!clean) return;
+
+      const exists = masterEkstraList.some(function(e){ return e.toLowerCase() === clean.toLowerCase(); });
+      if (!exists) {
+        masterEkstraList.push(clean);
+        masterEkstraList.sort();
+      }
+      currentSelectedEkstra.add(clean.toLowerCase());
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success && res.list && Array.isArray(res.list)) {
+              masterEkstraList = res.list;
+              if (typeof updateAppBundle === 'function') {
+                updateAppBundle({ ekstra: masterEkstraList });
+              }
+            }
+          })
+          .withFailureHandler(function(err) {
+            console.warn('Gagal simpan ekstra ke server:', err);
+          })
+          .addEkstrakurikuler(clean);
+      }
+
+      const searchEl = document.getElementById('searchPembinaEkstra');
+      if (searchEl) searchEl.value = '';
+      renderPembinaEkstraCheckboxes(null, '');
+      showToast('success', 'Cabang "' + clean + '" berhasil ditambahkan dan dicentang!');
     }
 
     function getModal(id) {
@@ -227,6 +477,7 @@
     }
     
     document.addEventListener('DOMContentLoaded', function() {
+      initSearchableWaliKelas();
       loadData();
       setTimeout(function() {
         const ov = document.getElementById('loadingOverlay');
@@ -278,15 +529,13 @@
         renderTable(allGuru);
       }
       if (bundle.kelas && Array.isArray(bundle.kelas)) {
-        const sel = document.getElementById('sebagaiWaliKelas');
-        const curr = sel.value;
-        sel.innerHTML = '<option value="-">- Tidak Ada -</option>';
-        bundle.kelas.forEach(function(k) { sel.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; });
-        if (curr) sel.value = curr;
+        masterKelasList = bundle.kelas;
+        const curr = document.getElementById('sebagaiWaliKelas') ? document.getElementById('sebagaiWaliKelas').value : '-';
+        setWaliKelasValue(curr);
       }
       if (bundle.ekstra && Array.isArray(bundle.ekstra)) {
         masterEkstraList = bundle.ekstra;
-        renderPembinaEkstraCheckboxes([]);
+        renderPembinaEkstraCheckboxes();
       }
     }
     
@@ -375,7 +624,9 @@
       }
       document.getElementById('nipGuru').value = (user && user.nip && !isSuperAdmin()) ? user.nip : '';
       document.getElementById('sebagaiGuruWali').value = 'Tidak';
-      document.getElementById('sebagaiWaliKelas').value = '-';
+      setWaliKelasValue('-');
+      const searchEkstra = document.getElementById('searchPembinaEkstra');
+      if (searchEkstra) searchEkstra.value = '';
       renderPembinaEkstraCheckboxes([]);
       getModal('modalGuru').show();
     }
@@ -403,7 +654,9 @@
       }
       document.getElementById('nipGuru').value = g.nip || '';
       document.getElementById('sebagaiGuruWali').value = g.sebagai_guru_wali || 'Tidak';
-      document.getElementById('sebagaiWaliKelas').value = g.sebagai_wali_kelas || '-';
+      setWaliKelasValue(g.sebagai_wali_kelas || '-');
+      const searchEkstra = document.getElementById('searchPembinaEkstra');
+      if (searchEkstra) searchEkstra.value = '';
       const currentEkstras = String(g.pembina_ekstra || '')
         .split(/[,;]/)
         .map(function(s){ return s.trim(); })

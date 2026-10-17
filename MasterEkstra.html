@@ -139,7 +139,7 @@
             <!-- Pilih Siswa Terdaftar (Autofill & Searchable) -->
             <div class="mb-3" id="divSelectMurid">
               <label class="form-label fw-semibold small text-primary d-flex align-items-center justify-content-between mb-1">
-                <span><i class="bi bi-search me-1"></i>Pilih Siswa dari Data Induk</span>
+                <span><i class="bi bi-search me-1"></i>Pilih Siswa dari Data Induk <span class="badge bg-success-subtle text-success ms-1 fw-normal" style="font-size:0.68rem;"><i class="bi bi-shield-check me-1"></i>Belum Digunakan</span></span>
                 <span class="badge bg-primary-subtle text-primary fw-normal" style="font-size: 0.72rem;"><i class="bi bi-keyboard me-1"></i>Dapat Diketik</span>
               </label>
               <div class="position-relative" id="wrapperMuridAutofill">
@@ -767,8 +767,26 @@
 
     function getEligibleMuridList() {
       if (!allMuridInduk || allMuridInduk.length === 0) return [];
-      const filtered = allMuridInduk.filter(function(m){ return String(m.status || '').includes('Ekstra'); });
-      return filtered.length > 0 ? filtered : allMuridInduk;
+
+      // Pengecekan data siswa yang sudah terdaftar di Data Siswa Ekstrakurikuler (sudah digunakan)
+      const usedNisnSet = new Set();
+      const usedNameSet = new Set();
+      (rawEkstra || []).forEach(function(e) {
+        if (e.nisn) usedNisnSet.add(String(e.nisn).trim().replace(/^0+/, ''));
+        if (e.nama_murid) usedNameSet.add(String(e.nama_murid).trim().toLowerCase());
+      });
+
+      // Saring data induk siswa: hanya tampilkan yang belum digunakan di Ekstrakurikuler
+      const unusedList = allMuridInduk.filter(function(m) {
+        const mNisn = m.nisn ? String(m.nisn).trim().replace(/^0+/, '') : '';
+        const mName = m.nama_murid ? String(m.nama_murid).trim().toLowerCase() : '';
+        const isUsed = (mNisn && usedNisnSet.has(mNisn)) || (mName && usedNameSet.has(mName));
+        return !isUsed;
+      });
+
+      // Prioritaskan siswa yang berstatus 'Ekstra' di Data Induk jika ada
+      const withStatus = unusedList.filter(function(m){ return String(m.status || '').includes('Ekstra'); });
+      return withStatus.length > 0 ? withStatus : unusedList;
     }
 
     let isMuridDropdownInit = false;
@@ -813,10 +831,13 @@
       const listEl = document.getElementById('listMuridDropdown');
       if (!listEl) return;
       if (!items || items.length === 0) {
+        const msg = query 
+          ? 'Tidak ada siswa cocok untuk "<strong>' + escapeHtml(query) + '</strong>" (atau data siswa sudah terdaftar).'
+          : 'Semua siswa dari Data Induk sudah terdaftar pada Siswa Ekstrakurikuler (tidak ada data baru yang belum digunakan).';
         listEl.innerHTML = '<div class="p-3 text-center text-muted small">' +
-          '<i class="bi bi-search fs-5 d-block mb-1 text-secondary"></i>' +
-          '<span>Tidak ada siswa cocok untuk "<strong>' + escapeHtml(query || '') + '</strong>"</span>' +
-          '<div class="text-secondary mt-1" style="font-size:0.75rem;">Anda dapat mengisi data manual di bawah.</div>' +
+          '<i class="bi bi-person-check fs-4 d-block mb-1 text-success"></i>' +
+          '<span>' + msg + '</span>' +
+          '<div class="text-secondary mt-1" style="font-size:0.75rem;">Anda dapat mengisi data manual di bawah jika diperlukan.</div>' +
         '</div>';
         return;
       }

@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Data Siswa - SIGURU</title>
   <?!= include('StyleCSS'); ?>
+  <style>
+    .searchable-kelas-menu {
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    .searchable-item {
+      transition: background-color 0.15s ease-in-out;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .searchable-item:hover, .searchable-item:focus {
+      background-color: #f1f5f9;
+    }
+    .searchable-item:active {
+      background-color: #e2e8f0;
+    }
+  </style>
 </head>
 <body>
   <?!= include('Sidebar'); ?>
@@ -126,10 +144,20 @@
                 </select>
               </div>
               <div class="col-6">
-                <label class="form-label fw-semibold small">Kelas / Rombel <span class="text-danger">*</span></label>
-                <select class="form-select" id="muridKelas" required>
-                  <option value="">-- Pilih Kelas --</option>
-                </select>
+                <label class="form-label fw-semibold small d-flex justify-content-between align-items-center mb-1">
+                  <span>Kelas / Rombel <span class="text-danger">*</span></span>
+                  <span class="badge bg-light text-primary border" style="font-size: 0.7rem;"><i class="bi bi-keyboard me-1"></i>Dapat Diketik</span>
+                </label>
+                <div class="position-relative" id="wrapperMuridKelasSearch">
+                  <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted px-2"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control border-start-0 border-end-0 px-2" id="searchMuridKelas" placeholder="Ketik cari kelas..." autocomplete="off">
+                    <button class="btn btn-outline-secondary dropdown-toggle px-2" type="button" id="btnToggleMuridKelasDropdown" title="Buka pilihan kelas"></button>
+                  </div>
+                  <input type="hidden" id="muridKelas" value="">
+                  <div class="dropdown-menu w-100 shadow border mt-1 p-0 searchable-kelas-menu" id="listMuridKelasDropdown" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; z-index: 1060; left: 0; right: 0;">
+                  </div>
+                </div>
               </div>
             </div>
             <div class="mb-3">
@@ -263,12 +291,121 @@
       }
     }
 
+    // === SEARCHABLE MODAL KELAS LOGIC ===
+    function initSearchableMuridKelas() {
+      const input = document.getElementById('searchMuridKelas');
+      const btnToggle = document.getElementById('btnToggleMuridKelasDropdown');
+      const listEl = document.getElementById('listMuridKelasDropdown');
+      if (!input || !listEl) return;
+
+      input.addEventListener('focus', function() {
+        filterMuridKelasDropdown(this.value);
+        openMuridKelasDropdown();
+      });
+      input.addEventListener('input', function() {
+        filterMuridKelasDropdown(this.value);
+        openMuridKelasDropdown();
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const firstItem = listEl.querySelector('.searchable-item');
+          if (firstItem) firstItem.click();
+        }
+      });
+
+      if (btnToggle) {
+        btnToggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleMuridKelasDropdown();
+        });
+      }
+
+      document.addEventListener('click', function(e) {
+        const wrap = document.getElementById('wrapperMuridKelasSearch');
+        if (wrap && !wrap.contains(e.target)) {
+          closeMuridKelasDropdown();
+        }
+      });
+    }
+
+    function openMuridKelasDropdown() {
+      const listEl = document.getElementById('listMuridKelasDropdown');
+      if (listEl) listEl.style.display = 'block';
+    }
+
+    function closeMuridKelasDropdown() {
+      const listEl = document.getElementById('listMuridKelasDropdown');
+      if (listEl) listEl.style.display = 'none';
+    }
+
+    function toggleMuridKelasDropdown() {
+      const listEl = document.getElementById('listMuridKelasDropdown');
+      if (!listEl) return;
+      if (listEl.style.display === 'block') {
+        closeMuridKelasDropdown();
+      } else {
+        filterMuridKelasDropdown('');
+        openMuridKelasDropdown();
+      }
+    }
+
+    function filterMuridKelasDropdown(query) {
+      const listEl = document.getElementById('listMuridKelasDropdown');
+      if (!listEl) return;
+      const q = String(query || '').trim().toLowerCase();
+
+      const options = [];
+      (cachedKelasList || []).forEach(function(k) {
+        if (k && String(k).trim()) {
+          options.push(String(k).trim());
+        }
+      });
+
+      const filtered = options.filter(function(k) {
+        if (!q) return true;
+        return k.toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="p-2 text-center text-muted small"><i class="bi bi-info-circle me-1"></i>Tidak ada kelas cocok dengan "' + escapeHtml(q) + '"</div>';
+        return;
+      }
+
+      let html = '';
+      const currentVal = document.getElementById('muridKelas') ? document.getElementById('muridKelas').value : '';
+      filtered.forEach(function(k) {
+        const isSelected = (k === currentVal);
+        html += '<a href="javascript:void(0)" class="dropdown-item py-2 px-3 border-bottom d-flex align-items-center justify-content-between searchable-item' + (isSelected ? ' active bg-primary text-white' : '') + '" onclick="selectMuridKelasItem(\'' + escapeHtml(k) + '\')">' +
+          '<span><i class="bi bi-door-closed me-2 text-primary"></i>' + escapeHtml(k) + '</span>' +
+          (isSelected ? '<i class="bi bi-check2"></i>' : '') +
+        '</a>';
+      });
+      listEl.innerHTML = html;
+    }
+
+    function selectMuridKelasItem(k) {
+      const hid = document.getElementById('muridKelas');
+      const input = document.getElementById('searchMuridKelas');
+      if (hid) hid.value = k;
+      if (input) input.value = k;
+      closeMuridKelasDropdown();
+    }
+
+    function setMuridKelasValue(k) {
+      const cleanVal = k ? String(k).trim() : '';
+      const hid = document.getElementById('muridKelas');
+      const input = document.getElementById('searchMuridKelas');
+      if (hid) hid.value = cleanVal;
+      if (input) input.value = cleanVal;
+    }
+
     function setupClassFilter(kelasList) {
       if (kelasList && Array.isArray(kelasList) && kelasList.length > 0) {
         cachedKelasList = kelasList;
       }
       const selFilter = document.getElementById('filterKelas');
-      const selModal = document.getElementById('muridKelas');
       if (!selFilter) return;
 
       if (isSuperAdmin()) {
@@ -309,17 +446,14 @@
       }
 
       // Populate modal kelas jika superadmin
-      if (selModal && cachedKelasList.length > 0) {
-        const curModal = selModal.value;
-        selModal.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-        cachedKelasList.forEach(function(k) {
-          selModal.innerHTML += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>';
-        });
-        if (curModal) selModal.value = curModal;
+      if (cachedKelasList.length > 0) {
+        const curModal = document.getElementById('muridKelas') ? document.getElementById('muridKelas').value : '';
+        setMuridKelasValue(curModal);
       }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+      initSearchableMuridKelas();
       // Tombol tambah dan import khusus Super Admin
       if (!isSuperAdmin()) {
         const btnAdd = document.getElementById('btnTambahSiswa');
@@ -690,7 +824,7 @@
       document.getElementById('muridNisn').value = '';
       document.getElementById('muridNama').value = '';
       document.getElementById('muridJk').value = 'L';
-      document.getElementById('muridKelas').value = '';
+      setMuridKelasValue('');
       
       document.getElementById('chkStatusMurid').checked = true;
       document.getElementById('chkStatusGW').checked = false;
@@ -714,7 +848,7 @@
       document.getElementById('muridNisn').value = formatNISN(m.nisn);
       document.getElementById('muridNama').value = m.nama_murid || '';
       document.getElementById('muridJk').value = m.jenis_kelamin || 'L';
-      document.getElementById('muridKelas').value = m.kelas || '';
+      setMuridKelasValue(m.kelas || '');
 
       const stList = String(m.status || '').split(',').map(function(s){ return s.trim(); });
       document.getElementById('chkStatusMurid').checked = stList.includes('Murid');
@@ -736,7 +870,16 @@
       const nisn = document.getElementById('muridNisn').value.trim();
       const nama = document.getElementById('muridNama').value.trim();
       const jk = document.getElementById('muridJk').value;
-      const kelas = document.getElementById('muridKelas').value;
+      const kelas = (document.getElementById('muridKelas').value || '').trim();
+      if (!kelas) {
+        showToast('warning', 'Validasi Gagal', 'Kelas / Rombel wajib dipilih!');
+        const sInput = document.getElementById('searchMuridKelas');
+        if (sInput) {
+          sInput.focus();
+          openMuridKelasDropdown();
+        }
+        return;
+      }
 
       const checkedStatuses = [];
       document.querySelectorAll('.status-chk:checked').forEach(function(c){ checkedStatuses.push(c.value); });
