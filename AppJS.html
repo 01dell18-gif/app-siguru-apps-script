@@ -713,18 +713,44 @@ function uploadMultipleFilesClient(fileInput, targetInputId, folderIdOrKey, prev
   const files = Array.from(fileInput.files);
   const total = files.length;
 
+  const DEFAULT_DRIVE_FOLDERS = {
+    folder_jurnal: '1g1iaALpfRo8oovkJNoPxy_MIDLv5axEB',
+    folder_foto: '1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3',
+    folder_guru_wali: '12RUHlItCa8smp58-aixHOTWHld21md9_',
+    folder_bimbingan: '12RUHlItCa8smp58-aixHOTWHld21md9_',
+    folder_wali: '1uNSsLv2rUUC1c_ykBhnkzQ7y43DRxaDj',
+    folder_ekstra: '1Jf8BcS1jHO1wUYCzk6dQi9_sy7BRyroM'
+  };
+
   let folderId = '';
   if (typeof folderIdOrKey === 'string') {
     if (folderIdOrKey.startsWith('http') || folderIdOrKey.includes('/folders/')) {
       folderId = extractDriveFolderId(folderIdOrKey);
     } else if (folderIdOrKey.startsWith('folder_')) {
       const bundle = (typeof getAppBundle === 'function') ? getAppBundle() : null;
-      if (bundle && bundle.settings && bundle.settings[folderIdOrKey]) {
-        folderId = extractDriveFolderId(bundle.settings[folderIdOrKey]);
+      if (bundle && bundle.settings) {
+        if (bundle.settings[folderIdOrKey]) {
+          folderId = extractDriveFolderId(bundle.settings[folderIdOrKey]);
+        } else if ((folderIdOrKey === 'folder_bimbingan' || folderIdOrKey === 'folder_guru_wali') && (bundle.settings.folder_guru_wali || bundle.settings.folder_bimbingan)) {
+          folderId = extractDriveFolderId(bundle.settings.folder_guru_wali || bundle.settings.folder_bimbingan);
+        }
+      }
+      if (!folderId && DEFAULT_DRIVE_FOLDERS[folderIdOrKey]) {
+        folderId = DEFAULT_DRIVE_FOLDERS[folderIdOrKey];
       }
     } else {
       folderId = folderIdOrKey;
     }
+  }
+
+  // Fallback cerdas berdasarkan nama folder jika belum terisi
+  if (!folderId && typeof folderIdOrKey === 'string') {
+    const keyLower = folderIdOrKey.toLowerCase();
+    if (keyLower.includes('jurnal')) folderId = DEFAULT_DRIVE_FOLDERS.folder_jurnal;
+    else if (keyLower.includes('guru_wali') || keyLower.includes('bimbingan')) folderId = DEFAULT_DRIVE_FOLDERS.folder_guru_wali;
+    else if (keyLower.includes('wali')) folderId = DEFAULT_DRIVE_FOLDERS.folder_wali;
+    else if (keyLower.includes('ekstra')) folderId = DEFAULT_DRIVE_FOLDERS.folder_ekstra;
+    else if (keyLower.includes('foto')) folderId = DEFAULT_DRIVE_FOLDERS.folder_foto;
   }
 
   if (!folderId) {
