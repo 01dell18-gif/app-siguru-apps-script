@@ -894,12 +894,9 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const base64Data = e.target.result.split(',')[1];
-        const folderId = extractDriveFolderId(driveFolderFoto);
-
+        let folderId = extractDriveFolderId(driveFolderFoto);
         if (!folderId) {
-          Swal.close();
-          showToast('warning', 'Folder Foto Drive belum dikonfigurasi di Pengaturan');
-          return;
+          folderId = '1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3'; // Fallback Folder Foto Google Drive Resmi
         }
 
         google.script.run

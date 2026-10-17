@@ -474,7 +474,8 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const base64Data = e.target.result.split(',')[1];
-        const folderId = extractDriveFolderId(document.getElementById('setFolderFoto').value || currentSettings.folder_foto);
+        let folderId = extractDriveFolderId(document.getElementById('setFolderFoto').value || (currentSettings && currentSettings.folder_foto));
+        if (!folderId) folderId = '1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3';
         
         google.script.run
           .withSuccessHandler(function(res) {
@@ -503,7 +504,8 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const base64Data = e.target.result.split(',')[1];
-        const folderId = extractDriveFolderId(document.getElementById('setFolderFoto').value || currentSettings.folder_foto);
+        let folderId = extractDriveFolderId(document.getElementById('setFolderFoto').value || (currentSettings && currentSettings.folder_foto));
+        if (!folderId) folderId = '1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3';
         
         google.script.run
           .withSuccessHandler(function(res) {

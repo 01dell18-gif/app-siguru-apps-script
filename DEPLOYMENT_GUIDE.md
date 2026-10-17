@@ -83,21 +83,28 @@ Sistem ini telah dikonfigurasi terhubung secara langsung dengan tautan Google Sp
    - **Who has access**: `Anyone` (Siapa saja)
 7. Klik **Deploy** dan salin URL Web App yang dihasilkan. Aplikasi kini siap digunakan tanpa kendala upload!
 
-### Inisialisasi Database Pertama Kali
+### Inisialisasi Database Otomatis pada Spreadsheet Baru
 
-Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan menginisialisasi seluruh 11 Sheet beserta header kolomnya:
+Sistem SIGURU telah dilengkapi fungsi **Auto-Initialization** penuh (`setupNewSpreadsheet()` / `setupInitialDatabase()`). Jika Anda menerapkan sistem menggunakan Google Spreadsheet baru:
+1. Buat Google Spreadsheet baru di Google Drive Anda.
+2. Salin ID Spreadsheet dari URL-nya (antara `/d/` dan `/edit`).
+3. Gantikan nilai variabel `SPREADSHEET_ID` di baris ke-7 file `Code.gs` dengan ID Spreadsheet baru tersebut.
+4. Terapkan Web App (Deploy).
+5. Saat Web App pertama kali dibuka (atau saat fungsi `setupNewSpreadsheet` dijalankan), sistem **secara otomatis membuat seluruh 11 Sheet**, mengatur baris header tebal, menghapus Sheet1 kosong bawaan, serta menyuntikkan data pengaturan resmi, akun pengguna default, dan data sampel guru/siswa:
 
-1. `Pengaturan`
-2. `Data User`
-3. `Data Guru`
-4. `Data Murid`
-5. `Data Murid Guru Wali`
-6. `Data Murid Ekstra`
-7. `Hasil Absen`
-8. `Hasil Jurnal`
-9. `Hasil Guru Wali`
-10. `Hasil Wali`
-11. `Hasil Ekstra`
+| Sheet Database | Fungsi & Letak Data Sumber |
+| --- | --- |
+| 1. `Pengaturan` | Identitas sekolah, periode TA/semester aktif, folder Google Drive, kop surat, & ttd |
+| 2. `Data User` | Akun autentikasi pengguna, peran hak akses RBAC, NIP, & foto profil |
+| 3. `Data Guru` | Master pendidik, NIP, status guru wali, rombel wali kelas, & pembina ekstra |
+| 4. `Data Murid` | Master data induk seluruh siswa, NISN, kelas, jenis kelamin, & status keterhubungan |
+| 5. `Data Murid Guru Wali` | Pemetaan siswa asuh binaan per guru wali, kontak ortu WhatsApp, & foto siswa |
+| 6. `Data Murid Ekstra` | Pemetaan anggota cabang ekstrakurikuler & penugasan guru pembina |
+| 7. `Hasil Absen` | Rekaman transaksi presensi harian siswa (H, I, S, A, D) per kelas & mapel |
+| 8. `Hasil Jurnal` | Rekaman agenda KBM guru, pertemuan ke-, model, ketuntasan, & tautan multi-bukti |
+| 9. `Hasil Guru Wali` | Rekaman riwayat pembinaan bimbingan siswa asuh & tautan multi-bukti Drive |
+| 10. `Hasil Wali` | Rekaman pembinaan kelas oleh wali kelas & tautan multi-bukti Drive |
+| 11. `Hasil Ekstra` | Rekaman pelaksanaan latihan ekstrakurikuler, presensi, & tautan multi-bukti Drive |
 
 ---
 
@@ -105,8 +112,10 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
 
 | Username | Password | Hak Akses | Deskripsi |
 | --- | --- | --- | --- |
-| **`SAdmin`** | `Pengelola@Admin@Super` | **Super Admin** | Akun induk sistem, hak akses mutlak ke seluruh modul dan pengaturan |
-| **`viewer`** | `view123` | **Pelihat** | Akun pelihat/pengawas sekolah (hanya dapat melihat laporan) |
+| **`SAdmin`** | `123` | **Super Admin** | Akun induk sistem, hak akses mutlak ke seluruh modul dan pengaturan |
+| **`admin`** | `123` | **Admin** | Administrator sistem |
+| **`guru`** | `123` | **Guru, Wali Kelas, Guru Wali, Pembina Ekstra** | Akun guru terpadu multi-peran (Drs. Budi Santoso, M.Pd.) |
+| **`viewer`** | `123` | **Pelihat** | Akun pengawas/pelihat supervisi (khusus pratinjau seluruh laporan) |
 
 > 🛡️ **Proteksi Akun SAdmin**: Akun SAdmin tidak dapat dihapus, username tidak dapat diganti, dan kata sandinya dilindungi secara khusus sehingga Super Admin tambahan lain tidak dapat mengintip kata sandi SAdmin.
 

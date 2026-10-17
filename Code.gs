@@ -26,6 +26,16 @@ let _activePage = 'landing';
 let _activeParams = {};
 
 function doGet(e) {
+  // Auto-inisialisasi seluruh sheet & data default jika spreadsheet baru belum memiliki sheet Data User atau Pengaturan
+  try {
+    const ssCheck = getSpreadsheet();
+    if (!ssCheck.getSheetByName(SHEET_NAMES.DATA_USER) || !ssCheck.getSheetByName(SHEET_NAMES.PENGATURAN)) {
+      setupNewSpreadsheet();
+    }
+  } catch(errInit) {
+    Logger.log('Auto init check note: ' + errInit.message);
+  }
+
   const page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'landing';
   const userJson = (e && e.parameter && e.parameter.user) ? e.parameter.user : '';
   _activePage = page;
@@ -220,6 +230,82 @@ function initializeSheet(sheet, sheetName) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   }
+
+  // Seeding data default jika sheet baru dibuat atau baris masih <= 1
+  if (sheet.getLastRow() <= 1) {
+    if (sheetName === SHEET_NAMES.PENGATURAN) {
+      const def = getDefaultSettingsObject();
+      const row = headers.map(h => def[h] !== undefined ? def[h] : '');
+      sheet.appendRow(row);
+    } else if (sheetName === SHEET_NAMES.DATA_USER) {
+      sheet.appendRow([1, 'SAdmin', '123', 'Super Admin', 'Super Administrator', '198001012005011001', '']);
+      sheet.appendRow([2, 'admin', '123', 'Admin', 'Administrator Sistem', '198202022006022002', '']);
+      sheet.appendRow([3, 'guru', '123', 'Guru Mata Pelajaran, Wali Kelas, Guru Wali, Pembina Ekstra', 'Drs. Budi Santoso, M.Pd.', '197603032000031003', '']);
+      sheet.appendRow([4, 'viewer', '123', 'Pelihat', 'Pengawas Sekolah', '197004041995041004', '']);
+    } else if (sheetName === SHEET_NAMES.DATA_GURU) {
+      sheet.appendRow([1, 'Drs. Budi Santoso, M.Pd.', '197603032000031003', 'Ya', 'X RPL 1', 'Pramuka, Futsal']);
+      sheet.appendRow([2, 'Siti Aminah, S.Pd.', '198505052010012005', 'Ya', 'X RPL 2', 'Paskibra']);
+      sheet.appendRow([3, 'Ahmad Fauzi, M.Kom.', '198808082015021008', 'Tidak', 'XI RPL 1', 'PMR']);
+    } else if (sheetName === SHEET_NAMES.DATA_MURID) {
+      sheet.appendRow([1, '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Murid, Guru Wali, Ekstra']);
+      sheet.appendRow([2, '0082345678', 'Annisa Rahmawati', 'P', 'X RPL 1', 'Murid, Guru Wali, Ekstra']);
+      sheet.appendRow([3, '0083456789', 'Bagas Satria Wibowo', 'L', 'X RPL 1', 'Murid, Guru Wali']);
+      sheet.appendRow([4, '0084567890', 'Cantika Dewi Lestari', 'P', 'X RPL 2', 'Murid, Ekstra']);
+      sheet.appendRow([5, '0085678901', 'Dimas Arya Nugraha', 'L', 'X RPL 2', 'Murid, Guru Wali, Ekstra']);
+    } else if (sheetName === SHEET_NAMES.DATA_MURID_GURU_WALI) {
+      sheet.appendRow([1, '0081234567', 'Aditya Pratama Putra', 'X RPL 1', 'L', '', 'Drs. Budi Santoso, M.Pd.', '081234567890', 'Bambang Pratama', '081234567891', 'Perlu perhatian khusus mata pelajaran produktif']);
+      sheet.appendRow([2, '0082345678', 'Annisa Rahmawati', 'X RPL 1', 'P', '', 'Drs. Budi Santoso, M.Pd.', '081234567892', 'Rahmat Hidayat', '081234567893', 'Aktif dan berprestasi']);
+      sheet.appendRow([3, '0085678901', 'Dimas Arya Nugraha', 'X RPL 2', 'L', '', 'Siti Aminah, S.Pd.', '081234567894', 'Agus Nugraha', '081234567895', 'Bimbingan kedisiplinan dan minat bakat']);
+    } else if (sheetName === SHEET_NAMES.DATA_MURID_EKSTRA) {
+      sheet.appendRow([1, '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Pramuka', 'Drs. Budi Santoso, M.Pd.']);
+      sheet.appendRow([2, '0081234567', 'Aditya Pratama Putra', 'L', 'X RPL 1', 'Futsal', 'Drs. Budi Santoso, M.Pd.']);
+      sheet.appendRow([3, '0082345678', 'Annisa Rahmawati', 'P', 'X RPL 1', 'Paskibra', 'Siti Aminah, S.Pd.']);
+      sheet.appendRow([4, '0084567890', 'Cantika Dewi Lestari', 'P', 'X RPL 2', 'PMR', 'Ahmad Fauzi, M.Kom.']);
+    }
+  }
+}
+
+// === INISIALISASI OTOMATIS SELURUH DATABASE PADA SPREADSHEET BARU ===
+function setupNewSpreadsheet() {
+  const ss = getSpreadsheet();
+  const report = [];
+
+  Object.keys(SHEET_NAMES).forEach(function(key) {
+    const sName = SHEET_NAMES[key];
+    let sheet = ss.getSheetByName(sName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sName);
+      initializeSheet(sheet, sName);
+      report.push('Membuat sheet: ' + sName);
+    } else if (sheet.getLastRow() === 0) {
+      initializeSheet(sheet, sName);
+      report.push('Inisialisasi ulang sheet kosong: ' + sName);
+    }
+  });
+
+  // Hapus Sheet1 default bawaan spreadsheet baru jika ada
+  const defaultSheet = ss.getSheetByName('Sheet1') || ss.getSheetByName('Sheet 1');
+  if (defaultSheet && ss.getSheets().length > 1) {
+    try {
+      if (defaultSheet.getLastRow() <= 1) {
+        ss.deleteSheet(defaultSheet);
+        report.push('Menghapus Sheet1 default bawaan');
+      }
+    } catch(err) {
+      Logger.log('Tidak dapat menghapus Sheet1: ' + err.message);
+    }
+  }
+
+  Logger.log('Inisialisasi spreadsheet baru selesai: ' + JSON.stringify(report));
+  return {
+    success: true,
+    message: 'Seluruh 11 sheet SIGURU berhasil diinisialisasi pada Google Spreadsheet!',
+    report: report
+  };
+}
+
+function setupInitialDatabase() {
+  return setupNewSpreadsheet();
 }
 
 function getHeaders(sheetName) {
@@ -304,7 +390,11 @@ function getNextId(sheetName) {
 // === AUTENTIKASI ===
 function loginUser(username, password) {
   try {
-    const users = getSheetData(SHEET_NAMES.DATA_USER);
+    let users = getSheetData(SHEET_NAMES.DATA_USER);
+    if (!users || users.length === 0) {
+      setupNewSpreadsheet();
+      users = getSheetData(SHEET_NAMES.DATA_USER);
+    }
     const user = users.find(u => 
       String(u.username).trim().toLowerCase() === String(username).trim().toLowerCase() && 
       String(u.password).trim() === String(password).trim()
@@ -1264,7 +1354,7 @@ function uploadFotoProfil(fileData, fileName, userId) {
     const folderUrl = settings.folder_foto || '';
     const folderId = extractFolderId(folderUrl);
 
-    const uploadRes = uploadFileToDrive(fileData, fileName, folderId || 'root');
+    const uploadRes = uploadFileToDrive(fileData, fileName, folderId || '1PmA4EHMEVfgbup9ZJuBrIlFzg37gsQO3' || 'root');
     if (!uploadRes.success) {
       return uploadRes;
     }
@@ -1736,30 +1826,7 @@ function getPrintData(type, filters) {
 
 // === INISIALISASI DATA DEFAULT ===
 function initializeDefaultData() {
-  try {
-    // Cek apakah sudah ada data user
-    const users = getSheetData(SHEET_NAMES.DATA_USER);
-    if (users.length === 0) {
-      const sheet = getSheet(SHEET_NAMES.DATA_USER);
-      // Tambah akun SAdmin default
-      sheet.appendRow([1, 'SAdmin', 'Pengelola@Admin@Super', 'Super Admin', 'Admin Pengelola', '-']);
-      sheet.appendRow([2, 'viewer', 'view123', 'Pelihat', 'Pengawas Sekolah', '197509121999031002']);
-    }
-    
-    // Cek apakah sudah ada pengaturan
-    const settings = getSheetData(SHEET_NAMES.PENGATURAN);
-    if (settings.length === 0) {
-      const settingsSheet = getSheet(SHEET_NAMES.PENGATURAN);
-      const defaultSettings = getSettings();
-      const headers = getHeaders(SHEET_NAMES.PENGATURAN);
-      const values = headers.map(h => defaultSettings[h] || '');
-      settingsSheet.appendRow(values);
-    }
-    
-    return { success: true, message: 'Inisialisasi berhasil!' };
-  } catch(e) {
-    return { success: false, message: 'Error: ' + e.message };
-  }
+  return setupNewSpreadsheet();
 }
 
 // === HRBAC HELPER (Client-Side Check) ===
