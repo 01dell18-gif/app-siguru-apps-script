@@ -99,10 +99,9 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
 1. **Role-Based Access Control (RBAC) Fleksibel & Multi-Role**:
    - Super Admin, Guru Mapel, Wali Kelas, Guru Wali, Pembina Ekstra, Pelihat (Viewer).
    - Pengguna dapat memiliki kombinasi multi-role (misal: "Guru, Wali Kelas, Pembina Ekstra").
-   - Filter dan penguncian nama guru otomatis (`🔒 [Nama Guru]`) di seluruh menu Master Data (Data Siswa Bimbingan, Data Siswa Ekstrakurikuler, & Data Guru), formulir pencatatan harian, dan laporan bagi selain Super Admin. Khusus hak akses Super Admin yang dapat memilih nama guru secara bebas.
    - **Hak Akses Pelihat (Viewer) pada Seluruh Menu Laporan Hasil**: Pada seluruh 5 menu Laporan Hasil KBM, akun Pelihat diberikan kebebasan memilih nama guru dari dropdown filter untuk keperluan supervisi/pemeriksaan, namun kolom menu Aksi pada tabel laporan terkunci permanen (`🔒 Terkunci`) serta aksi edit dan hapus dilindungi secara ketat (read-only).
-   - Proteksi Aksi & Multi-Pembina Master Ekstrakurikuler: Jika siswa mengikuti lebih dari satu cabang ekstra, sistem menyediakan pemetaan guru pembina untuk masing-masing cabang. Tombol Edit dan Hapus dinonaktifkan (`🔒 Terkunci`) bagi selain Super Admin.
-   - Otomasi Cabang & Presensi Formulir Ekstrakurikuler: Pada Formulir Kegiatan Ekstrakurikuler, cabang ekstrakurikuler otomatis terisi sesuai penugasan pembina ekstra akun guru yang login (dikunci jika 1 cabang, dapat dipilih di antara cabang binaan jika lebih dari 1 cabang). Presensi siswa secara akurat menyaring siswa yang terdaftar pada cabang ekstra tersebut.
+   - **Pemetaan Multi-Pembina & Seleksi Guru di Master Ekstrakurikuler**: Jika siswa mengikuti lebih dari satu cabang ekstra, sistem memetakan guru pembina untuk masing-masing cabang. Jika suatu cabang ekstra memiliki lebih dari 1 guru pembina terdaftar di sistem, pengguna dapat memilih salah satu guru pembinanya melalui dropdown saat tambah/edit data. Aksi edit dan hapus dapat dilakukan oleh Super Admin serta guru pembina siswa terkait.
+   - **Otomasi Cabang & Presensi Formulir Ekstrakurikuler**: Pada Formulir Kegiatan Ekstrakurikuler, cabang ekstrakurikuler otomatis terisi sesuai penugasan pembina ekstra akun guru yang login (dikunci jika membina tepat 1 cabang, dapat dipilih di antara cabang binaan jika membina lebih dari 1 cabang). Presensi siswa secara akurat menyaring siswa yang terdaftar pada cabang ekstra tersebut.
 2. **Auto-Hiding Navbar & Real-Time Device Clock**:
    - Header modern yang otomatis menyusut saat di-scroll ke bawah dan muncul saat di-scroll ke atas.
    - Jam & tanggal real-time sesuai perangkat pengguna (klien).
@@ -154,6 +153,11 @@ Pada saat pertama kali dibuka, sistem otomatis mendeteksi sheet kosong dan mengi
 
 12. **Pencarian Cepat Siswa dari Data Induk (Typeable Student Search)**:
     - Pemilihan siswa dari Data Induk pada Master Bimbingan (Guru Wali) dan Master Siswa Ekstrakurikuler kini dapat diketik langsung (pencarian nama siswa atau NISN) menggunakan *searchable datalist*, mempercepat pemilihan siswa di antara ratusan data tanpa perlu menggulir menu dropdown yang panjang.
+
+13. **Multi-Pembina Ekstrakurikuler pada Master Guru & Formulir Terintegrasi**:
+    - **Master Data Guru**: Mendukung penugasan lebih dari 1 cabang kegiatan ekstrakurikuler untuk satu guru melalui antarmuka checkbox multi-pilihan (*Pilih Semua* & *Kosongkan*) dan tampilan badge mandiri per cabang pada tabel.
+    - **Formulir Kegiatan Ekstrakurikuler**: Dropdown cabang terbuka dan dapat dipilih jika guru membina lebih dari 1 kegiatan ekstra, lengkap dengan badge keterangan jumlah cabang binaan.
+    - **Data Siswa Ekstrakurikuler**: Menyediakan dropdown pemilihan guru pembina per cabang jika suatu cabang ekstra memiliki lebih dari 1 guru pembina terdaftar di sistem.
 
 ---
 

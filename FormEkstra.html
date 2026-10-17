@@ -45,7 +45,7 @@
           </div>
           <div class="col-md-4 col-sm-12">
             <label class="form-label fw-semibold small text-secondary">Cabang Ekstrakurikuler <span class="text-danger">*</span></label>
-            <select id="ekstraCabang" class="form-select" required onchange="filterPesertaByEkstra()"></select>
+            <select id="ekstraCabang" class="form-select" required onchange="onCabangChanged()"></select>
             <div id="badgeEkstraLock" class="mt-1" style="display: none;">
               <small class="badge bg-secondary-subtle text-secondary"><i class="bi bi-lock-fill me-1"></i>Terkunci otomatis sesuai pembina</small>
             </div>
@@ -172,14 +172,25 @@
       applyCabangByPembina(pembinaName);
     }
 
+    function onCabangChanged() {
+      const selCabang = document.getElementById('ekstraCabang');
+      if (selCabang) {
+        assignedEkstraGuru = selCabang.value;
+      }
+      filterPesertaByEkstra();
+    }
+
     function applyCabangByPembina(pembinaName) {
       const selCabang = document.getElementById('ekstraCabang');
       if (!selCabang) return;
 
       const pName = pembinaName || (user && user.nama ? user.nama : '');
-      const g = (daftarGuru || []).find(function(item) {
-        return String(item.nama || '').trim().toLowerCase() === String(pName).trim().toLowerCase();
+      let g = (daftarGuru || []).find(function(item) {
+        return String(item.nama || item.nama_guru || '').trim().toLowerCase() === String(pName).trim().toLowerCase();
       });
+      if (!g && user && user.nama && String(user.nama).trim().toLowerCase() === String(pName).trim().toLowerCase()) {
+        g = user;
+      }
 
       let assignedBranches = [];
       if (g && g.pembina_ekstra && g.pembina_ekstra !== '-') {
@@ -205,13 +216,13 @@
           lockBadge.innerHTML = '<small class="badge bg-secondary-subtle text-secondary"><i class="bi bi-lock-fill me-1"></i>Otomatis terisi: ' + escapeHtml(singleBranch) + '</small>';
         }
       } else if (assignedBranches.length > 1) {
-        // Guru membina lebih dari 1 cabang ekstra: tampilkan dropdown hanya untuk cabang binaannya
+        // Guru membina lebih dari 1 cabang ekstra: tampilkan dropdown agar dapat dipilih
         const curVal = selCabang.value;
-        selCabang.innerHTML = '<option value="">-- Pilih Cabang Binaan Guru --</option>';
+        selCabang.innerHTML = '<option value="">-- Pilih Salah Satu Cabang Binaan (' + assignedBranches.length + ' Cabang) --</option>';
         assignedBranches.forEach(function(b) {
           selCabang.innerHTML += '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>';
         });
-        if (assignedBranches.includes(curVal)) {
+        if (curVal && assignedBranches.includes(curVal)) {
           selCabang.value = curVal;
         } else {
           selCabang.value = assignedBranches[0];
@@ -222,7 +233,7 @@
         selCabang.title = 'Pilih salah satu cabang ekstra binaan guru';
         if (lockBadge) {
           lockBadge.style.display = 'block';
-          lockBadge.innerHTML = '<small class="badge bg-info-subtle text-info"><i class="bi bi-check-circle me-1"></i>Pilih cabang binaan: ' + escapeHtml(assignedBranches.join(', ')) + '</small>';
+          lockBadge.innerHTML = '<small class="badge bg-info-subtle text-info"><i class="bi bi-star-fill me-1"></i>Membina ' + assignedBranches.length + ' cabang: silakan pilih cabang di atas (' + escapeHtml(assignedBranches.join(', ')) + ')</small>';
         }
       } else {
         // Guru belum memiliki penugasan cabang khusus di database: tampilkan seluruh cabang
@@ -285,7 +296,7 @@
 
     function filterPesertaByEkstra() {
       const selCabang = document.getElementById('ekstraCabang');
-      const ekstraVal = (selCabang && selCabang.value ? selCabang.value.trim() : '') || assignedEkstraGuru || '';
+      const ekstraVal = (selCabang && selCabang.value ? selCabang.value.trim() : '') || (selCabang && selCabang.disabled ? assignedEkstraGuru : '');
       const container = document.getElementById('containerPesertaEkstra');
       if (!container) return;
 

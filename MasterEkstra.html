@@ -347,6 +347,23 @@
       renderGuruPerEkstraSection();
     }
 
+    function getPembinasForEkstra(ekstraName) {
+      if (!ekstraName) return [];
+      const tr = String(ekstraName).trim().toLowerCase();
+      const list = [];
+      (allGuruList || []).forEach(function(g) {
+        const gn = (g.nama_guru || g.nama || '').trim();
+        const pe = g.pembina_ekstra || '';
+        if (gn && pe && pe !== '-') {
+          const parts = String(pe).split(/[,;]/).map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+          if (parts.includes(tr) || parts.some(function(p){ return p === tr; })) {
+            if (!list.includes(gn)) list.push(gn);
+          }
+        }
+      });
+      return list;
+    }
+
     function renderGuruPerEkstraSection(savedMap) {
       const container = document.getElementById('containerGuruPerEkstra');
       if (!container) return;
@@ -371,18 +388,54 @@
 
       let html = '<div class="d-flex flex-column gap-2">';
       checkedEkstras.forEach(function(ek) {
-        let defaultTeacher = currentValues[ek] || guruEkstraMap[ek] || '';
+        const pembinas = getPembinasForEkstra(ek);
+        let defaultTeacher = currentValues[ek] || '';
 
-        // Jika guru yang login membina cabang ini, prioritaskan namanya
-        if (!isSuperAdmin() && user && user.nama) {
-          const loggedTeacher = allGuruList.find(function(g){ return (g.nama_guru || g.nama || '') === user.nama; });
-          const userEkstras = String(loggedTeacher && loggedTeacher.pembina_ekstra ? loggedTeacher.pembina_ekstra : '').split(',').map(function(s){ return s.trim(); });
-          if (userEkstras.includes(ek)) {
+        if (!defaultTeacher) {
+          if (!isSuperAdmin() && user && user.nama && pembinas.includes(user.nama)) {
             defaultTeacher = user.nama;
+          } else if (pembinas.length > 0) {
+            defaultTeacher = pembinas[0];
+          } else {
+            defaultTeacher = guruEkstraMap[ek] || (user && user.nama ? user.nama : '');
           }
         }
 
-        if (isSuperAdmin()) {
+        // Jika terdapat lebih dari 1 Guru Pembina untuk cabang ini:
+        // Dapat dipilih salah satu Guru Pembinanya!
+        if (pembinas.length > 1) {
+          html += '<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-2 border rounded bg-light gap-2">' +
+            '<div class="d-flex align-items-center gap-2">' +
+              '<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>' + escapeHtml(ek) + '</span>' +
+              '<span class="badge bg-info-subtle text-info border small"><i class="bi bi-people-fill me-1"></i>' + pembinas.length + ' Pembina Tersedia</span>' +
+            '</div>' +
+            '<div class="flex-grow-1" style="max-width: 320px;">' +
+              '<select class="form-select form-select-sm sel-guru-ekstra" data-ekstra="' + escapeHtml(ek) + '" required title="Pilih salah satu guru pembina untuk ' + escapeHtml(ek) + '">' +
+                '<option value="">-- Pilih Salah Satu Guru Pembina --</option>';
+          pembinas.forEach(function(pName) {
+            const selAttr = (pName === defaultTeacher) ? ' selected' : '';
+            html += '<option value="' + escapeHtml(pName) + '"' + selAttr + '>' + escapeHtml(pName) + '</option>';
+          });
+          if (isSuperAdmin()) {
+            const otherGurus = allGuruList.filter(function(g){
+              const gn = g.nama_guru || g.nama || '';
+              return gn && !pembinas.includes(gn);
+            });
+            if (otherGurus.length > 0) {
+              html += '<optgroup label="Guru Lainnya">';
+              otherGurus.forEach(function(g) {
+                const gn = g.nama_guru || g.nama || '';
+                const selAttr = (gn === defaultTeacher) ? ' selected' : '';
+                html += '<option value="' + escapeHtml(gn) + '"' + selAttr + '>' + escapeHtml(gn) + '</option>';
+              });
+              html += '</optgroup>';
+            }
+          }
+          html += '</select>' +
+            '</div>' +
+          '</div>';
+        } else if (isSuperAdmin()) {
+          // Super Admin: Dropdown fleksibel
           html += '<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-2 border rounded bg-light gap-2">' +
             '<div class="d-flex align-items-center gap-2">' +
               '<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>' + escapeHtml(ek) + '</span>' +
@@ -402,7 +455,9 @@
             '</div>' +
           '</div>';
         } else {
-          const isMyExtra = (defaultTeacher === user.nama);
+          // Non-superadmin dengan 1 pembina tunggal atau belum ada pembina terdaftar
+          const singlePembina = (pembinas.length === 1) ? pembinas[0] : (defaultTeacher || user.nama || '-');
+          const isMyExtra = (singlePembina === user.nama);
           html += '<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-2 border rounded bg-light gap-2">' +
             '<div class="d-flex align-items-center gap-2">' +
               '<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>' + escapeHtml(ek) + '</span>' +
@@ -411,7 +466,7 @@
                 : '<span class="badge bg-secondary-subtle text-secondary small"><i class="bi bi-person-badge me-1"></i>Pembina Terdaftar</span>') +
             '</div>' +
             '<div class="flex-grow-1" style="max-width: 320px;">' +
-              '<input type="text" class="form-control form-control-sm bg-light fw-semibold text-dark sel-guru-ekstra" data-ekstra="' + escapeHtml(ek) + '" value="' + escapeHtml(defaultTeacher || user.nama || '-') + '" readonly title="Terkunci sesuai data pembina ' + escapeHtml(ek) + '">' +
+              '<input type="text" class="form-control form-control-sm bg-light fw-semibold text-dark sel-guru-ekstra" data-ekstra="' + escapeHtml(ek) + '" value="' + escapeHtml(singlePembina) + '" readonly title="Terkunci: Pembina tunggal untuk cabang ' + escapeHtml(ek) + '">' +
             '</div>' +
           '</div>';
         }
@@ -639,14 +694,22 @@
         });
         if (!pembinaBadges) pembinaBadges = '<span class="text-muted">-</span>';
 
-        // Aksi: dinonaktifkan untuk selain Super Admin
+        // Check if current user is pembina of this student
+        const studentEkstras = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const myTeacherRecord = (allGuruList || []).find(function(g){ return (g.nama_guru || g.nama || '') === user.nama; });
+        const myBranches = String(myTeacherRecord && myTeacherRecord.pembina_ekstra ? myTeacherRecord.pembina_ekstra : '')
+          .split(/[,;]/).map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const isMyBranch = myBranches.some(function(b){ return studentEkstras.includes(b); });
+        const isMyPembinaName = pembinaArr.some(function(p){ return p.toLowerCase() === (user.nama || '').toLowerCase(); });
+        const canManage = isSuperAdmin() || isMyBranch || isMyPembinaName;
+
         let actionBtns = '';
-        if (isSuperAdmin()) {
+        if (canManage) {
           actionBtns = 
             '<button class="btn btn-outline-primary btn-sm btn-icon" onclick="editEkstra(' + e.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
             '<button class="btn btn-outline-danger btn-sm btn-icon" onclick="deleteEkstra(' + e.id + ', \'' + escapeHtml(e.nama_murid) + '\')" title="Hapus"><i class="bi bi-trash"></i></button>';
         } else {
-          actionBtns = '<span class="badge bg-secondary-subtle text-secondary py-1 px-2 small" title="Aksi dinonaktifkan. Hanya Super Admin yang berhak mengubah atau menghapus data."><i class="bi bi-lock-fill me-1"></i>Terkunci</span>';
+          actionBtns = '<span class="badge bg-secondary-subtle text-secondary py-1 px-2 small" title="Terkunci. Hanya pembina siswa ini atau Super Admin yang dapat mengubah."><i class="bi bi-lock-fill me-1"></i>Terkunci</span>';
         }
 
         html += '<tr>' +
@@ -912,12 +975,22 @@
     }
 
     function editEkstra(id) {
-      if (!isSuperAdmin()) {
-        showToast('warning', 'Hanya Super Admin yang berhak mengubah data anggota ekstra.');
-        return;
-      }
       const e = rawEkstra.find(function(x){ return x.id == id; });
       if (!e) return;
+
+      if (!isSuperAdmin()) {
+        const studentEkstras = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const myTeacherRecord = (allGuruList || []).find(function(g){ return (g.nama_guru || g.nama || '') === user.nama; });
+        const myBranches = String(myTeacherRecord && myTeacherRecord.pembina_ekstra ? myTeacherRecord.pembina_ekstra : '')
+          .split(/[,;]/).map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const pembinaArr = parsePembinaList(e.nama_guru || '');
+        const isMyBranch = myBranches.some(function(b){ return studentEkstras.includes(b); });
+        const isMyPembinaName = pembinaArr.some(function(p){ return p.toLowerCase() === (user.nama || '').toLowerCase(); });
+        if (!isMyBranch && !isMyPembinaName) {
+          showToast('warning', 'Hanya Super Admin atau guru pembina siswa ini yang berhak mengubah data anggota ekstra.');
+          return;
+        }
+      }
 
       document.getElementById('modalEkstraTitle').textContent = 'Edit Anggota Ekstrakurikuler';
       document.getElementById('divSelectMurid').style.display = 'none';
@@ -936,12 +1009,14 @@
 
       const savedMap = {};
       ekstraArr.forEach(function(ek, i) {
-        if (guruEkstraMap[ek] && guruArr.includes(guruEkstraMap[ek])) {
-          savedMap[ek] = guruEkstraMap[ek];
+        const pembinas = getPembinasForEkstra(ek);
+        const matchedInRecord = guruArr.find(function(g){ return pembinas.includes(g); });
+        if (matchedInRecord) {
+          savedMap[ek] = matchedInRecord;
         } else if (guruArr[i]) {
           savedMap[ek] = guruArr[i];
-        } else if (guruEkstraMap[ek]) {
-          savedMap[ek] = guruEkstraMap[ek];
+        } else if (pembinas.length > 0) {
+          savedMap[ek] = pembinas[0];
         }
       });
 
@@ -1004,9 +1079,20 @@
     }
 
     function deleteEkstra(id, nama) {
+      const e = rawEkstra.find(function(x){ return x.id == id; });
       if (!isSuperAdmin()) {
-        showToast('warning', 'Hanya Super Admin yang berhak menghapus data anggota ekstra.');
-        return;
+        if (!e) return;
+        const studentEkstras = String(e.nama_ekstra || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const myTeacherRecord = (allGuruList || []).find(function(g){ return (g.nama_guru || g.nama || '') === user.nama; });
+        const myBranches = String(myTeacherRecord && myTeacherRecord.pembina_ekstra ? myTeacherRecord.pembina_ekstra : '')
+          .split(/[,;]/).map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+        const pembinaArr = parsePembinaList(e.nama_guru || '');
+        const isMyBranch = myBranches.some(function(b){ return studentEkstras.includes(b); });
+        const isMyPembinaName = pembinaArr.some(function(p){ return p.toLowerCase() === (user.nama || '').toLowerCase(); });
+        if (!isMyBranch && !isMyPembinaName) {
+          showToast('warning', 'Hanya Super Admin atau guru pembina siswa ini yang berhak menghapus data.');
+          return;
+        }
       }
       Swal.fire({
         title: 'Hapus Anggota Ekstra?',
